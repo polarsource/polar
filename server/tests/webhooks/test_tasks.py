@@ -1,18 +1,31 @@
+import json
 import uuid
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 
+import httpx2
 import pytest
 from pytest_mock import MockerFixture
 
 from polar.config import settings
-from polar.models import WebhookEndpoint, WebhookEvent
+from polar.kit.encryption import EncryptedString
+from polar.kit.versioning import api_version_context
+from polar.models import (
+    Organization,
+    Subscription,
+    UserOrganization,
+    WebhookEndpoint,
+    WebhookEvent,
+)
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
+from polar.subscription.schemas import Subscription as SubscriptionSchema
 from polar.version import CURRENT_API_VERSION
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.tasks import (
+    _signing_secrets,
     _webhook_event_failed_debounce_key,
     _webhook_event_send,
+    get_cached_signing_secret,
 )
 from tests.fixtures.database import SaveFixture
 
@@ -52,6 +65,97 @@ class TestWebhookEventSend:
 
     async def test_missing_event_skips_send(self, session: AsyncSession) -> None:
         await _webhook_event_send(session, webhook_event_id=uuid.uuid4())
+
+    async def test_mcp_envelope_and_headers(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        http_mocks: dict[tuple[str, str], Mock],
+        organization: Organization,
+        subscription: Subscription,
+        webhook_endpoint_mcp: WebhookEndpoint,
+    ) -> None:
+        mocker.patch("polar.webhook.service.enqueue_job")
+        route = http_mocks["POST", webhook_endpoint_mcp.url] = Mock(
+            return_value=httpx2.Response(200)
+        )
+        [event] = await webhook_service.send(
+            session, organization, WebhookEventType.subscription_created, subscription
+        )
+        event_id, timestamp = event.id, event.created_at
+
+        await _webhook_event_send(session, webhook_event_id=event_id)
+
+        with api_version_context(CURRENT_API_VERSION):
+            expected_data = SubscriptionSchema.model_validate(subscription).model_dump(
+                mode="json"
+            )
+        request = route.call_args.args[0]
+        assert json.loads(request.content) == {
+            "eventId": str(event_id),
+            "name": "subscription.created",
+            "timestamp": timestamp.isoformat(),
+            "data": expected_data,
+            "cursor": None,
+        }
+        assert request.headers["webhook-id"] == str(event_id)
+        assert request.headers["X-MCP-Subscription-Id"] == str(webhook_endpoint_mcp.id)
+
+    async def test_mcp_gone_soft_deletes_endpoint(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        http_mocks: dict[tuple[str, str], Mock],
+        enqueue_job_mock: MagicMock,
+        webhook_endpoint_mcp: WebhookEndpoint,
+    ) -> None:
+        http_mocks["POST", webhook_endpoint_mcp.url] = Mock(
+            return_value=httpx2.Response(410)
+        )
+        event = WebhookEvent(
+            webhook_endpoint=webhook_endpoint_mcp,
+            type=WebhookEventType.subscription_created,
+            api_version=CURRENT_API_VERSION,
+            payload='{"foo":"bar"}',
+        )
+        await save_fixture(event)
+
+        await _webhook_event_send(session, webhook_event_id=event.id)
+
+        await session.refresh(event)
+        await session.refresh(webhook_endpoint_mcp)
+        assert event.succeeded is False
+        assert webhook_endpoint_mcp.deleted_at is not None
+        enqueue_job_mock.assert_not_called()
+
+    async def test_mcp_payload_too_large_does_not_retry(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        http_mocks: dict[tuple[str, str], Mock],
+        enqueue_job_mock: MagicMock,
+        webhook_endpoint_mcp: WebhookEndpoint,
+    ) -> None:
+        http_mocks["POST", webhook_endpoint_mcp.url] = Mock(
+            return_value=httpx2.Response(413)
+        )
+        event = WebhookEvent(
+            webhook_endpoint=webhook_endpoint_mcp,
+            type=WebhookEventType.subscription_created,
+            api_version=CURRENT_API_VERSION,
+            payload='{"foo":"bar"}',
+        )
+        await save_fixture(event)
+
+        await _webhook_event_send(session, webhook_event_id=event.id)
+
+        await session.refresh(event)
+        assert event.succeeded is False
+        enqueue_job_mock.assert_called_once_with(
+            "webhook_event.failed",
+            webhook_event_id=event.id,
+            webhook_endpoint_id=webhook_endpoint_mcp.id,
+        )
 
 
 @pytest.mark.anyio
@@ -265,6 +369,33 @@ class TestOnEventFailed:
             await session.refresh(pending_event)
             assert pending_event.skipped is True
 
+    async def test_soft_deletes_mcp_endpoint_without_email(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        webhook_endpoint_mcp: WebhookEndpoint,
+    ) -> None:
+        enqueue_email_mock = mocker.patch(
+            "polar.webhook.service.enqueue_email_template"
+        )
+        for _ in range(settings.WEBHOOK_FAILURE_THRESHOLD):
+            event = WebhookEvent(
+                webhook_endpoint=webhook_endpoint_mcp,
+                type=WebhookEventType.subscription_created,
+                api_version=CURRENT_API_VERSION,
+                payload='{"foo":"bar"}',
+                succeeded=False,
+            )
+            await save_fixture(event)
+
+        await webhook_service.on_event_failed(session, event.id)
+
+        assert webhook_endpoint_mcp.deleted_at is not None
+        assert webhook_endpoint_mcp.enabled is True
+        enqueue_email_mock.assert_not_called()
+
 
 class TestWebhookEventFailedDebounceKey:
     def test_collapses_concurrent_events_for_same_endpoint(self) -> None:
@@ -275,3 +406,56 @@ class TestWebhookEventFailedDebounceKey:
 
     def test_no_key_without_endpoint(self) -> None:
         assert _webhook_event_failed_debounce_key(uuid.uuid4()) is None
+
+
+async def _build_endpoint(secret: str) -> WebhookEndpoint:
+    id = WebhookEndpoint.generate_id()
+    return WebhookEndpoint(
+        id=id, secret_encrypted=await WebhookEndpoint.encrypt_secret(id, secret)
+    )
+
+
+@pytest.mark.anyio
+class TestGetCachedSigningSecret:
+    @pytest.fixture(autouse=True)
+    def clear_cache(self) -> None:
+        _signing_secrets.clear()
+
+    async def test_decrypts_once_per_ciphertext(self, mocker: MockerFixture) -> None:
+        decrypt = mocker.spy(EncryptedString, "decrypt")
+        endpoint = await _build_endpoint("whsec_one")
+
+        assert await get_cached_signing_secret(endpoint) == "whsec_one"
+        assert await get_cached_signing_secret(endpoint) == "whsec_one"
+
+        assert decrypt.call_count == 1
+
+    async def test_new_ciphertext_after_reset(self, mocker: MockerFixture) -> None:
+        decrypt = mocker.spy(EncryptedString, "decrypt")
+        endpoint = await _build_endpoint("whsec_old")
+        assert await get_cached_signing_secret(endpoint) == "whsec_old"
+
+        endpoint.secret_encrypted = await WebhookEndpoint.encrypt_secret(
+            endpoint.id, "whsec_new"
+        )
+
+        assert await get_cached_signing_secret(endpoint) == "whsec_new"
+        assert decrypt.call_count == 2
+
+    async def test_evicts_least_recently_used(self, mocker: MockerFixture) -> None:
+        mocker.patch("polar.webhook.tasks._SIGNING_SECRETS_MAX_SIZE", 2)
+        decrypt = mocker.spy(EncryptedString, "decrypt")
+        first = await _build_endpoint("whsec_first")
+        second = await _build_endpoint("whsec_second")
+        third = await _build_endpoint("whsec_third")
+
+        await get_cached_signing_secret(first)
+        await get_cached_signing_secret(second)
+        await get_cached_signing_secret(first)
+        await get_cached_signing_secret(third)
+        assert decrypt.call_count == 3
+
+        await get_cached_signing_secret(first)
+        assert decrypt.call_count == 3
+        await get_cached_signing_secret(second)
+        assert decrypt.call_count == 4

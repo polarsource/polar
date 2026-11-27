@@ -40,9 +40,10 @@ from polar.integrations.polar.exceptions import (
 )
 from polar.integrations.polar.service import polar_self
 from polar.models.member import MemberRole
-from polar.models.organization import Organization, SupportTier
+from polar.models.organization import Organization, OrganizationStatus, SupportTier
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.version import CURRENT_API_VERSION
+from tests.fixtures.database import SaveFixture
 
 SELF_ORG_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 ORG_A = uuid.UUID("00000000-0000-0000-0000-00000000000a")
@@ -428,89 +429,6 @@ class TestEnqueueTrackOrganizationReviewUsage:
             cost_usd="0.0123",
             usage_id="usage-123",
         )
-
-    def test_accepts_float_cost(self, configured: None, mocker: MockerFixture) -> None:
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call(cost_usd=0.5)
-
-        assert enqueue.call_count == 1
-        assert enqueue.call_args.kwargs["cost_usd"] == "0.5"
-
-
-class TestEnqueueTrackCompassAssistantUsage:
-    def _call(
-        self,
-        *,
-        external_customer_id: str = str(ORG_A),
-        cost_usd: Decimal | float | None = Decimal("0.0042"),
-    ) -> None:
-        polar_self.enqueue_track_compass_assistant_usage(
-            external_customer_id=external_customer_id,
-            vendor="openai",
-            model="gpt-5.5",
-            input_tokens=1200,
-            output_tokens=300,
-            cost_usd=cost_usd,
-            usage_id="run-1",
-        )
-
-    def test_noop_when_not_configured(self, mocker: MockerFixture) -> None:
-        settings = mocker.patch("polar.integrations.polar.service.settings")
-        settings.POLAR_SELF_ENABLED = False
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call()
-
-        enqueue.assert_not_called()
-
-    def test_tracks_self_organization_usage(
-        self, configured: None, mocker: MockerFixture
-    ) -> None:
-        # Polar's own organization is deliberately not gated out: its Compass
-        # usage is cost-tracked like any merchant's, so Polar's own dashboard
-        # shows its AI costs.
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call(external_customer_id=str(SELF_ORG_ID))
-
-        enqueue.assert_called_once()
-
-    def test_noop_when_cost_is_none(
-        self, configured: None, mocker: MockerFixture
-    ) -> None:
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call(cost_usd=None)
-
-        enqueue.assert_not_called()
-
-    def test_enqueues_job_with_serialized_cost(
-        self, configured: None, mocker: MockerFixture
-    ) -> None:
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call(cost_usd=Decimal("0.0042"))
-
-        enqueue.assert_called_once_with(
-            "polar_self.track_compass_assistant_usage",
-            external_customer_id=str(ORG_A),
-            vendor="openai",
-            model="gpt-5.5",
-            input_tokens=1200,
-            output_tokens=300,
-            cost_usd="0.0042",
-            usage_id="run-1",
-        )
-
-    def test_noop_when_cost_is_zero(
-        self, configured: None, mocker: MockerFixture
-    ) -> None:
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call(cost_usd=Decimal(0))
-
-        enqueue.assert_not_called()
 
     def test_accepts_float_cost(self, configured: None, mocker: MockerFixture) -> None:
         enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
@@ -2336,18 +2254,7 @@ class TestListOrders:
         with pytest.raises(PolarSelfNotConfigured):
             await polar_self.list_orders(ORG_A)
 
-    async def test_returns_empty_when_customer_not_found(
-        self, configured: None, orders_client_mock: MagicMock
-    ) -> None:
-        orders_client_mock.get_customer_by_external_id_or_none.return_value = None
-
-        items, total = await polar_self.list_orders(ORG_A)
-
-        assert items == []
-        assert total == 0
-        orders_client_mock.list_customer_orders.assert_not_awaited()
-
-    async def test_lists_orders_for_resolved_customer(
+    async def test_lists_orders_by_external_customer_id(
         self, configured: None, orders_client_mock: MagicMock
     ) -> None:
         order = _make_order(id="ord_1")
@@ -2358,10 +2265,11 @@ class TestListOrders:
         assert items == [order]
         assert total == 1
         orders_client_mock.list_customer_orders.assert_awaited_once_with(
-            customer_id=_CUSTOMER_ID,
+            external_customer_id=str(ORG_A),
             page=2,
             limit=20,
         )
+        orders_client_mock.get_customer_by_external_id_or_none.assert_not_awaited()
 
 
 @pytest.mark.anyio
@@ -2739,14 +2647,17 @@ def _make_subscription_past_due_payload(
 
 
 def _make_subscription_revoked_payload(
-    **kwargs: Any,
+    *, external_customer_id: str | None = None, **kwargs: Any
 ) -> WebhookSubscriptionRevokedPayload:
+    data = dataclasses.asdict(_make_subscription(**kwargs))
+    if external_customer_id is not None:
+        data["customer"]["external_id"] = external_customer_id
     return deserialize(
         {
             "type": "subscription.revoked",
             "timestamp": "2026-01-01T00:00:00Z",
             "api_version": str(CURRENT_API_VERSION),
-            "data": dataclasses.asdict(_make_subscription(**kwargs)),
+            "data": data,
         },
         WebhookSubscriptionRevokedPayload,
     )
@@ -2912,36 +2823,39 @@ class TestHandleSubscriptionPastDueEvent:
 class TestHandleSubscriptionRevokedEvent:
     async def test_skips_free_subscription(
         self,
+        session: AsyncSession,
         subscription_webhook_client_mock: MagicMock,
         enqueue_email_mock: MagicMock,
     ) -> None:
         payload = _make_subscription_revoked_payload(amount=0)
 
-        await polar_self.handle_subscription_revoked_event(payload)
+        await polar_self.handle_subscription_revoked_event(session, payload)
 
         subscription_webhook_client_mock.list_billing_contacts.assert_not_awaited()
         enqueue_email_mock.assert_not_called()
 
     async def test_skips_when_no_billing_contacts(
         self,
+        session: AsyncSession,
         subscription_webhook_client_mock: MagicMock,
         enqueue_email_mock: MagicMock,
     ) -> None:
         subscription_webhook_client_mock.list_billing_contacts.return_value = []
         payload = _make_subscription_revoked_payload(amount=2000)
 
-        await polar_self.handle_subscription_revoked_event(payload)
+        await polar_self.handle_subscription_revoked_event(session, payload)
 
         enqueue_email_mock.assert_not_called()
 
     async def test_sends_email_to_billing_contacts(
         self,
+        session: AsyncSession,
         subscription_webhook_client_mock: MagicMock,
         enqueue_email_mock: MagicMock,
     ) -> None:
         payload = _make_subscription_revoked_payload(amount=2000)
 
-        await polar_self.handle_subscription_revoked_event(payload)
+        await polar_self.handle_subscription_revoked_event(session, payload)
 
         subscription_webhook_client_mock.list_billing_contacts.assert_awaited_once_with(
             customer_id=_CUSTOMER_ID
@@ -2954,8 +2868,28 @@ class TestHandleSubscriptionRevokedEvent:
         assert kwargs["to_email_addr"] == "billing@example.com"
         assert kwargs["subject"] == "Your Pro subscription has ended"
 
+    async def test_skips_when_organization_denied(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        payload = _make_subscription_revoked_payload(
+            amount=2000, external_customer_id=str(organization.id)
+        )
+
+        await polar_self.handle_subscription_revoked_event(session, payload)
+
+        subscription_webhook_client_mock.list_billing_contacts.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()
+
     async def test_skips_in_sandbox(
         self,
+        session: AsyncSession,
         subscription_webhook_client_mock: MagicMock,
         enqueue_email_mock: MagicMock,
         mocker: MockerFixture,
@@ -2966,7 +2900,7 @@ class TestHandleSubscriptionRevokedEvent:
         )
         payload = _make_subscription_revoked_payload(amount=2000)
 
-        await polar_self.handle_subscription_revoked_event(payload)
+        await polar_self.handle_subscription_revoked_event(session, payload)
 
         subscription_webhook_client_mock.list_billing_contacts.assert_not_awaited()
         enqueue_email_mock.assert_not_called()

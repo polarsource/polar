@@ -1,9 +1,10 @@
 import builtins
 import uuid
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Literal
 
+from pydantic import MISSING
 from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, selectinload, undefer
 
@@ -16,14 +17,17 @@ from polar.authz.service import (
 )
 from polar.authz.types import AccessibleOrganizationID
 from polar.benefit.service import benefit as benefit_service
+from polar.catalog.repository import CatalogRepository
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
+from polar.customer_meter.repository import CustomerMeterRepository
 from polar.declarative_config.guard import (
     DeclarativeConfigManaged,
     assert_catalog_editable,
 )
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import (
+    NotPermitted,
     PolarError,
     PolarRequestValidationError,
     ValidationError,
@@ -32,11 +36,13 @@ from polar.file.service import file as file_service
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
+from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
 from polar.meter.repository import MeterRepository
 from polar.models import (
     Benefit,
     Organization,
+    OrganizationRiskSignal,
     Product,
     ProductBenefit,
     ProductMedia,
@@ -44,12 +50,15 @@ from polar.models import (
     ProductVisibility,
     User,
 )
+from polar.models.catalog import CatalogStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.product_custom_field import ProductCustomField
 from polar.models.product_price import ProductPriceSource
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
+from polar.organization_review.repository import OrganizationRiskSignalRepository
+from polar.organization_review.risk_signal import risk_signal as risk_signal_service
 from polar.organization_review.schemas import ReviewContext
 from polar.product.guard import (
     is_custom_price,
@@ -63,9 +72,12 @@ from polar.product.repository import ProductRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
+from .legacy_schemas import ProductUpdate as LegacyProductUpdate
+from .name_check import FLAGGED_PRODUCT_PHRASES
 from .schemas import (
     ExistingProductPrice,
     ProductCreate,
+    ProductFlaggedNameReport,
     ProductPriceCreate,
     ProductPriceMeteredCreateBase,
     ProductPriceMeteredTiersCreate,
@@ -103,6 +115,8 @@ class ProductService:
         id: Sequence[uuid.UUID] | None = None,
         external_id: Sequence[str] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
+        catalog_id: Sequence[uuid.UUID] | None = None,
+        catalog_status: Sequence[CatalogStatus] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         is_recurring: bool | None = None,
@@ -139,8 +153,11 @@ class ProductService:
 
         if id is not None:
             statement = statement.where(Product.id.in_(id))
-        else:
-            statement = statement.where(Product.is_current)
+
+        if catalog_id is not None or catalog_status is not None:
+            statement = repository.apply_catalog_filter(
+                statement, org_ids, catalog_id, catalog_status
+            )
 
         if external_id is not None:
             statement = statement.where(Product.external_id.in_(external_id))
@@ -173,6 +190,7 @@ class ProductService:
         statement = repository.apply_sorting(statement, sorting)
 
         statement = statement.options(
+            undefer(Product.is_deletable),
             selectinload(Product.product_medias),
             selectinload(Product.attached_custom_fields),
         )
@@ -194,7 +212,7 @@ class ProductService:
         statement = (
             repository.get_statement_by_org_ids(org_ids)
             .where(Product.id == id)
-            .options(*repository.get_eager_options())
+            .options(undefer(Product.is_deletable), *repository.get_eager_options())
         )
         return await repository.get_one_or_none(statement)
 
@@ -214,6 +232,121 @@ class ProductService:
             .options(undefer(Product.external_id), *repository.get_eager_options())
         )
         return await repository.get_all(statement)
+
+    async def resolve_meter_versions(
+        self,
+        session: AsyncReadSession,
+        product: Product,
+        customer_id: uuid.UUID,
+        *,
+        options: Options = (),
+    ) -> Product | None:
+        """Return the version of `product` to sell to the customer.
+
+        A version is compatible when, for each meter it bills or credits, the
+        customer has no customer meter with that meter's `external_id`, or has
+        one on that exact meter version.
+
+        Return `product` if it's compatible. Otherwise return the latest
+        published compatible version, archived or not, or `None` if there's none.
+        """
+        repository = ProductRepository.from_session(session)
+        customer_meter_repository = CustomerMeterRepository.from_session(session)
+
+        # A current product only uses current meters.
+        if (
+            product.is_current
+            and not await customer_meter_repository.has_previous_meter_versions(
+                customer_id
+            )
+        ):
+            return product
+
+        async def get_compatible(products: Sequence[Product]) -> Product | None:
+            meters = await repository.get_meters([product.id for product in products])
+            external_ids = {
+                external_id
+                for product_meters in meters.values()
+                for external_id in product_meters
+            }
+            if not external_ids:
+                return products[0] if products else None
+            versions = await customer_meter_repository.get_meter_versions(
+                customer_id, external_ids
+            )
+            for candidate in products:
+                if all(
+                    meter_id in versions.get(external_id, {meter_id})
+                    for external_id, meter_id in meters.get(candidate.id, {}).items()
+                ):
+                    return candidate
+            return None
+
+        if await get_compatible([product]) is not None:
+            return product
+        return await get_compatible(
+            await repository.get_other_published_versions(product, options=options)
+        )
+
+    async def report_flagged_name(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product: Product,
+        report: ProductFlaggedNameReport,
+    ) -> None:
+        await assert_resource_permission(
+            session, auth_subject, product, OrganizationPermission.products_manage
+        )
+        errors: list[ValidationError] = [
+            {
+                "type": "value_error",
+                "loc": ("body", "attempts", index, "category"),
+                "msg": "Unknown name check category.",
+                "input": attempt.category,
+            }
+            for index, attempt in enumerate(report.attempts)
+            if attempt.category not in FLAGGED_PRODUCT_PHRASES
+        ]
+        if errors:
+            raise PolarRequestValidationError(errors)
+
+        await ProductRepository.from_session(session).get_by_id(
+            product.id, for_update=True
+        )
+        repository = OrganizationRiskSignalRepository.from_session(session)
+        if await repository.has_flagged_product_name(
+            product.organization_id, product.id
+        ):
+            return
+
+        product_name = product.name.strip().casefold()
+        kept = any(
+            attempt.name.strip().casefold() == product_name
+            for attempt in report.attempts
+        )
+        names = [attempt.name for attempt in report.attempts]
+        if not kept:
+            names.append(product.name)
+        await risk_signal_service.record(
+            session,
+            product.organization,
+            source=OrganizationRiskSignal.Source.POLAR,
+            type=(
+                OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_KEPT
+                if kept
+                else OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_RENAMED
+            ),
+            risk_level=OrganizationRiskSignal.RiskLevel.UNKNOWN,
+            description=" → ".join(names),
+            payload={
+                "attempts": [
+                    attempt.model_dump(mode="json") for attempt in report.attempts
+                ],
+                "product_id": str(product.id),
+                "product_name": product.name,
+            },
+        )
 
     async def create(
         self,
@@ -239,8 +372,17 @@ class ProductService:
         if not declarative_config and organization.is_config_as_code_enabled:
             raise DeclarativeConfigManaged()
 
+        await CatalogRepository.from_session(session).lock(organization.id)
         if (
-            create_schema.external_id is not None
+            await repository.count_by_organization_id(organization.id)
+            >= organization.products_limit
+        ):
+            raise NotPermitted(
+                f"Organization has reached its limit of {organization.products_limit} products."
+            )
+
+        if (
+            create_schema.external_id is not MISSING
             and await repository.get_by_external_id_and_organization(
                 create_schema.external_id, organization.id
             )
@@ -264,6 +406,7 @@ class ProductService:
             create_schema.recurring_interval,
             None,
             auth_subject,
+            declarative_config=declarative_config,
         )
         errors.extend(prices_errors)
 
@@ -338,7 +481,7 @@ class ProductService:
         await session.flush()
 
         if notify:
-            await self._after_product_created(session, auth_subject, product)
+            await self.notify_created(session, product)
 
         return product
 
@@ -360,7 +503,7 @@ class ProductService:
         errors: list[ValidationError] = []
 
         if (
-            "external_id" in update_schema.model_fields_set
+            update_schema.external_id is not MISSING
             and update_schema.external_id != product.external_id
         ):
             repository = ProductRepository.from_session(session)
@@ -373,11 +516,8 @@ class ProductService:
                         "input": update_schema.external_id,
                     }
                 )
-            elif (
-                update_schema.external_id is not None
-                and await repository.get_by_external_id_and_organization(
-                    update_schema.external_id, product.organization_id
-                )
+            elif await repository.get_by_external_id_and_organization(
+                update_schema.external_id, product.organization_id
             ):
                 errors.append(
                     {
@@ -391,7 +531,7 @@ class ProductService:
         # Validate prices
         existing_prices = set(product.prices)
         added_prices: list[ProductPrice] = []
-        if update_schema.prices is not None:
+        if update_schema.prices is not MISSING:
             (
                 _,
                 existing_prices,
@@ -404,59 +544,22 @@ class ProductService:
                 product.recurring_interval,
                 product,
                 auth_subject,
+                declarative_config=declarative_config,
             )
             errors.extend(prices_errors)
 
-        # Prevent products from changing their recurring interval
-        if (
-            update_schema.recurring_interval is not None
-            or update_schema.recurring_interval_count is not None
-        ) and (
-            (
-                update_schema.recurring_interval is not None
-                and update_schema.recurring_interval != product.recurring_interval
-            )
-            or (
-                update_schema.recurring_interval_count is not None
-                and update_schema.recurring_interval_count
-                != product.recurring_interval_count
-            )
-        ):
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "recurring_interval"),
-                    "msg": "Recurring interval cannot be changed.",
-                    "input": update_schema.recurring_interval,
-                }
-            )
-
-        if (
-            "recurring_interval" in update_schema.model_fields_set
-            and update_schema.recurring_interval is None
-            and product.recurring_interval is not None
-        ):
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "recurring_interval"),
-                    "msg": "Recurring interval cannot be changed.",
-                    "input": update_schema.recurring_interval,
-                }
-            )
-        if (
-            "recurring_interval_count" in update_schema.model_fields_set
-            and update_schema.recurring_interval_count is None
-            and product.recurring_interval_count is not None
-        ):
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "recurring_interval_count"),
-                    "msg": "Recurring interval cannot be changed.",
-                    "input": update_schema.recurring_interval_count,
-                }
-            )
+        if isinstance(update_schema, LegacyProductUpdate):
+            for field in ("recurring_interval", "recurring_interval_count"):
+                value = getattr(update_schema, field)
+                if value is not MISSING and value != getattr(product, field):
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": ("body", field),
+                            "msg": "Recurring interval cannot be changed.",
+                            "input": value,
+                        }
+                    )
 
         # Prevent trying to add trial configuration to non-recurring products
         if (
@@ -480,7 +583,10 @@ class ProductService:
                 ]
             )
 
-        if update_schema.medias is not None:
+        if update_schema.medias is not MISSING:
+            # Lock the product row and reload product_medias. Two transactions
+            # otherwise both delete the rows and insert the same order values.
+            await session.refresh(product, {"product_medias"}, with_for_update=True)
             medias_errors: list[ValidationError] = []
             try:
                 async with session.begin_nested():
@@ -510,7 +616,14 @@ class ProductService:
             except _SavepointRollback:
                 errors.extend(medias_errors)
 
-        if update_schema.attached_custom_fields is not None:
+        if update_schema.attached_custom_fields is not MISSING:
+            # Lock the product row and reload attached_custom_fields. Two
+            # transactions otherwise both delete the rows and insert order=0.
+            await session.refresh(
+                product,
+                {"attached_custom_fields", "organization_id"},
+                with_for_update=True,
+            )
             attached_custom_fields_errors: list[ValidationError] = []
             try:
                 async with session.begin_nested():
@@ -556,7 +669,7 @@ class ProductService:
         if product.is_archived and update_schema.is_archived is False:
             product = await self._unarchive(product)
 
-        if update_schema.name is not None and update_schema.name != product.name:
+        if update_schema.name is not MISSING and update_schema.name != product.name:
             product.name = update_schema.name
         if (
             update_schema.description is not None
@@ -564,19 +677,26 @@ class ProductService:
         ):
             product.description = update_schema.description
 
-        if update_schema.recurring_interval is not None:
-            product.recurring_interval = update_schema.recurring_interval
-
         deleted_prices = set(product.prices) - existing_prices
         for deleted_price in deleted_prices:
             deleted_price.is_archived = True
 
-        if update_schema.is_archived:
+        if update_schema.is_archived is True:
             product = await self._archive(session, product)
+
+        if update_schema.trial_payment_setup_required is not MISSING:
+            product.trial_payment_setup_required = (
+                update_schema.trial_payment_setup_required
+            )
 
         for attr, value in update_schema.model_dump(
             exclude_unset=True,
-            exclude={"prices", "medias", "attached_custom_fields"},
+            exclude={
+                "prices",
+                "medias",
+                "attached_custom_fields",
+                "trial_payment_setup_required",
+            },
             by_alias=True,
         ).items():
             setattr(product, attr, value)
@@ -586,7 +706,7 @@ class ProductService:
 
         await session.refresh(product, {"prices", "all_prices"})
 
-        await self._after_product_updated(session, product)
+        await self.notify_updated(session, product)
         self._enqueue_organization_review(product)
 
         return product
@@ -598,8 +718,11 @@ class ProductService:
         benefits: Sequence[uuid.UUID],
         auth_subject: AuthSubject[User | Organization | Agent],
         *,
+        notify: bool = True,
         declarative_config: bool = False,
     ) -> tuple[Product, set[Benefit], set[Benefit]]:
+        """``notify=False`` skips the ``product.updated`` webhook, for a product
+        whose ``product.created`` is still to be sent."""
         await assert_resource_permission(
             session, auth_subject, product, OrganizationPermission.products_manage
         )
@@ -687,7 +810,8 @@ class ProductService:
             # risk profile, so it does not warrant a review.
             self._enqueue_organization_review(product)
 
-        await self._after_product_updated(session, product)
+        if notify:
+            await self.notify_updated(session, product)
 
         return product, added_benefits, deleted_benefits
 
@@ -721,6 +845,8 @@ class ProductService:
         auth_subject: AuthSubject[User | Organization | Agent],
         source: ProductPriceSource = ProductPriceSource.catalog,
         error_prefix: tuple[str, ...] = ("body", "prices"),
+        *,
+        declarative_config: bool = False,
     ) -> tuple[
         builtins.list[ProductPrice],
         builtins.set[ProductPrice],
@@ -751,23 +877,7 @@ class ProductService:
                     continue
                 existing_prices.add(price)
             else:
-                model_class = price_schema.get_model_class()
-                if isinstance(
-                    price_schema,
-                    ProductPriceUnitBasedCreate
-                    | ProductPriceMeteredTiersCreate
-                    | ProductPriceSeatBasedCreate,
-                ):
-                    price = model_class(
-                        product=product,
-                        source=source,
-                        **price_schema.model_dump(exclude={"tiers"}),
-                        tiers=price_schema.tiers.to_tiers(),
-                    )
-                else:
-                    price = model_class(
-                        product=product, source=source, **price_schema.model_dump()
-                    )
+                price = self.build_price(price_schema, product, source)
                 if is_metered_price(price) and isinstance(
                     price_schema, ProductPriceMeteredCreateBase
                 ):
@@ -809,6 +919,61 @@ class ProductService:
                 }
             )
 
+        errors.extend(
+            self.validate_price_structure(
+                prices_per_currency, prices_schema, error_prefix
+            )
+        )
+
+        # Config checks prices against the currency it publishes, which a draft
+        # doesn't make the organization's yet.
+        if (
+            not declarative_config
+            and organization.default_presentment_currency not in prices_per_currency
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": error_prefix,
+                    "msg": "The organization's default presentment currency must be present in the prices.",
+                    "input": prices_schema,
+                }
+            )
+
+        return prices, existing_prices, added_prices, errors
+
+    def build_price(
+        self,
+        price_schema: ProductPriceCreate,
+        product: Product | None,
+        source: ProductPriceSource,
+    ) -> ProductPrice:
+        model_class = price_schema.get_model_class()
+        if isinstance(
+            price_schema,
+            ProductPriceUnitBasedCreate
+            | ProductPriceMeteredTiersCreate
+            | ProductPriceSeatBasedCreate,
+        ):
+            price = model_class(
+                product=product,
+                source=source,
+                **price_schema.model_dump(exclude={"tiers"}),
+                tiers=price_schema.tiers.to_tiers(),
+            )
+        else:
+            price = model_class(
+                product=product, source=source, **price_schema.model_dump()
+            )
+        return price
+
+    def validate_price_structure(
+        self,
+        prices_per_currency: Mapping[str, Sequence[tuple[ProductPrice, int]]],
+        prices_schema: object,
+        error_prefix: tuple[str, ...],
+    ) -> builtins.list[ValidationError]:
+        errors: list[ValidationError] = []
         # Track price structure per currency for cross-currency validation
         price_structure_per_currency: dict[str, tuple[bool, bool, bool, bool, int]] = {}
 
@@ -936,21 +1101,7 @@ class ProductService:
                 }
             )
 
-        # Check that the default presentment currency is present
-        if (
-            organization.default_presentment_currency
-            not in price_structure_per_currency
-        ):
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": error_prefix,
-                    "msg": "The organization's default presentment currency must be present in the prices.",
-                    "input": prices_schema,
-                }
-            )
-
-        return prices, existing_prices, added_prices, errors
+        return errors
 
     async def _archive(self, session: AsyncSession, product: Product) -> Product:
         product.is_archived = True
@@ -964,19 +1115,23 @@ class ProductService:
         product.is_archived = False
         return product
 
-    async def _after_product_created(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization | Agent],
-        product: Product,
-    ) -> None:
+    async def notify_created(self, session: AsyncSession, product: Product) -> None:
         await self._send_webhook(session, product, WebhookEventType.product_created)
         self._enqueue_organization_review(product)
 
-    async def _after_product_updated(
-        self, session: AsyncSession, product: Product
-    ) -> None:
+    async def notify_updated(self, session: AsyncSession, product: Product) -> None:
         await self._send_webhook(session, product, WebhookEventType.product_updated)
+
+    async def notify_retired(self, session: AsyncSession, product: Product) -> None:
+        """Send `product.updated` for a version that stopped being current,
+        loaded however its caller loaded it."""
+        repository = ProductRepository.from_session(session)
+        retired = await repository.get_by_id(
+            product.id,
+            options=(undefer(Product.is_deletable), *repository.get_eager_options()),
+        )
+        assert retired is not None
+        await self.notify_updated(session, retired)
 
     def _enqueue_organization_review(self, product: Product) -> None:
         """Re-review an active organization when one of its products changes.

@@ -4,13 +4,13 @@ import re
 from dataclasses import dataclass, field
 from urllib.parse import urljoin, urlparse
 
-import httpx
+import httpx2
 import structlog
 import trafilatura
 from pydantic_ai import Agent, RunContext
 
 from polar.config import settings
-from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
+from polar.kit.http import SSRFBlockedError, SSRFSafeTransport
 from polar.observability.baggage import organization_baggage
 
 from ..schemas import UsageInfo, WebsiteData, WebsitePage
@@ -76,7 +76,7 @@ Keep it factual and under 500 words. Skip sections with no relevant info.
 class WebsiteDeps:
     """Shared dependencies for the website agent's page-visiting tools."""
 
-    client: httpx.AsyncClient
+    client: httpx2.AsyncClient
     allowed_domain: str
     pages_visited: list[WebsitePage] = field(default_factory=list)
     pages_navigated: int = 0
@@ -90,7 +90,9 @@ class WebsiteDeps:
 @functools.cache
 def _get_website_agent() -> tuple[Agent[WebsiteDeps, str], str, str]:
     """Build the agent lazily so importing this module doesn't touch gateway config."""
-    model_instance, model_provider, model_name = settings.get_pydantic_gateway_model()
+    model_instance, model_provider, model_name = settings.get_pydantic_gateway_model(
+        settings.PYDANTIC_AI_GATEWAY_ORGANIZATION_REVIEW_MODEL
+    )
     agent: Agent[WebsiteDeps, str] = Agent(
         model_instance,
         output_type=str,
@@ -192,17 +194,10 @@ with server-side rendering. Use this by default."""
     if not _is_allowed_origin(url, deps.allowed_domain):
         return f"Error: URL is off-origin (only {deps.allowed_domain} is allowed)"
 
-    # SSRF check on initial URL
-    initial_host = urlparse(url).hostname
-    if initial_host:
-        try:
-            await resolve_and_validate_ip(initial_host)
-        except SSRFBlockedError as e:
-            return f"Error: {e}"
-
     deps.pages_navigated += 1
 
-    # Manual redirect loop with domain + SSRF validation
+    # Manual redirect loop with domain validation; `SSRFSafeTransport` blocks
+    # private/reserved IPs on every hop
     current_url = url
     try:
         for _ in range(MAX_REDIRECTS):
@@ -221,10 +216,6 @@ with server-side rendering. Use this by default."""
                     f"Error: redirect to off-origin URL blocked "
                     f"(only {deps.allowed_domain} is allowed)"
                 )
-
-            redirect_host = urlparse(redirect_url).hostname
-            if redirect_host:
-                await resolve_and_validate_ip(redirect_host)
 
             current_url = redirect_url
         else:
@@ -409,7 +400,8 @@ async def _run_website_agent(
     # Strip www. so redirects between www and non-www are both allowed
     allowed_domain = allowed_domain.removeprefix("www.")
 
-    async with httpx.AsyncClient(
+    async with httpx2.AsyncClient(
+        transport=SSRFSafeTransport(),
         follow_redirects=False,
         timeout=PAGE_TIMEOUT_MS / 1000,
         headers={"User-Agent": _USER_AGENT},

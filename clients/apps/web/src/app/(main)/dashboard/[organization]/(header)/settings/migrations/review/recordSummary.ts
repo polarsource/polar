@@ -53,6 +53,7 @@ export const useRecordSummary = (
       },
       selectableTotal: counts.subscriptions.selectable,
       attentionCount: counts.subscriptions.action_required,
+      paymentMethods: query.data?.payment_methods ?? [],
     }
   }, [query.data])
 

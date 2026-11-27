@@ -1,10 +1,10 @@
 ---
 title: "SDKs"
 sidebarTitle: "Overview"
-description: "Official, fully typed clients for the Polar API"
+description: "Pick an official Polar SDK for TypeScript or Python, and learn how SDK imports pin your code to an API version."
 ---
 
-Call the Polar API with full type safety using one of our official SDKs.
+The official SDKs are typed clients for the Polar API. They also verify webhook signatures and buffer usage events for you.
 
 <Columns cols={2}>
   <Card
@@ -13,7 +13,7 @@ Call the Polar API with full type safety using one of our official SDKs.
     href="/integrate/sdk/typescript"
     horizontal
   >
-    For JavaScript runtimes — Node.js and the browser.
+    `@polar-sh/sdk` for Node.js servers.
   </Card>
 
   <Card
@@ -22,6 +22,39 @@ Call the Polar API with full type safety using one of our official SDKs.
     href="/integrate/sdk/python"
     horizontal
   >
-    For Django, Flask, and FastAPI applications.
+    `polar-sdk`, sync and async, for Django, Flask and FastAPI.
   </Card>
 </Columns>
+
+## API versions
+
+Each SDK ships one client per API version, and you pick the version in the import:
+
+<CodeGroup>
+```typescript TypeScript
+import { createPolar } from "@polar-sh/sdk/2026-10";
+```
+
+```python Python
+from polar.v2026_10 import Polar
+```
+</CodeGroup>
+
+The client sends that version in the `Polar-Version` header, and its types match that version's requests, responses and webhook payloads. Upgrading the SDK package doesn't change the API version your code uses. You move to a new version by changing the import. See [API versioning](/api-reference/versioning).
+
+## What the SDKs do for you
+
+| Task | TypeScript | Python |
+| --- | --- | --- |
+| Call the API | `polar.customers.getStateExternal(...)` | `polar.customers.get_state_external(...)` |
+| Page through lists | `polar.products.iterList()` | `polar.products.iter_list()` |
+| Verify webhooks | `webhooks.validateEvent(...)` | `validate_event(...)` |
+| Send usage events | `polar.events.ingest(...)` | `polar.events.ingest(...)` |
+
+See [Handle deliveries](/integrate/webhooks/delivery) for webhooks and [Send events](/features/usage-based-billing/event-ingestion) for usage events.
+
+## Other ways in
+
+- **Framework adapters** add checkout, Customer Portal and webhook routes to Next.js, Nuxt, TanStack Start, Laravel and Better Auth. See [Framework adapters](/integrate/sdk/adapters/introduction).
+- **Other languages** can call the REST API directly. See the [API reference](/api-reference/current).
+- **From the terminal or an agent**, use the [Polar CLI](/integrate/cli/introduction) or the [MCP server](/integrate/mcp).

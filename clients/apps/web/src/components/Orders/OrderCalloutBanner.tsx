@@ -5,6 +5,7 @@ import {
   isOrderDunningFailed,
   isOrderNonRecoverable,
 } from '@/utils/order'
+import { getPaymentDeclineMessage } from '@/utils/payment'
 import { schemas } from '@polar-sh/client'
 import { Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -16,7 +17,7 @@ import { Children, type ReactNode } from 'react'
 const DUNNING_TOTAL_RETRY_DAYS = 21
 
 const FAILED_PAYMENTS_DOCS_URL =
-  'https://docs.polar.sh/features/subscriptions/failed-payments'
+  'https://polar.sh/docs/features/subscriptions/failed-payments'
 
 const BannerFrame = ({
   heading,
@@ -100,7 +101,7 @@ const DeclineReasonBox = ({
   >
     <Box alignItems="center" justifyContent="between" columnGap="s">
       <Text variant="caption" color="muted">
-        Bank Decline Reason
+        Decline Reason
       </Text>
       {unrecoverable ? <Pill color="red">Unrecoverable</Pill> : null}
     </Box>
@@ -185,8 +186,9 @@ export const OrderCalloutBanner = ({
       )
     : null
 
-  const declineMessage =
-    latestFailedPayment?.decline_message ?? latestFailedPayment?.decline_reason
+  const declineMessage = latestFailedPayment
+    ? getPaymentDeclineMessage(latestFailedPayment)
+    : null
 
   const benefitsRevoked = benefitsRevocationDate
     ? isPast(benefitsRevocationDate)

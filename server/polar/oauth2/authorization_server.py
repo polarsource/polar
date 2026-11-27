@@ -7,6 +7,7 @@ import structlog
 from authlib.oauth2 import AuthorizationServer as _AuthorizationServer
 from authlib.oauth2 import OAuth2Error
 from authlib.oauth2.rfc6749.errors import (
+    InvalidRequestError,
     UnsupportedResponseTypeError,
 )
 from authlib.oauth2.rfc6749.hooks import hooked
@@ -21,6 +22,7 @@ from authlib.oauth2.rfc7592 import (
 )
 from authlib.oauth2.rfc7662 import IntrospectionEndpoint as _IntrospectionEndpoint
 from authlib.oauth2.rfc9207 import IssuerParameter as _IssuerParameter
+from authlib.oidc.core.errors import ConsentRequiredError
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 from starlette.requests import Request
@@ -35,7 +37,7 @@ from polar.kit.crypto import (
 from polar.logging import Logger
 from polar.models import OAuth2Client, OAuth2Token, User
 from polar.models.oauth2_token_organization import OAuth2TokenOrganization
-from polar.oauth2.sub_type import SubTypeValue
+from polar.oauth2.sub_type import SubType, SubTypeValue
 
 from .constants import (
     ACCESS_TOKEN_PREFIX,
@@ -274,21 +276,15 @@ class _QueryTokenMixin:
     def query_token(
         self,
         token_string: str,
-        token_type_hint: typing.Literal["access_token", "refresh_token"] | None,
+        token_type_hint: str | None,
     ) -> OAuth2Token | None:
         token_hashes = get_token_hash_candidates(token_string).values()
-        statement = select(OAuth2Token)
-        if token_type_hint == "access_token":
-            statement = statement.where(OAuth2Token.access_token.in_(token_hashes))
-        elif token_type_hint == "refresh_token":
-            statement = statement.where(OAuth2Token.refresh_token.in_(token_hashes))
-        else:
-            statement = statement.where(
-                or_(
-                    OAuth2Token.access_token.in_(token_hashes),
-                    OAuth2Token.refresh_token.in_(token_hashes),
-                )
+        statement = select(OAuth2Token).where(
+            or_(
+                OAuth2Token.access_token.in_(token_hashes),
+                OAuth2Token.refresh_token.in_(token_hashes),
             )
+        )
 
         result = self.server.session.execute(statement)
         return result.unique().scalar_one_or_none()
@@ -296,6 +292,13 @@ class _QueryTokenMixin:
 
 class RevocationEndpoint(_QueryTokenMixin, _RevocationEndpoint):
     CLIENT_AUTH_METHODS = ["client_secret_basic", "client_secret_post"]
+
+    def check_params(
+        self, request: StarletteOAuth2Request, client: OAuth2Client
+    ) -> None:
+        # RFC 7009 requires ignoring unknown hints, unlike Authlib's default.
+        if "token" not in request.form:
+            raise InvalidRequestError()
 
     def authenticate_endpoint_client(
         self, request: StarletteOAuth2Request
@@ -333,10 +336,8 @@ class RevocationEndpoint(_QueryTokenMixin, _RevocationEndpoint):
 
     def revoke_token(self, token: OAuth2Token, request: StarletteOAuth2Request) -> None:
         now = int(time.time())
-        hint = request.form.get("token_type_hint")
         token.access_token_revoked_at = now  # pyright: ignore
-        if hint != "access_token":
-            token.refresh_token_revoked_at = now  # pyright: ignore
+        token.refresh_token_revoked_at = now  # pyright: ignore
         self.server.session.add(token)
         self.server.session.flush()
 
@@ -495,6 +496,16 @@ class AuthorizationServer(_AuthorizationServer):
 
         try:
             redirect_uri = grant.validate_authorization_request()
+            if not save_consent and grant_user is not None:
+                consent_grant = oauth2_grant_service.get_by_sub_and_client_id(
+                    self.session,
+                    sub_type=SubType.user,
+                    sub_id=grant_user.id,
+                    client_id=grant.client.client_id,
+                )
+                if consent_grant is None:
+                    raise ConsentRequiredError(redirect_uri=redirect_uri)
+                grant.consent_grant = consent_grant
             status_code, body, headers = grant.create_authorization_response(
                 redirect_uri, grant_user
             )
@@ -513,14 +524,14 @@ class AuthorizationServer(_AuthorizationServer):
         assert grant.sub_type is not None
         assert grant.sub is not None
         assert grant.client is not None
-        payload = request.payload
-        assert payload is not None
+        assert grant.organization_ids is not None
         oauth2_grant_service.create_or_update_grant(
             self.session,
             sub_type=grant.sub_type,
             sub_id=grant.sub.id,
             client_id=grant.client.client_id,
-            scope=payload.scope,
+            scope=request.scope,
+            organization_ids=grant.organization_ids,
         )
 
     @property

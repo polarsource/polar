@@ -9,7 +9,6 @@ import {
   FieldUrl,
 } from '@/components/Settings/Webhook/WebhookForm'
 import { toast } from '@/components/Toast/use-toast'
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useEditWebhookEndpoint } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { enums, schemas } from '@polar-sh/client'
@@ -32,20 +31,19 @@ export default function WebhookContextView({
       url: endpoint.url,
       name: endpoint.name,
       api_version: apiVersion,
-      format: endpoint.format,
+      format: endpoint.format === 'mcp' ? undefined : endpoint.format,
       events: endpoint.events,
     },
   })
 
   const { handleSubmit } = form
   const updateWebhookEndpoint = useEditWebhookEndpoint()
-  const managedAsCode = useIsManagedAsCode(endpoint.organization_id)
 
   const onSubmit = useCallback(
     async (body: schemas['WebhookEndpointUpdate']) => {
       const { error } = await updateWebhookEndpoint.mutateAsync({
         id: endpoint.id,
-        body,
+        body: { ...body, name: body.name === '' ? null : body.name },
       })
       if (error) {
         toast({
@@ -70,12 +68,7 @@ export default function WebhookContextView({
             onSubmit={handleSubmit(onSubmit)}
             className="flex max-w-[700px] flex-col gap-y-4"
           >
-            <Box
-              as="fieldset"
-              disabled={managedAsCode}
-              flexDirection="column"
-              rowGap="l"
-            >
+            <Box as="fieldset" flexDirection="column" rowGap="l">
               <FieldName />
               <FieldUrl />
               <FieldFormat />
@@ -83,15 +76,13 @@ export default function WebhookContextView({
               <FieldEvents />
             </Box>
 
-            {!managedAsCode && (
-              <Button
-                type="submit"
-                loading={updateWebhookEndpoint.isPending}
-                disabled={updateWebhookEndpoint.isPending}
-              >
-                Save
-              </Button>
-            )}
+            <Button
+              type="submit"
+              loading={updateWebhookEndpoint.isPending}
+              disabled={updateWebhookEndpoint.isPending}
+            >
+              Save
+            </Button>
           </form>
         </Form>
       </div>

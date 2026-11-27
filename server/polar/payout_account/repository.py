@@ -33,5 +33,5 @@ class PayoutAccountRepository(
         )
         return await self.get_one_or_none(statement)
 
-    def get_statement_by_user(self, user: User) -> Select[tuple[PayoutAccount]]:
+    def get_statement_by_user(self, user: User) -> Select[PayoutAccount]:
         return self.get_base_statement().where(PayoutAccount.admin_id == user.id)

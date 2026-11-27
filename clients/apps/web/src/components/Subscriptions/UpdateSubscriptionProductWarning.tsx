@@ -31,20 +31,28 @@ export const UpdateSubscriptionProductWarning = ({
           {trialOutcome?.kind === 'ends' && (
             <>
               This change will end the current trial and{' '}
-              <strong>charge the customer immediately</strong> for the first
-              billing period of <strong>{selectedProduct.name}</strong>.{' '}
+              <strong className="font-medium">
+                charge the customer immediately
+              </strong>{' '}
+              for the first billing period of{' '}
+              <strong className="font-medium">{selectedProduct.name}</strong>
+              .{' '}
             </>
           )}
           {trialOutcome?.kind === 'continues' && (
             <>
               The trial will continue until{' '}
-              <strong>{formatTrialEnd(trialOutcome.trialEnd)}</strong>. The
-              customer won&apos;t be charged before then.{' '}
+              <strong className="font-medium">
+                {formatTrialEnd(trialOutcome.trialEnd)}
+              </strong>
+              . The customer won&apos;t be charged before then.{' '}
             </>
           )}
           By updating this subscription, the customer will get access to{' '}
-          <strong>{selectedProduct.name}</strong> benefits, and lose access to{' '}
-          <strong>{subscription.product.name}</strong> benefits.
+          <strong className="font-medium">{selectedProduct.name}</strong>{' '}
+          benefits, and lose access to{' '}
+          <strong className="font-medium">{subscription.product.name}</strong>{' '}
+          benefits.
         </>
       }
     />

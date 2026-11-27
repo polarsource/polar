@@ -18,7 +18,6 @@ export default async function Page(props: {
   const searchParams = await props.searchParams
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    api,
     params.organization,
   )
 
@@ -30,6 +29,7 @@ export default async function Page(props: {
         limit: 1,
         sorting: ['-created_at'],
         is_archived: false,
+        catalog_status: 'live',
       },
     },
   })

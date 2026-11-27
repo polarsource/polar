@@ -3,14 +3,14 @@ import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime, timedelta
 
-import httpx
+import httpx2
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.backoffice import app as backoffice_app
+from polar.backoffice.app import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
-from polar.models import Customer, Organization, User, WalletTransaction
-from polar.models.user_session import UserSession
+from polar.models import Customer, Organization, WalletTransaction
+from polar.models.backoffice_user_session import BackofficeUserSession
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.wallet.service import wallet as wallet_service
 from tests.fixtures.database import SaveFixture
@@ -24,15 +24,14 @@ from tests.fixtures.random_objects import (
 
 @pytest.fixture
 async def backoffice_client(
-    session: AsyncSession, user: User
-) -> AsyncGenerator[httpx.AsyncClient]:
-    user_session = UserSession(token="0" * 64, user_agent="tests", user=user)
+    session: AsyncSession, backoffice_user_session: BackofficeUserSession
+) -> AsyncGenerator[httpx2.AsyncClient]:
     backoffice_app.dependency_overrides[get_db_session] = lambda: session
     backoffice_app.dependency_overrides[get_db_read_session] = lambda: session
-    backoffice_app.dependency_overrides[get_admin] = lambda: user_session
+    backoffice_app.dependency_overrides[get_admin] = lambda: backoffice_user_session
     try:
-        async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=backoffice_app),
+        async with httpx2.AsyncClient(
+            transport=httpx2.ASGITransport(app=backoffice_app),
             base_url="http://test",
         ) as client:
             yield client
@@ -46,7 +45,7 @@ async def backoffice_client(
 class TestList:
     async def test_paginates_without_total_count(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -83,7 +82,7 @@ class TestList:
 
     async def test_query_by_organization_id(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         organization: Organization,
         customer: Customer,
         customer_organization_second: Customer,
@@ -100,7 +99,7 @@ class TestList:
 @pytest.mark.anyio
 class TestCreateBalanceTransaction:
     async def test_returns_404_for_unknown_customer(
-        self, backoffice_client: httpx.AsyncClient
+        self, backoffice_client: httpx2.AsyncClient
     ) -> None:
         response = await backoffice_client.get(
             f"/customers/{uuid.uuid4()}/balance-transactions/create"
@@ -110,7 +109,7 @@ class TestCreateBalanceTransaction:
 
     async def test_get_renders_form(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         customer: Customer,
     ) -> None:
         response = await backoffice_client.get(
@@ -137,7 +136,7 @@ class TestCreateBalanceTransaction:
         amount: str,
         currency: str,
         expected_amount: int,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         customer: Customer,
         mocker: MockerFixture,
@@ -181,7 +180,7 @@ class TestCreateBalanceTransaction:
         amount: str,
         currency: str,
         error_message: str,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         customer: Customer,
         mocker: MockerFixture,
     ) -> None:
@@ -202,10 +201,10 @@ class TestCreateBalanceTransaction:
 
 
 @pytest.mark.anyio
-class TestCreditBalance:
+class TestCustomerBalance:
     async def test_displays_all_billing_wallet_currencies(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         customer: Customer,
     ) -> None:
@@ -216,6 +215,8 @@ class TestCreditBalance:
         response = await backoffice_client.get(f"/customers/{customer.id}")
 
         assert response.status_code == 200
+        assert "Customer Balance" in response.text
+        assert "Credit Balance" not in response.text
         assert "Add Transaction" in response.text
         assert "USD" in response.text
         assert "$12.34" in response.text
@@ -225,7 +226,7 @@ class TestCreditBalance:
 
     async def test_displays_usd_zero_balance_without_wallets(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         customer: Customer,
     ) -> None:
         response = await backoffice_client.get(f"/customers/{customer.id}")
@@ -236,7 +237,7 @@ class TestCreditBalance:
 
     async def test_hides_add_transaction_for_deleted_customer(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         customer: Customer,
     ) -> None:
@@ -246,7 +247,7 @@ class TestCreditBalance:
         response = await backoffice_client.get(f"/customers/{customer.id}")
 
         assert response.status_code == 200
-        assert "Credit Balance" in response.text
+        assert "Customer Balance" in response.text
         assert "Add Transaction" not in response.text
 
 
@@ -254,7 +255,7 @@ class TestCreditBalance:
 class TestWalletTransactions:
     async def test_displays_transactions_newest_first_with_references(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         save_fixture: SaveFixture,
         customer: Customer,
@@ -303,7 +304,7 @@ class TestWalletTransactions:
 
     async def test_paginates_transactions(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         customer: Customer,
     ) -> None:
@@ -345,7 +346,7 @@ class TestWalletTransactions:
 
     async def test_returns_404_for_wallet_from_another_customer(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         save_fixture: SaveFixture,
         customer: Customer,

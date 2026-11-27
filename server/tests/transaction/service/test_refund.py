@@ -258,6 +258,11 @@ class TestCreate:
         assert second_call[1]["amount"] == refund.amount * 0.25
 
         create_refund_fees_mock.assert_awaited_once()
+        assert (
+            create_refund_fees_mock.call_args.kwargs["balance_transaction"]
+            == balance_transaction
+        )
+        stripe_service_mock.get_balance_transaction.assert_awaited_once()
 
     async def test_valid_tax_only_refund(
         self,
@@ -288,6 +293,7 @@ class TestCreate:
             presentment_tax_amount=200,
             charge_id=payment.processor_id,
             order=order,
+            payment_customer=customer,
         )
         outgoing_balance = Transaction(
             type=TransactionType.balance,
@@ -323,6 +329,10 @@ class TestCreate:
         assert refund_transaction.amount == 0
         assert refund_transaction.tax_amount == -200
         balance_transaction_service_mock.create_reversal_balance.assert_not_called()
+
+        events = await get_all_by_name(session, SystemEvent.balance_refund)
+        assert len(events) == 1
+        assert events[0].user_metadata["transaction_id"] == str(refund_transaction.id)
 
     async def test_valid_uses_refund_order_when_payment_transaction_is_not_linked(
         self,

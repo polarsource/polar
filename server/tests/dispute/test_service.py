@@ -8,7 +8,11 @@ from pytest_mock import MockerFixture
 from polar.benefit.grant.service import BenefitGrantService
 from polar.customer_seat.service import SeatService
 from polar.dispute.dispute_case import dispute_case as dispute_case_service
-from polar.dispute.service import DisputeNotOpenError, DisputePaymentNotFoundError
+from polar.dispute.service import (
+    DisputeAlertTransactionNotLinkedError,
+    DisputeNotOpenError,
+    DisputePaymentNotFoundError,
+)
 from polar.dispute.service import dispute as dispute_service
 from polar.enums import PaymentProcessor, TaxProcessor
 from polar.integrations.chargeback_stop.types import ChargebackStopAlert
@@ -77,7 +81,7 @@ def build_chargeback_stop_alert(
     *,
     id: str = "CHARGEBACK_STOP_ALERT_ID",
     status: str = "RESOLVED",
-    integration_transaction_id: str = "STRIPE_PAYMENT_INTENT_ID",
+    integration_transaction_id: str | None = "STRIPE_PAYMENT_INTENT_ID",
     transaction_refund_outcome: Literal["REFUNDED", "NOT_REFUNDED"] = "NOT_REFUNDED",
     transaction_amount_in_cents: int = 1000,
     transaction_currency_code: str = "USD",
@@ -1608,6 +1612,19 @@ class TestUpsertFromChargebackStop:
         case = await dispute_case_service.get_case(session, dispute)
         assert case is not None
         assert await dispute_case_service.is_open(session, case)
+
+    async def test_unlinked_transaction(
+        self, session: AsyncSession, mocker: MockerFixture
+    ) -> None:
+        get_payment_intent_mock = mocker.patch(
+            "polar.dispute.service.stripe_service.get_payment_intent"
+        )
+        alert = build_chargeback_stop_alert(integration_transaction_id=None)
+
+        with pytest.raises(DisputeAlertTransactionNotLinkedError):
+            await dispute_service.upsert_from_chargeback_stop(session, alert)
+
+        get_payment_intent_mock.assert_not_called()
 
 
 @pytest.mark.anyio

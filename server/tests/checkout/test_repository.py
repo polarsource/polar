@@ -128,6 +128,10 @@ class TestAnonymizeExpired:
         checkout.customer_name = "John Doe"
         checkout.customer_email = "john@example.com"
         checkout.customer_ip_address = "1.2.3.4"
+        checkout.customer_signals = {
+            "ip_address": "1.2.3.4",
+            "ip_country": "FR",
+        }
         checkout.customer_billing_name = "John Doe"
         checkout.customer_tax_id = ("FR61954506077", TaxIDFormat.eu_vat)
         checkout.custom_field_data = {"phone": "+33600000000"}
@@ -163,6 +167,7 @@ class TestAnonymizeExpired:
         assert checkout.customer_name is None
         assert checkout.customer_email is None
         assert checkout.customer_ip_address is None
+        assert checkout.customer_signals is None
         assert checkout.customer_billing_name is None
         assert checkout.customer_billing_address is None
         assert checkout.customer_tax_id is None

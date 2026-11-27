@@ -5,7 +5,7 @@ from sqlalchemy import select, update
 
 from polar.enums import TaxProcessor
 from polar.models import Checkout, Order, Transaction, WalletTransaction
-from scripts.helper import (
+from scripts.helper import (  # lint-skip: dry-run
     configure_script_logging,
     limit_bindparam,
     run_batched_update,

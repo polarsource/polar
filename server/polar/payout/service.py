@@ -32,6 +32,9 @@ from polar.models.organization import OrganizationStatus
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.organization.repository import OrganizationRepository
+from polar.organization_email.service import (
+    organization_email as organization_email_service,
+)
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.transaction.repository import (
     PayoutReversalTransactionRepository,
@@ -333,6 +336,7 @@ class PayoutService:
     ) -> PayoutEstimate:
         if not organization.can_payout:
             raise OrganizationCannotPayout(organization)
+        await organization_email_service.assert_verified(session, organization)
 
         account = organization.account
         payout_account = organization.get_ready_payout_account()
@@ -399,12 +403,13 @@ class PayoutService:
             # eager-loaded relationships.
             await session.refresh(
                 organization,
-                attribute_names=["status", "capabilities"],
+                attribute_names=["status", "capabilities", "email"],
                 with_for_update=True,
             )
 
             if not organization.can_payout:
                 raise OrganizationCannotPayout(organization)
+            await organization_email_service.assert_verified(session, organization)
 
             held = organization.status in (
                 OrganizationStatus.REVIEW,

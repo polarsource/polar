@@ -57,9 +57,8 @@ def _extract_error(event_type: str, data: dict[str, Any]) -> str:
             parts.append(f"type={bounce.get('type', 'unknown')}")
             if msg := bounce.get("message"):
                 parts.append(msg[:500])
-    elif event_type == "email.suppressed":
-        if reason := data.get("reason"):
-            parts.append(f"reason={reason}")
+    elif event_type == "email.suppressed" and (reason := data.get("reason")):
+        parts.append(f"reason={reason}")
 
     return "; ".join(parts)
 

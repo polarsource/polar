@@ -1,6 +1,11 @@
 'use client'
 
+import { ManagedAsCodeHint } from '@/components/Dashboard/ManagedAsCodeBadge'
 import { BulkActionBar } from '@/components/BulkActions/BulkActionBar'
+import {
+  DraftContents,
+  versionsHref,
+} from '@/components/Layout/Dashboard/CatalogHoverCard'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import Pagination from '@/components/Pagination/Pagination'
 import {
@@ -8,10 +13,11 @@ import {
   BulkArchiveProductsModal,
 } from '@/components/Products/BulkArchiveProductsModal'
 import { ProductListItem } from '@/components/Products/ProductListItem'
-import { useIsManagedAsCode } from '@/hooks/permissions'
+import { useCatalogs } from '@/hooks/queries/catalogs'
 import { useProducts } from '@/hooks/queries/products'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { useSelection } from '@/hooks/useSelection'
+import { RemovedProducts } from './versions/RemovedTab'
 import { useDebouncedCallback } from '@/hooks/utils'
 import { getAPIParams } from '@/utils/datatable'
 import {
@@ -20,7 +26,7 @@ import {
   SearchFilled as Search,
 } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import { List } from '@polar-sh/orbit'
 import {
@@ -37,8 +43,20 @@ import { useSearchParams } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryStates } from 'nuqs'
 import { type MouseEvent, useCallback, useMemo, useState } from 'react'
 
-const showValues = ['all', 'active', 'archived'] as const
+const showValues = ['all', 'active', 'archived', 'removed'] as const
 type ShowValue = (typeof showValues)[number]
+
+const showOptions: Record<'classic' | 'asCode', [ShowValue, string][]> = {
+  classic: [
+    ['all', 'All'],
+    ['active', 'Active'],
+    ['archived', 'Archived'],
+  ],
+  asCode: [
+    ['active', 'Current'],
+    ['removed', 'Removed'],
+  ],
+}
 
 const filterParsers = {
   query: parseAsString,
@@ -55,10 +73,15 @@ export default function ClientPage({
       defaultSorting: [{ id: 'name', desc: false }],
     })
 
-  const [{ query, show }, setFilters] = useQueryStates(filterParsers)
+  const [{ query, show: requestedShow }, setFilters] =
+    useQueryStates(filterParsers)
 
   const searchParams = useSearchParams()
-  const managedAsCode = useIsManagedAsCode(org.id)
+  const managedAsCode = org.feature_settings?.config_as_code_enabled ?? false
+  const options = showOptions[managedAsCode ? 'asCode' : 'classic']
+  const show = options.some(([value]) => value === requestedShow)
+    ? requestedShow
+    : 'active'
 
   const onPageChange = useCallback(
     (page: number) =>
@@ -104,6 +127,11 @@ export default function ClientPage({
     query: query ?? undefined,
     is_archived: show === 'all' ? null : show === 'active' ? false : true,
   })
+
+  const { data: latestCatalogs } = useCatalogs(org.id, 1, 1)
+  const draft = latestCatalogs?.items.find(({ status }) => status === 'draft')
+  const showDraftEmptyState =
+    !!draft && !query && show !== 'archived' && show !== 'removed'
 
   const items = useMemo(
     () =>
@@ -184,46 +212,51 @@ export default function ClientPage({
                   <SelectValue placeholder="Show archived products" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
+                  {options.map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <Select
-                value={currentSortingValue}
-                onValueChange={onSortingChange}
-              >
-                <SelectTrigger className="w-full md:max-w-fit">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="name">Name A-Z</SelectItem>
-                  <SelectItem value="-name">Name Z-A</SelectItem>
-                  <SelectItem value="-created_at">Newest</SelectItem>
-                  <SelectItem value="created_at">Oldest</SelectItem>
-                  <SelectItem value="price_amount">
-                    Price: Low to High
-                  </SelectItem>
-                  <SelectItem value="-price_amount">
-                    Price: High to Low
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              {(products.data?.pagination.total_count ?? 0) > 20 && (
+              {show !== 'removed' && (
                 <Select
-                  value={pagination.pageSize.toString()}
-                  onValueChange={onLimitChange}
+                  value={currentSortingValue}
+                  onValueChange={onSortingChange}
                 >
                   <SelectTrigger className="w-full md:max-w-fit">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="20">Show 20</SelectItem>
-                    <SelectItem value="50">Show 50</SelectItem>
-                    <SelectItem value="100">Show 100</SelectItem>
+                    <SelectItem value="name">Name A-Z</SelectItem>
+                    <SelectItem value="-name">Name Z-A</SelectItem>
+                    <SelectItem value="-created_at">Newest</SelectItem>
+                    <SelectItem value="created_at">Oldest</SelectItem>
+                    <SelectItem value="price_amount">
+                      Price: Low to High
+                    </SelectItem>
+                    <SelectItem value="-price_amount">
+                      Price: High to Low
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               )}
+              {show !== 'removed' &&
+                (products.data?.pagination.total_count ?? 0) > 20 && (
+                  <Select
+                    value={pagination.pageSize.toString()}
+                    onValueChange={onLimitChange}
+                  >
+                    <SelectTrigger className="w-full md:max-w-fit">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="20">Show 20</SelectItem>
+                      <SelectItem value="50">Show 50</SelectItem>
+                      <SelectItem value="100">Show 100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
             </div>
             {!managedAsCode && (
               <Link
@@ -242,7 +275,9 @@ export default function ClientPage({
             )}
           </div>
         )}
-        {items.length > 0 ? (
+        {show === 'removed' ? (
+          <RemovedProducts organization={org} query={query} />
+        ) : items.length > 0 ? (
           <Pagination
             currentPage={pagination.pageIndex + 1}
             pageSize={pagination.pageSize}
@@ -266,6 +301,32 @@ export default function ClientPage({
               ))}
             </List>
           </Pagination>
+        ) : showDraftEmptyState ? (
+          <ShadowBoxOnMd className="items-center justify-center md:flex md:flex-col md:py-48">
+            <Box flexDirection="column" alignItems="center" rowGap="xl">
+              <HiveOutlined
+                className="dark:text-polar-600 text-5xl text-gray-300"
+                fontSize="large"
+              />
+              <Box
+                flexDirection="column"
+                alignItems="center"
+                rowGap="s"
+                textAlign="center"
+              >
+                <Text as="h3" variant="heading-xs">
+                  Your products are in a draft
+                </Text>
+                <DraftContents organization={org} draft={draft} />
+                <Text color="muted">Publish the draft to make them live.</Text>
+              </Box>
+              <Link href={versionsHref(org, draft)}>
+                <Button role="link" variant="secondary">
+                  Review draft
+                </Button>
+              </Link>
+            </Box>
+          </ShadowBoxOnMd>
         ) : (
           <ShadowBoxOnMd className="items-center justify-center gap-y-6 md:flex md:flex-col md:py-48">
             <HiveOutlined
@@ -276,10 +337,15 @@ export default function ClientPage({
               <div className="flex flex-col items-center gap-y-2">
                 <h3 className="text-lg font-medium">No products found</h3>
                 <p className="dark:text-polar-500 text-gray-500">
-                  Start selling digital products today
+                  {query
+                    ? 'No products match your search query'
+                    : 'Start selling digital products today'}
                 </p>
               </div>
-              {!managedAsCode && (
+              {managedAsCode && !query && (
+                <ManagedAsCodeHint resource="products" />
+              )}
+              {!managedAsCode && !query && (
                 <Link href={`/dashboard/${org.slug}/products/new`}>
                   <Button role="link" variant="secondary">
                     <span>Create Product</span>

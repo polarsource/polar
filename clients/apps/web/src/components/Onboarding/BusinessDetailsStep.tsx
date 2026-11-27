@@ -20,7 +20,12 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import { useForm, useFormContext, useWatch } from 'react-hook-form'
+import {
+  useForm,
+  useFormContext,
+  useWatch,
+  useFormState,
+} from 'react-hook-form'
 import slugify from 'slugify'
 import {
   ORGANIZATION_SLUG_MAX_LENGTH,
@@ -241,14 +246,20 @@ export function BusinessDetailsStep() {
       name: data.orgName || '',
       slug: data.orgSlug || '',
       default_presentment_currency: data.defaultCurrency || 'usd',
-      country: data.businessCountry || '',
+      country:
+        data.businessCountry ||
+        (data.organizationType === 'company' ? data.country : '') ||
+        '',
       legal_entity: {
         registered_name: data.registeredBusinessName || '',
       },
     },
   })
+  const { errors, isValidating, isSubmitting } = useFormState({
+    control: form.control,
+  })
 
-  const { handleSubmit, setValue } = form
+  const { handleSubmit, setValue, getValues } = form
 
   const onSubmit = (formData: FormSchema) => {
     updateData({
@@ -270,11 +281,7 @@ export function BusinessDetailsStep() {
         title="Business Details"
         subtitle="Tell us about your organization so we can set things up."
         step="business"
-        actions={
-          <SubmitButton
-            loading={form.formState.isValidating || form.formState.isSubmitting}
-          />
-        }
+        actions={<SubmitButton loading={isValidating || isSubmitting} />}
       >
         <Box
           as="form"
@@ -303,6 +310,8 @@ export function BusinessDetailsStep() {
                       if (value === 'individual') {
                         setValue('country', '')
                         setValue('legal_entity.registered_name', '')
+                      } else if (!getValues('country') && data.country) {
+                        setValue('country', data.country)
                       }
                     }}
                   >
@@ -406,12 +415,10 @@ export function BusinessDetailsStep() {
 
           <CurrencyAndCountryFields />
 
-          {form.formState.errors.root && (
+          {errors.root && (
             <Alert
               variant="danger"
-              title={
-                form.formState.errors.root.message ?? 'Something went wrong'
-              }
+              title={errors.root.message ?? 'Something went wrong'}
             />
           )}
         </Box>

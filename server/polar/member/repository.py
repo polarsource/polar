@@ -116,6 +116,9 @@ class MemberRepository(
 
         A customer must have at most one active owner; raises
         `MultipleResultsFound` otherwise so the invariant violation is loud.
+
+        With `include_deleted`, soft-deleted owners may coexist with the active
+        one: the active owner is preferred, then the most recently deleted.
         """
         statement = (
             select(Member)
@@ -125,7 +128,11 @@ class MemberRepository(
             )
             .options(joinedload(Member.customer).joinedload(Customer.organization))
         )
-        if not include_deleted:
+        if include_deleted:
+            statement = statement.order_by(
+                Member.deleted_at.desc().nulls_first()
+            ).limit(1)
+        else:
             statement = statement.where(~Member.is_deleted)
         return await self.get_one_or_none(statement)
 
@@ -181,5 +188,5 @@ class MemberRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Member]]:
+    ) -> Select[Member]:
         return self.get_base_statement().where(Member.organization_id.in_(org_ids))

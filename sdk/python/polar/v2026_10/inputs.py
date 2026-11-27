@@ -4,6 +4,7 @@ import typing
 
 import typing_extensions
 
+from polar.base import _Discriminator
 from polar.v2026_10.literals import (
     ApiVersion,
     BenefitVisibility,
@@ -14,12 +15,12 @@ from polar.v2026_10.literals import (
     DiscountType,
     FilterConjunction,
     FilterOperator,
+    Format,
     Func,
     LicenseKeyStatus,
     MemberRole,
     MeterUnit,
     OrganizationSocialPlatforms,
-    PaymentProcessor,
     Permission,
     PresentmentCurrency,
     ProductVisibility,
@@ -36,7 +37,6 @@ from polar.v2026_10.literals import (
     TokenEndpointAuthMethod,
     TrialInterval,
     WebhookEventType,
-    WebhookFormat,
 )
 
 
@@ -590,9 +590,6 @@ class CheckoutConfirmStripe(typing.TypedDict):
     product_id: typing.NotRequired[str | None]
     """ID of the product to checkout. Must be present in the checkout's product list."""
 
-    product_price_id: typing.NotRequired[str | None]
-    """ID of the product price to checkout. Must correspond to a price present in the checkout's product list."""
-
     amount: typing.NotRequired[int | None]
 
     seats: typing.NotRequired[int | None]
@@ -626,6 +623,9 @@ class CheckoutConfirmStripe(typing.TypedDict):
 
     confirmation_token_id: typing.NotRequired[str | None]
     """ID of the Stripe confirmation token. Required for fixed prices and custom prices."""
+
+    product_price_id: typing.NotRequired[str | None]
+    """ID of the product price to checkout. Must correspond to a price present in the checkout's product list."""
 
 
 class CheckoutCreate(typing.TypedDict):
@@ -746,12 +746,25 @@ You can store up to **50 key-value pairs**."""
         dict[
             str,
             list[
-                ProductPriceFixedCreate
-                | ProductPriceCustomCreate
-                | ProductPriceSeatBasedCreate
-                | ProductPriceUnitBasedCreate
-                | ProductPriceMeteredUnitCreate
-                | ProductPriceMeteredTiersCreate
+                typing.Annotated[
+                    ProductPriceFixedCreate
+                    | ProductPriceCustomCreate
+                    | ProductPriceSeatBasedCreate
+                    | ProductPriceUnitBasedCreate
+                    | ProductPriceMeteredUnitCreate
+                    | ProductPriceMeteredTiersCreate,
+                    _Discriminator(
+                        "amount_type",
+                        (
+                            ("custom", ProductPriceCustomCreate),
+                            ("fixed", ProductPriceFixedCreate),
+                            ("metered_tiers", ProductPriceMeteredTiersCreate),
+                            ("metered_unit", ProductPriceMeteredUnitCreate),
+                            ("seat_based", ProductPriceSeatBasedCreate),
+                            ("unit_based", ProductPriceUnitBasedCreate),
+                        ),
+                    ),
+                ]
             ],
         ]
         | None
@@ -978,9 +991,6 @@ class CheckoutUpdate(typing.TypedDict):
     product_id: typing.NotRequired[str | None]
     """ID of the product to checkout. Must be present in the checkout's product list."""
 
-    product_price_id: typing.NotRequired[str | None]
-    """ID of the product price to checkout. Must correspond to a price present in the checkout's product list."""
-
     amount: typing.NotRequired[int | None]
 
     seats: typing.NotRequired[int | None]
@@ -1060,6 +1070,9 @@ You can store up to **50 key-value pairs**."""
     embed_origin: typing.NotRequired[str | None]
     """If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."""
 
+    product_price_id: typing.NotRequired[str | None]
+    """ID of the product price to checkout. Must correspond to a price present in the checkout's product list."""
+
 
 class CheckoutUpdatePublic(typing.TypedDict):
     """Update an existing checkout session using the client secret."""
@@ -1069,9 +1082,6 @@ class CheckoutUpdatePublic(typing.TypedDict):
 
     product_id: typing.NotRequired[str | None]
     """ID of the product to checkout. Must be present in the checkout's product list."""
-
-    product_price_id: typing.NotRequired[str | None]
-    """ID of the product price to checkout. Must correspond to a price present in the checkout's product list."""
 
     amount: typing.NotRequired[int | None]
 
@@ -1103,6 +1113,9 @@ class CheckoutUpdatePublic(typing.TypedDict):
 
     allow_trial: typing.NotRequired[typing.Literal[False] | None]
     """Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one."""
+
+    product_price_id: typing.NotRequired[str | None]
+    """ID of the product price to checkout. Must correspond to a price present in the checkout's product list."""
 
 
 class CostMetadataInput(typing.TypedDict):
@@ -1549,19 +1562,6 @@ You can store up to **50 key-value pairs**."""
     """The email address of the customer. This must be unique within the organization."""
 
 
-class CustomerOrderConfirmPayment(typing.TypedDict):
-    """Schema to confirm a retry payment using either a saved payment method or a new confirmation token."""
-
-    confirmation_token_id: typing.NotRequired[str | None]
-    """ID of the Stripe confirmation token for new payment methods."""
-
-    payment_method_id: typing.NotRequired[str | None]
-    """ID of an existing saved payment method."""
-
-    payment_processor: typing.NotRequired[PaymentProcessor]
-    """Payment processor used."""
-
-
 class CustomerOrderUpdate(typing.TypedDict):
     """Schema to update an order."""
 
@@ -1569,7 +1569,7 @@ class CustomerOrderUpdate(typing.TypedDict):
     """The name of the customer that should appear on the invoice."""
 
     billing_address: typing.NotRequired[AddressInput | None]
-    """The address of the customer that should appear on the invoice. Country and state fields cannot be updated."""
+    """The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders."""
 
 
 class CustomerPaymentMethodConfirm(typing.TypedDict):
@@ -1855,8 +1855,6 @@ You can store up to **50 key-value pairs**."""
 
 
 class DiscountFixedCreate(typing.TypedDict):
-    """Schema to create a fixed amount discount."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -1906,11 +1904,11 @@ Required when `duration` is `repeating`. Must be omitted otherwise.
 For this to work on yearly pricing, you should multiply this by 12.
 For example, to apply the discount for 2 years, set this to 24."""
 
+    amounts: typing.NotRequired[dict[str, int] | None]
+
     amount: typing.NotRequired[int | None]
 
     currency: typing.NotRequired[PresentmentCurrency | None]
-
-    amounts: typing.NotRequired[dict[str, int] | None]
 
 
 class DiscountPercentageCreate(typing.TypedDict):
@@ -1973,8 +1971,6 @@ For example, to create a 25.5% discount, set this to 2550."""
 
 
 class DiscountUpdate(typing.TypedDict):
-    """Schema to update a discount."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -2011,15 +2007,15 @@ You can store up to **50 key-value pairs**."""
 
     type: typing.NotRequired[DiscountType | None]
 
-    amount: typing.NotRequired[int | None]
-
-    currency: typing.NotRequired[PresentmentCurrency | None]
-
     amounts: typing.NotRequired[dict[str, int] | None]
 
     basis_points: typing.NotRequired[int | None]
 
     products: typing.NotRequired[list[str] | None]
+
+    amount: typing.NotRequired[int | None]
+
+    currency: typing.NotRequired[PresentmentCurrency | None]
 
 
 class DownloadableFileCreate(typing.TypedDict):
@@ -2127,7 +2123,7 @@ class EventTypeUpdate(typing.TypedDict):
     """The label for the event type."""
 
     label_property_selector: typing.NotRequired[str | None]
-    """Property path to extract dynamic label from event metadata (e.g., 'subject' or 'metadata.subject')."""
+    """Property path to extract a dynamic label from event metadata (e.g., 'subject' or 'metadata.subject'). Set to `null` to clear it."""
 
 
 class EventsIngest(typing.TypedDict):
@@ -2347,7 +2343,20 @@ You can store up to **50 key-value pairs**."""
     filter: Filter
     """The filter to apply on events that'll be used to calculate the meter."""
 
-    aggregation: CountAggregation | PropertyAggregation | UniqueAggregation
+    aggregation: typing.Annotated[
+        CountAggregation | PropertyAggregation | UniqueAggregation,
+        _Discriminator(
+            "func",
+            (
+                ("avg", PropertyAggregation),
+                ("count", CountAggregation),
+                ("max", PropertyAggregation),
+                ("min", PropertyAggregation),
+                ("sum", PropertyAggregation),
+                ("unique", UniqueAggregation),
+            ),
+        ),
+    ]
     """The aggregation to apply on the filtered events to calculate the meter."""
 
     organization_id: typing.NotRequired[str | None]
@@ -2384,35 +2393,26 @@ You can store up to **50 key-value pairs**."""
     """The filter to apply on events that'll be used to calculate the meter."""
 
     aggregation: typing.NotRequired[
-        CountAggregation | PropertyAggregation | UniqueAggregation | None
+        typing.Annotated[
+            CountAggregation | PropertyAggregation | UniqueAggregation,
+            _Discriminator(
+                "func",
+                (
+                    ("avg", PropertyAggregation),
+                    ("count", CountAggregation),
+                    ("max", PropertyAggregation),
+                    ("min", PropertyAggregation),
+                    ("sum", PropertyAggregation),
+                    ("unique", UniqueAggregation),
+                ),
+            ),
+        ]
+        | None
     ]
     """The aggregation to apply on the filtered events to calculate the meter."""
 
     is_archived: typing.NotRequired[bool | None]
     """Whether the meter is archived. Archived meters are no longer used for billing."""
-
-
-class MetricDashboardCreate(typing.TypedDict):
-    """Schema for creating a metrics dashboard."""
-
-    name: str
-    """Display name for the dashboard."""
-
-    metrics: typing.NotRequired[list[str]]
-    """List of metric slugs to display in this dashboard."""
-
-    organization_id: typing.NotRequired[str | None]
-    """The ID of the organization owning this dashboard. **Required unless you use an organization token.**"""
-
-
-class MetricDashboardUpdate(typing.TypedDict):
-    """Schema for updating a metrics dashboard."""
-
-    name: typing.NotRequired[str | None]
-    """Display name for the dashboard."""
-
-    metrics: typing.NotRequired[list[str] | None]
-    """List of metric slugs to display in this dashboard."""
 
 
 class OAuth2ClientConfiguration(typing.TypedDict):
@@ -2524,7 +2524,7 @@ class OrderUpdate(typing.TypedDict):
     """The name of the customer that should appear on the invoice."""
 
     billing_address: typing.NotRequired[AddressInput | None]
-    """The address of the customer that should appear on the invoice. Country and state fields cannot be updated."""
+    """The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders."""
 
 
 class OrganizationAvatarFileCreate(typing.TypedDict):
@@ -2563,8 +2563,17 @@ class OrganizationCreate(typing.TypedDict):
     avatar_url: typing.NotRequired[str | None]
 
     legal_entity: typing.NotRequired[
-        OrganizationIndividualLegalEntitySchema
-        | OrganizationCompanyLegalEntitySchema
+        typing.Annotated[
+            OrganizationIndividualLegalEntitySchema
+            | OrganizationCompanyLegalEntitySchema,
+            _Discriminator(
+                "type",
+                (
+                    ("company", OrganizationCompanyLegalEntitySchema),
+                    ("individual", OrganizationIndividualLegalEntitySchema),
+                ),
+            ),
+        ]
         | None
     ]
 
@@ -2641,9 +2650,6 @@ class OrganizationCustomerPortalSettings(typing.TypedDict):
 
 
 class OrganizationDetails(typing.TypedDict):
-    about: typing.NotRequired[str | None]
-    """Brief information about you and your business."""
-
     product_description: typing.NotRequired[str | None]
     """Description of digital products being sold."""
 
@@ -2653,6 +2659,17 @@ class OrganizationDetails(typing.TypedDict):
     pricing_models: typing.NotRequired[list[str]]
     """Pricing models used by the organization."""
 
+    switching: typing.NotRequired[bool]
+    """Switching from another platform?"""
+
+    switching_from: typing.NotRequired[
+        typing.Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
+    ]
+    """Which platform the organization is migrating from."""
+
+    about: typing.NotRequired[str | None]
+    """Brief information about you and your business."""
+
     intended_use: typing.NotRequired[str | None]
     """How the organization will integrate and use Polar."""
 
@@ -2661,14 +2678,6 @@ class OrganizationDetails(typing.TypedDict):
 
     future_annual_revenue: typing.NotRequired[int | None]
     """Estimated revenue in the next 12 months"""
-
-    switching: typing.NotRequired[bool]
-    """Switching from another platform?"""
-
-    switching_from: typing.NotRequired[
-        typing.Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
-    ]
-    """Which platform the organization is migrating from."""
 
     previous_annual_revenue: typing.NotRequired[int | None]
     """Revenue from last year if applicable."""
@@ -2796,12 +2805,25 @@ You can store up to **50 key-value pairs**."""
     """The visibility of the product."""
 
     prices: list[
-        ProductPriceFixedCreate
-        | ProductPriceCustomCreate
-        | ProductPriceSeatBasedCreate
-        | ProductPriceUnitBasedCreate
-        | ProductPriceMeteredUnitCreate
-        | ProductPriceMeteredTiersCreate
+        typing.Annotated[
+            ProductPriceFixedCreate
+            | ProductPriceCustomCreate
+            | ProductPriceSeatBasedCreate
+            | ProductPriceUnitBasedCreate
+            | ProductPriceMeteredUnitCreate
+            | ProductPriceMeteredTiersCreate,
+            _Discriminator(
+                "amount_type",
+                (
+                    ("custom", ProductPriceCustomCreate),
+                    ("fixed", ProductPriceFixedCreate),
+                    ("metered_tiers", ProductPriceMeteredTiersCreate),
+                    ("metered_unit", ProductPriceMeteredUnitCreate),
+                    ("seat_based", ProductPriceSeatBasedCreate),
+                    ("unit_based", ProductPriceUnitBasedCreate),
+                ),
+            ),
+        ]
     ]
     """List of available prices for this product. It may combine at most one fixed price with one seat-based price (billed as `fixed + seat_charge`), or contain a single custom or free price, plus any number of metered prices. A free price cannot be combined with other prices, and a custom price cannot be combined with a fixed or seat-based price. Metered prices are not supported on one-time purchase products."""
 
@@ -2845,12 +2867,25 @@ You can store up to **50 key-value pairs**."""
     """The visibility of the product."""
 
     prices: list[
-        ProductPriceFixedCreate
-        | ProductPriceCustomCreate
-        | ProductPriceSeatBasedCreate
-        | ProductPriceUnitBasedCreate
-        | ProductPriceMeteredUnitCreate
-        | ProductPriceMeteredTiersCreate
+        typing.Annotated[
+            ProductPriceFixedCreate
+            | ProductPriceCustomCreate
+            | ProductPriceSeatBasedCreate
+            | ProductPriceUnitBasedCreate
+            | ProductPriceMeteredUnitCreate
+            | ProductPriceMeteredTiersCreate,
+            _Discriminator(
+                "amount_type",
+                (
+                    ("custom", ProductPriceCustomCreate),
+                    ("fixed", ProductPriceFixedCreate),
+                    ("metered_tiers", ProductPriceMeteredTiersCreate),
+                    ("metered_unit", ProductPriceMeteredUnitCreate),
+                    ("seat_based", ProductPriceSeatBasedCreate),
+                    ("unit_based", ProductPriceUnitBasedCreate),
+                ),
+            ),
+        ]
     ]
     """List of available prices for this product. It may combine at most one fixed price with one seat-based price (billed as `fixed + seat_charge`), or contain a single custom or free price, plus any number of metered prices. A free price cannot be combined with other prices, and a custom price cannot be combined with a fixed or seat-based price. Metered prices are not supported on one-time purchase products."""
 
@@ -3471,12 +3506,6 @@ You can store up to **50 key-value pairs**."""
     description: typing.NotRequired[str | None]
     """The description of the product."""
 
-    recurring_interval: typing.NotRequired[RecurringInterval | None]
-    """The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**"""
-
-    recurring_interval_count: typing.NotRequired[int | None]
-    """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**"""
-
     is_archived: typing.NotRequired[bool | None]
     """Whether the product is archived. If `true`, the product won't be available for purchase anymore. Existing customers will still have access to their benefits, and subscriptions will continue normally."""
 
@@ -3486,12 +3515,25 @@ You can store up to **50 key-value pairs**."""
     prices: typing.NotRequired[
         list[
             ExistingProductPrice
-            | ProductPriceFixedCreate
-            | ProductPriceCustomCreate
-            | ProductPriceSeatBasedCreate
-            | ProductPriceUnitBasedCreate
-            | ProductPriceMeteredUnitCreate
-            | ProductPriceMeteredTiersCreate
+            | typing.Annotated[
+                ProductPriceFixedCreate
+                | ProductPriceCustomCreate
+                | ProductPriceSeatBasedCreate
+                | ProductPriceUnitBasedCreate
+                | ProductPriceMeteredUnitCreate
+                | ProductPriceMeteredTiersCreate,
+                _Discriminator(
+                    "amount_type",
+                    (
+                        ("custom", ProductPriceCustomCreate),
+                        ("fixed", ProductPriceFixedCreate),
+                        ("metered_tiers", ProductPriceMeteredTiersCreate),
+                        ("metered_unit", ProductPriceMeteredUnitCreate),
+                        ("seat_based", ProductPriceSeatBasedCreate),
+                        ("unit_based", ProductPriceUnitBasedCreate),
+                    ),
+                ),
+            ]
         ]
         | None
     ]
@@ -3501,6 +3543,12 @@ You can store up to **50 key-value pairs**."""
     """List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded."""
 
     attached_custom_fields: typing.NotRequired[list[AttachedCustomFieldCreate] | None]
+
+    recurring_interval: typing.NotRequired[RecurringInterval | None]
+    """The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**"""
+
+    recurring_interval_count: typing.NotRequired[int | None]
+    """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**"""
 
 
 class PropertyAggregation(typing.TypedDict):
@@ -3851,7 +3899,7 @@ class WebhookEndpointCreate(typing.TypedDict):
     api_version: typing.NotRequired[ApiVersion]
     """The API version that'll be used in event payloads."""
 
-    format: WebhookFormat
+    format: Format
     """The format of the webhook payload."""
 
     events: list[WebhookEventType]
@@ -3867,12 +3915,12 @@ class WebhookEndpointUpdate(typing.TypedDict):
     url: typing.NotRequired[str | None]
 
     name: typing.NotRequired[str | None]
-    """An optional name for the webhook endpoint to help organize and identify it."""
+    """An optional name for the webhook endpoint. Set to `null` to clear it."""
 
     api_version: typing.NotRequired[typing.Literal["2026-04", "2026-10"] | None]
     """The API version that'll be used in event payloads."""
 
-    format: typing.NotRequired[WebhookFormat | None]
+    format: typing.NotRequired[typing.Literal["raw", "discord", "slack"] | None]
 
     events: typing.NotRequired[list[WebhookEventType] | None]
 
@@ -3880,7 +3928,7 @@ class WebhookEndpointUpdate(typing.TypedDict):
     """Whether the webhook endpoint is enabled."""
 
 
-BenefitCreate: typing.TypeAlias = (
+BenefitCreate: typing.TypeAlias = typing.Annotated[
     BenefitCustomCreate
     | BenefitDiscordCreate
     | BenefitGitHubRepositoryCreate
@@ -3888,8 +3936,21 @@ BenefitCreate: typing.TypeAlias = (
     | BenefitLicenseKeysCreate
     | BenefitMeterCreditCreate
     | BenefitFeatureFlagCreate
-    | BenefitSlackSharedChannelCreate
-)
+    | BenefitSlackSharedChannelCreate,
+    _Discriminator(
+        "type",
+        (
+            ("custom", BenefitCustomCreate),
+            ("discord", BenefitDiscordCreate),
+            ("downloadables", BenefitDownloadablesCreate),
+            ("feature_flag", BenefitFeatureFlagCreate),
+            ("github_repository", BenefitGitHubRepositoryCreate),
+            ("license_keys", BenefitLicenseKeysCreate),
+            ("meter_credit", BenefitMeterCreditCreate),
+            ("slack_shared_channel", BenefitSlackSharedChannelCreate),
+        ),
+    ),
+]
 
 CheckoutLinkCreate: typing.TypeAlias = (
     CheckoutLinkCreateProductPrice
@@ -3897,23 +3958,43 @@ CheckoutLinkCreate: typing.TypeAlias = (
     | CheckoutLinkCreateProducts
 )
 
-CustomFieldCreate: typing.TypeAlias = (
+CustomFieldCreate: typing.TypeAlias = typing.Annotated[
     CustomFieldCreateText
     | CustomFieldCreateNumber
     | CustomFieldCreateDate
     | CustomFieldCreateCheckbox
-    | CustomFieldCreateSelect
-)
+    | CustomFieldCreateSelect,
+    _Discriminator(
+        "type",
+        (
+            ("checkbox", CustomFieldCreateCheckbox),
+            ("date", CustomFieldCreateDate),
+            ("number", CustomFieldCreateNumber),
+            ("select", CustomFieldCreateSelect),
+            ("text", CustomFieldCreateText),
+        ),
+    ),
+]
 
-CustomFieldUpdate: typing.TypeAlias = (
+CustomFieldUpdate: typing.TypeAlias = typing.Annotated[
     CustomFieldUpdateText
     | CustomFieldUpdateNumber
     | CustomFieldUpdateDate
     | CustomFieldUpdateCheckbox
-    | CustomFieldUpdateSelect
-)
+    | CustomFieldUpdateSelect,
+    _Discriminator(
+        "type",
+        (
+            ("checkbox", CustomFieldUpdateCheckbox),
+            ("date", CustomFieldUpdateDate),
+            ("number", CustomFieldUpdateNumber),
+            ("select", CustomFieldUpdateSelect),
+            ("text", CustomFieldUpdateText),
+        ),
+    ),
+]
 
-CustomerBenefitGrantUpdate: typing.TypeAlias = (
+CustomerBenefitGrantUpdate: typing.TypeAlias = typing.Annotated[
     CustomerBenefitGrantDiscordUpdate
     | CustomerBenefitGrantGitHubRepositoryUpdate
     | CustomerBenefitGrantDownloadablesUpdate
@@ -3921,8 +4002,21 @@ CustomerBenefitGrantUpdate: typing.TypeAlias = (
     | CustomerBenefitGrantCustomUpdate
     | CustomerBenefitGrantMeterCreditUpdate
     | CustomerBenefitGrantFeatureFlagUpdate
-    | CustomerBenefitGrantSlackSharedChannelUpdate
-)
+    | CustomerBenefitGrantSlackSharedChannelUpdate,
+    _Discriminator(
+        "benefit_type",
+        (
+            ("custom", CustomerBenefitGrantCustomUpdate),
+            ("discord", CustomerBenefitGrantDiscordUpdate),
+            ("downloadables", CustomerBenefitGrantDownloadablesUpdate),
+            ("feature_flag", CustomerBenefitGrantFeatureFlagUpdate),
+            ("github_repository", CustomerBenefitGrantGitHubRepositoryUpdate),
+            ("license_keys", CustomerBenefitGrantLicenseKeysUpdate),
+            ("meter_credit", CustomerBenefitGrantMeterCreditUpdate),
+            ("slack_shared_channel", CustomerBenefitGrantSlackSharedChannelUpdate),
+        ),
+    ),
+]
 
 CustomerCreate: typing.TypeAlias = CustomerIndividualCreate | CustomerTeamCreate
 
@@ -3936,14 +4030,32 @@ CustomerSubscriptionUpdate: typing.TypeAlias = (
     | CustomerSubscriptionUpdateClear
 )
 
-DiscountCreate: typing.TypeAlias = DiscountFixedCreate | DiscountPercentageCreate
+DiscountCreate: typing.TypeAlias = typing.Annotated[
+    DiscountFixedCreate | DiscountPercentageCreate,
+    _Discriminator(
+        "type",
+        (
+            ("fixed", DiscountFixedCreate),
+            ("percentage", DiscountPercentageCreate),
+        ),
+    ),
+]
 
-FileCreate: typing.TypeAlias = (
+FileCreate: typing.TypeAlias = typing.Annotated[
     DownloadableFileCreate
     | ProductMediaFileCreate
     | OrganizationAvatarFileCreate
-    | SupportCaseAttachmentFileCreate
-)
+    | SupportCaseAttachmentFileCreate,
+    _Discriminator(
+        "service",
+        (
+            ("downloadable", DownloadableFileCreate),
+            ("organization_avatar", OrganizationAvatarFileCreate),
+            ("product_media", ProductMediaFileCreate),
+            ("support_case_attachment", SupportCaseAttachmentFileCreate),
+        ),
+    ),
+]
 
 MetadataQuery: typing.TypeAlias = (
     dict[str, str | int | bool | list[str] | list[int] | list[bool]] | None

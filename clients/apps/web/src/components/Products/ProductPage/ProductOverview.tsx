@@ -1,8 +1,11 @@
 import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
 import { schemas } from '@polar-sh/client'
 import { Grid } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { ProductBenefits } from './ProductBenefits'
+import { ProductCustomFields } from './ProductCustomFields'
 import { ProductDiscounts } from './ProductDiscounts'
+import { ProductMeters } from './ProductMeters'
 import { ProductOrders } from './ProductOrders'
 import { ProductSubscriptions } from './ProductSubscriptions'
 
@@ -20,8 +23,15 @@ export const ProductOverview = ({
   todayMetrics,
 }: ProductOverviewProps) => {
   return (
-    <div className="flex flex-col gap-y-16">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <Box flexDirection="column" rowGap="3xl">
+      <Grid
+        templateColumns={{
+          base: '1fr',
+          md: 'repeat(2, 1fr)',
+          lg: 'repeat(3, 1fr)',
+        }}
+        gap="xl"
+      >
         {product.is_recurring ? (
           <>
             <MiniMetricChartBox
@@ -52,14 +62,18 @@ export const ProductOverview = ({
           metric={metrics?.metrics.cumulative_revenue}
           value={metrics?.periods.at(-1)?.cumulative_revenue}
         />
-      </div>
+      </Grid>
       {product.is_recurring && (
         <ProductSubscriptions organization={organization} product={product} />
       )}
       <ProductOrders organization={organization} product={product} />
 
       {product.is_archived ? (
-        <ProductBenefits organization={organization} product={product} />
+        <>
+          <ProductBenefits organization={organization} product={product} />
+          <ProductMeters organization={organization} product={product} />
+          <ProductCustomFields organization={organization} product={product} />
+        </>
       ) : (
         <Grid
           templateColumns={{ base: '1fr', md: 'repeat(2, minmax(0, 1fr))' }}
@@ -68,8 +82,10 @@ export const ProductOverview = ({
         >
           <ProductBenefits organization={organization} product={product} />
           <ProductDiscounts organization={organization} product={product} />
+          <ProductMeters organization={organization} product={product} />
+          <ProductCustomFields organization={organization} product={product} />
         </Grid>
       )}
-    </div>
+    </Box>
   )
 }

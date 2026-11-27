@@ -61,7 +61,7 @@ class WalletRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Wallet]]:
+    ) -> Select[Wallet]:
         statement = (
             self.get_base_statement()
             .join(Customer, Wallet.customer_id == Customer.id)

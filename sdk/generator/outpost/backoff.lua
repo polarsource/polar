@@ -1,0 +1,20 @@
+-- Counts one more failure in a row on a key the whole fleet shares, such as the pull's, and
+-- says when to try again. Each failure in a row doubles the wait, up to a maximum. Failures
+-- met during one wait count as one: they only move the retry later, never sooner.
+local key = KEYS[1]
+local now = tonumber(ARGV[1])
+local first_delay = tonumber(ARGV[2])
+local max_delay = tonumber(ARGV[3])
+-- Optional: the key expires this many milliseconds later, and its failures with it.
+local forget_after = ARGV[4]
+
+local waiting_until = tonumber(redis.call('HGET', key, 'retry_at')) or 0
+local failures = waiting_until > now and tonumber(redis.call('HGET', key, 'failures'))
+    or redis.call('HINCRBY', key, 'failures', 1)
+local delay = math.min(max_delay, first_delay * 2 ^ math.min(failures - 1, 16))
+local retry_at = math.max(waiting_until, now + delay)
+redis.call('HSET', key, 'retry_at', retry_at)
+if forget_after then
+    redis.call('PEXPIRE', key, forget_after)
+end
+return retry_at

@@ -21,9 +21,8 @@ from .schemas import (
 from .schemas import (
     OrganizationSSOConnectionCreate,
     OrganizationSSOConnectionUpdate,
-    OrganizationSSODomain,
 )
-from .service import LastSSOConnectionRequired
+from .service import LastSSOConnectionRequired, SSORequiresVerifiedDomain
 from .service import (
     organization_sso_connection as organization_sso_connection_service,
 )
@@ -46,6 +45,11 @@ SSOConnectionNotFound = {
 NotPermittedResponse = {
     "description": "The user doesn't have the permission to manage the organization.",
     "model": NotPermitted.schema(),
+}
+
+SSORequiresVerifiedDomainResponse = {
+    "description": "The organization has no verified domain.",
+    "model": SSORequiresVerifiedDomain.schema(),
 }
 
 LastSSOConnectionResponse = {
@@ -99,7 +103,11 @@ async def get_sso_connection(
     summary="Create SSO Connection",
     response_model=OrganizationSSOConnectionSchema,
     status_code=201,
-    responses={403: NotPermittedResponse, 404: OrganizationNotFound},
+    responses={
+        403: NotPermittedResponse,
+        404: OrganizationNotFound,
+        409: SSORequiresVerifiedDomainResponse,
+    },
 )
 async def create_sso_connection(
     create: OrganizationSSOConnectionCreate,
@@ -159,31 +167,4 @@ async def delete_sso_connection(
         raise ResourceNotFound()
     await organization_sso_connection_service.delete(
         session, authz.organization, connection
-    )
-
-
-domain_router = APIRouter(
-    prefix="/organizations/{id}/sso-domains",
-    tags=["sso", APITag.private],
-)
-
-
-@domain_router.get(
-    "/",
-    summary="List SSO Domains",
-    response_model=ListResource[OrganizationSSODomain],
-    responses={403: NotPermittedResponse, 404: OrganizationNotFound},
-)
-async def list_sso_domains(
-    authz: AuthorizeOrgManageRead,
-    pagination: PaginationParamsQuery,
-    session: AsyncReadSession = Depends(get_db_read_session),
-) -> ListResource[OrganizationSSODomain]:
-    results, count = await organization_sso_connection_service.list_domains(
-        session, authz.organization, pagination=pagination
-    )
-    return ListResource.from_paginated_results(
-        [OrganizationSSODomain.model_validate(result) for result in results],
-        count,
-        pagination,
     )

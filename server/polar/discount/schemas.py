@@ -4,6 +4,7 @@ from typing import Annotated, Any, Literal, Self
 
 from annotated_types import Ge, Le
 from pydantic import (
+    MISSING,
     UUID4,
     AfterValidator,
     Discriminator,
@@ -14,7 +15,6 @@ from pydantic import (
 )
 
 from polar.kit.currency import PresentmentCurrency
-from polar.kit.external_id import ExternalIDInputMixin, ExternalIDOutputMixin
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
@@ -25,15 +25,24 @@ from polar.kit.schemas import (
     IDSchema,
     Int32,
     MergeJSONSchema,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.kit.versioning import Version
+from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductBase
 from polar.version import V2026_10
+
+
+class DiscountListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    query: str | None = Field(None, description="Filter by name.")
+
 
 DiscountID = Annotated[
     UUID4,
@@ -77,9 +86,13 @@ Code = Annotated[
 
 
 def _starts_at_ends_at_validator(
-    starts_at: datetime | None, ends_at: datetime | None
+    starts_at: datetime | None | MISSING, ends_at: datetime | None | MISSING
 ) -> None:
-    if starts_at is not None and ends_at is not None and starts_at >= ends_at:
+    if (
+        isinstance(starts_at, datetime)
+        and isinstance(ends_at, datetime)
+        and starts_at >= ends_at
+    ):
         raise ValueError("starts_at must be before ends_at")
 
 
@@ -169,7 +182,7 @@ ProductsList = Annotated[
 ]
 
 
-class DiscountCreateBase(MetadataInputMixin, ExternalIDInputMixin, Schema):
+class DiscountCreateBase(MetadataInputMixin, Schema):
     name: Name
     code: Code = None
 
@@ -263,27 +276,27 @@ class DiscountPercentageCreate(DiscountCreateBase):
         return self
 
 
-class DiscountUpdate(MetadataInputMixin, ExternalIDInputMixin, Schema):
+class DiscountUpdate(MetadataInputMixin, Schema):
     """
     Schema to update a discount.
     """
 
-    name: Name | None = None
-    code: Code = None
+    name: Omissible[Name] = MISSING
+    code: Omissible[Code] = MISSING
 
-    starts_at: StartsAt = None
-    ends_at: EndsAt = None
-    max_redemptions: MaxRedemptions = None
-    max_redemptions_per_customer: MaxRedemptionsPerCustomer = None
+    starts_at: Omissible[StartsAt] = MISSING
+    ends_at: Omissible[EndsAt] = MISSING
+    max_redemptions: Omissible[MaxRedemptions] = MISSING
+    max_redemptions_per_customer: Omissible[MaxRedemptionsPerCustomer] = MISSING
 
-    duration: DiscountDuration | None = None
-    duration_in_months: DurationInMonths | None = None
+    duration: Omissible[DiscountDuration] = MISSING
+    duration_in_months: Omissible[DurationInMonths] = MISSING
 
-    type: DiscountType | None = None
-    amounts: Amounts | None = None
-    basis_points: BasisPoints | None = None
+    type: Omissible[DiscountType] = MISSING
+    amounts: Omissible[Amounts] = MISSING
+    basis_points: Omissible[BasisPoints] = MISSING
 
-    products: ProductsList | None = None
+    products: Omissible[ProductsList] = MISSING
 
     @model_validator(mode="after")
     def validate_starts_at_ends_at(self) -> Self:
@@ -295,9 +308,7 @@ class DiscountProduct(ProductBase, MetadataOutputMixin):
     """A product that a discount can be applied to."""
 
 
-class DiscountBase(
-    MetadataOutputMixin, ExternalIDOutputMixin, IDSchema, TimestampedSchema
-):
+class DiscountBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
     name: str = Field(
         description=(
             "Name of the discount. "

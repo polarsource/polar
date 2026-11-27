@@ -1,5 +1,9 @@
 import { WorkerEntrypoint } from 'cloudflare:workers'
+import { Effect } from 'effect'
+import { HttpClient, HttpClientRequest } from 'effect/http'
 import { isAllowedOperation, spec } from './spec'
+
+const USER_AGENT = 'polar-mcp'
 
 export interface PolarApiOutboundProps {
   apiUrl: string
@@ -33,11 +37,23 @@ export class PolarApiOutbound extends WorkerEntrypoint<
 
     const headers = new Headers(request.headers)
     headers.set('Authorization', `Bearer ${token}`)
-    headers.set('User-Agent', 'polar-mcp')
+    headers.set('User-Agent', USER_AGENT)
     headers.set('Polar-Version', spec.apiVersion)
     return fetch(new Request(request, { headers }))
   }
 }
+
+export const polarApiClient = (token: string) =>
+  Effect.map(
+    HttpClient.HttpClient,
+    HttpClient.mapRequest((request) =>
+      request.pipe(
+        HttpClientRequest.bearerToken(token),
+        HttpClientRequest.setHeader('User-Agent', USER_AGENT),
+        HttpClientRequest.setHeader('Polar-Version', spec.apiVersion),
+      ),
+    ),
+  )
 
 const forbidden = (message: string) =>
   Response.json({ error: 'Forbidden', detail: message }, { status: 403 })

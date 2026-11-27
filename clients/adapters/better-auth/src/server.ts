@@ -9,7 +9,7 @@ import { installOrganizationHooks } from './organization/hooks'
 import { createOrganizationLifecycleHooks } from './organization/lifecycle'
 import type { PolarEndpoints, PolarOptions } from './types'
 
-interface PolarBetterAuthPlugin {
+export interface PolarBetterAuthPlugin {
   id: 'polar'
   endpoints: PolarEndpoints
   hooks: ReturnType<typeof createOrganizationLifecycleHooks>

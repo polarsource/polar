@@ -29,7 +29,7 @@ class FileRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[File]]:
+    ) -> Select[File]:
         statement = self.get_base_statement()
         statement = statement.where(File.organization_id.in_(org_ids))
         return statement

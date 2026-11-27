@@ -1,13 +1,13 @@
 import uuid
 from collections.abc import AsyncGenerator
 
-import httpx
+import httpx2
 import pytest
 
-from polar.backoffice import app as backoffice_app
+from polar.backoffice.app import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
-from polar.models import Organization, User, WebhookEndpoint
-from polar.models.user_session import UserSession
+from polar.models import Organization, WebhookEndpoint
+from polar.models.backoffice_user_session import BackofficeUserSession
 from polar.models.webhook_endpoint import WebhookFormat
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from tests.fixtures.database import SaveFixture
@@ -15,15 +15,14 @@ from tests.fixtures.database import SaveFixture
 
 @pytest.fixture
 async def backoffice_client(
-    session: AsyncSession, user: User
-) -> AsyncGenerator[httpx.AsyncClient]:
-    user_session = UserSession(token="0" * 64, user_agent="tests", user=user)
+    session: AsyncSession, backoffice_user_session: BackofficeUserSession
+) -> AsyncGenerator[httpx2.AsyncClient]:
     backoffice_app.dependency_overrides[get_db_session] = lambda: session
     backoffice_app.dependency_overrides[get_db_read_session] = lambda: session
-    backoffice_app.dependency_overrides[get_admin] = lambda: user_session
+    backoffice_app.dependency_overrides[get_admin] = lambda: backoffice_user_session
     try:
-        async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=backoffice_app),
+        async with httpx2.AsyncClient(
+            transport=httpx2.ASGITransport(app=backoffice_app),
             base_url="http://test",
         ) as client:
             yield client
@@ -36,7 +35,7 @@ async def backoffice_client(
 @pytest.mark.anyio
 class TestToggleEnabled:
     async def test_toggle_unknown_endpoint_returns_404(
-        self, backoffice_client: httpx.AsyncClient
+        self, backoffice_client: httpx2.AsyncClient
     ) -> None:
         response = await backoffice_client.post(
             f"/webhooks/{uuid.uuid4()}/toggle-enabled"
@@ -46,7 +45,7 @@ class TestToggleEnabled:
 
     async def test_enable_with_valid_url_succeeds(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -71,7 +70,7 @@ class TestToggleEnabled:
 
     async def test_disable_with_valid_url_succeeds(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -96,7 +95,7 @@ class TestToggleEnabled:
 
     async def test_reject_enable_with_localhost_url(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -125,7 +124,7 @@ class TestToggleEnabled:
 
     async def test_reject_enable_with_private_ip_url(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -153,7 +152,7 @@ class TestToggleEnabled:
 
     async def test_reject_enable_with_ipv6_loopback_url(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -181,7 +180,7 @@ class TestToggleEnabled:
 
     async def test_reject_enable_with_invalid_hostname(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -209,7 +208,7 @@ class TestToggleEnabled:
 
     async def test_disable_with_localhost_url_succeeds(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,

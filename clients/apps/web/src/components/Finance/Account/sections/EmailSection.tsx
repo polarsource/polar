@@ -9,9 +9,13 @@ import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import { Form, FormField, FormMessage } from '@polar-sh/ui/components/ui/form'
-import { useForm } from 'react-hook-form'
+import { useForm, useFormState, useWatch } from 'react-hook-form'
 import { PathCardBanner } from './PathCardBanner'
 import { SectionLayout } from './SectionLayout'
+import {
+  SupportEmailStatusIcon,
+  SupportEmailVerifyPrompt,
+} from './SupportEmailVerification'
 
 interface Props {
   organization: schemas['Organization']
@@ -39,7 +43,10 @@ export const EmailSection = ({
   const form = useForm<FormValues>({
     values: { email: organization.email ?? '' },
   })
-  const { control, handleSubmit, setError, formState, reset } = form
+  const { control, handleSubmit, setError, reset } = form
+  const formState = useFormState({ control })
+  const email = useWatch({ control, name: 'email' })
+  const isSaved = !!email && email === organization.email
 
   const tone = step.status === 'failed' ? 'danger' : 'warning'
 
@@ -90,14 +97,33 @@ export const EmailSection = ({
             rules={{ required: 'Support email is required' }}
             render={({ field }) => (
               <Box display="block">
-                <Input type="email" {...field} placeholder="support@acme.com" />
+                <Input
+                  type="email"
+                  {...field}
+                  placeholder="support@acme.com"
+                  postSlot={
+                    isSaved ? (
+                      <SupportEmailStatusIcon
+                        organization={organization}
+                        tone="warning"
+                      />
+                    ) : undefined
+                  }
+                />
                 <FormMessage />
               </Box>
             )}
           />
-          {reasonItems.map((reason) => (
-            <PathCardBanner key={reason} tone={tone} title={reason} />
-          ))}
+          {step.status !== 'pending' &&
+            reasonItems.map((reason) => (
+              <PathCardBanner key={reason} tone={tone} title={reason} />
+            ))}
+          {isSaved && (
+            <SupportEmailVerifyPrompt
+              organization={organization}
+              tone="warning"
+            />
+          )}
         </SectionLayout>
       </form>
     </Form>

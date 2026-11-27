@@ -26,7 +26,7 @@ import {
 } from '@polar-sh/orbit'
 import { Info as InfoIcon } from '@polar-sh/orbit/icons'
 import React, { useCallback, useMemo } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 import { ProductFormType } from '../ProductForm'
 import UnitAmountInput from '../UnitAmountInput'
 import { MeteredTierEditor } from './MeteredTierEditor'
@@ -44,8 +44,7 @@ export const MeteredPricingFields: React.FC<MeteredPricingFieldsProps> = ({
   index,
   currency,
 }) => {
-  const { control, setValue, watch, getValues } =
-    useFormContext<ProductFormType>()
+  const { control, setValue, getValues } = useFormContext<ProductFormType>()
 
   const { data: meters } = useMeters(organization.id, {
     sorting: ['name'],
@@ -53,10 +52,10 @@ export const MeteredPricingFields: React.FC<MeteredPricingFieldsProps> = ({
     is_archived: false,
   })
 
-  const meterId = watch(`prices.${index}.meter_id`)
-  const amountType = watch(`prices.${index}.amount_type`)
-  const unitAmount = watch(`prices.${index}.unit_amount`)
-  const tiersValue = watch(`prices.${index}.tiers`)
+  const meterId = useWatch({ control, name: `prices.${index}.meter_id` })
+  const amountType = useWatch({ control, name: `prices.${index}.amount_type` })
+  const unitAmount = useWatch({ control, name: `prices.${index}.unit_amount` })
+  const tiersValue = useWatch({ control, name: `prices.${index}.tiers` })
 
   const pricingModel: MeteredPricingModel =
     amountType === 'metered_tiers' && tiersValue ? tiersValue.type : 'fixed'

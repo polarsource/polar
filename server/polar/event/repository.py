@@ -1,7 +1,9 @@
 from collections.abc import Collection, Mapping, Sequence
 from datetime import datetime, timedelta
+from itertools import batched
 from typing import Any
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import (
     UUID as SA_UUID,
@@ -9,38 +11,48 @@ from sqlalchemy import (
 from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
+    NotNullable,
+    ScalarSelect,
     Select,
     String,
     and_,
     case,
     cast,
     delete,
+    false,
     func,
     literal,
     or_,
     select,
+    text,
     tuple_,
     union_all,
     update,
 )
 from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, with_polymorphic
 
 from polar.authz.types import AccessibleOrganizationID
+from polar.kit.db.postgres import json_serializer
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.kit.repository.base import Options
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
-from polar.kit.utils import generate_uuid
+from polar.kit.utils import generate_uuid, utc_now
 from polar.models import (
     BillingEntry,
     Customer,
     Event,
     Meter,
     MeterEvent,
+    MeterReducer,
     StagedEvent,
 )
 from polar.models.event import EventSource
-from polar.models.product_price import ProductPrice
+from polar.models.product_price import (
+    ProductPrice,
+    ProductPriceMeteredTiers,
+    ProductPriceMeteredUnit,
+)
 
 from .system import SystemEvent
 
@@ -50,13 +62,72 @@ from .system import SystemEvent
 # statement_timeout kills the worker.
 _MAX_RESOLVE_DEPTH = 100
 
+# Postgres rejects statements with more than 1664 target list entries, so the
+# meters of an organization are matched in chunks well below that limit.
+_METER_MATCH_CHUNK_SIZE = 500
+
+_INSERT_STAGED_EVENTS = text(
+    """
+    INSERT INTO staged_events (
+        id, ingested_at, timestamp, name, source, organization_id, customer_id,
+        external_customer_id, member_id, external_member_id, external_id,
+        pending_parent_external_id, event_type_id, user_metadata
+    )
+    SELECT * FROM UNNEST(
+        CAST(:id AS uuid[]),
+        CAST(:ingested_at AS timestamptz[]),
+        CAST(:timestamp AS timestamptz[]),
+        CAST(:name AS varchar[]),
+        CAST(:source AS varchar[]),
+        CAST(:organization_id AS uuid[]),
+        CAST(:customer_id AS uuid[]),
+        CAST(:external_customer_id AS varchar[]),
+        CAST(:member_id AS uuid[]),
+        CAST(:external_member_id AS varchar[]),
+        CAST(:external_id AS varchar[]),
+        CAST(:pending_parent_external_id AS varchar[]),
+        CAST(:event_type_id AS uuid[]),
+        CAST(:user_metadata AS jsonb[])
+    )
+    ON CONFLICT (organization_id, external_id) WHERE external_id IS NOT NULL
+    DO NOTHING
+    RETURNING id, organization_id, external_id
+    """
+)
+_INSERT_STAGED_EVENTS_COLUMNS = frozenset(_INSERT_STAGED_EVENTS._bindparams)
+
+_DELETE_STAGED_EVENTS_ALREADY_IN_EVENTS = text(
+    """
+    DELETE FROM staged_events
+    USING events
+    WHERE staged_events.id = ANY(CAST(:ids AS uuid[]))
+    AND events.organization_id = staged_events.organization_id
+    AND events.external_id = staged_events.external_id
+    RETURNING staged_events.id
+    """
+)
+
+
+def _is_meter_reset(
+    organization_id: UUID | ColumnElement[UUID],
+    customer_id: UUID | ColumnElement[UUID],
+    meter_id: str | ColumnElement[str],
+) -> ColumnElement[bool]:
+    return and_(
+        Event.organization_id == organization_id,
+        Event.customer_id == customer_id,
+        Event.source == EventSource.system,
+        Event.name == SystemEvent.meter_reset,
+        Event.user_metadata["meter_id"].as_string() == meter_id,
+    )
+
 
 class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
     model = Event
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Event]]:
+    ) -> Select[Event]:
         statement = self.get_base_statement()
         statement = statement.where(Event.organization_id.in_(org_ids))
         return statement
@@ -134,57 +205,77 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         if not events:
             return [], 0
 
+        unknown_columns = set().union(*events) - _INSERT_STAGED_EVENTS_COLUMNS
+        if unknown_columns:
+            raise ValueError(f"Unknown staged event columns: {unknown_columns}")
+        ids: list[UUID] = []
+        ingested_at: list[datetime] = []
+        timestamps: list[datetime] = []
+        names: list[str] = []
+        sources: list[str] = []
+        organization_ids: list[UUID] = []
+        customer_ids: list[UUID | None] = []
+        external_customer_ids: list[str | None] = []
+        member_ids: list[UUID | None] = []
+        external_member_ids: list[str | None] = []
+        event_external_ids: list[str | None] = []
+        pending_parent_external_ids: list[str | None] = []
+        event_type_ids: list[UUID | None] = []
+        user_metadata: list[str] = []
         for event in events:
             if event.get("id") is None:
                 event["id"] = generate_uuid()
-        keys = set().union(*events)
-        for event in events:
-            for key in keys:
-                event.setdefault(key, None)
+            ids.append(event["id"])
+            ingested_at.append(event.get("ingested_at") or utc_now())
+            timestamps.append(event["timestamp"])
+            names.append(event["name"])
+            sources.append(event["source"])
+            organization_ids.append(event["organization_id"])
+            customer_ids.append(event.get("customer_id"))
+            external_customer_ids.append(event.get("external_customer_id"))
+            member_ids.append(event.get("member_id"))
+            external_member_ids.append(event.get("external_member_id"))
+            event_external_ids.append(event.get("external_id"))
+            pending_parent_external_ids.append(event.get("pending_parent_external_id"))
+            event_type_ids.append(event.get("event_type_id"))
+            user_metadata.append(json_serializer(event["user_metadata"]))
 
-        statement = (
-            insert(StagedEvent)
-            .on_conflict_do_nothing(
-                index_elements=["organization_id", "external_id"],
-                index_where=StagedEvent.external_id.is_not(None),
-            )
-            .returning(
-                StagedEvent.id, StagedEvent.organization_id, StagedEvent.external_id
-            )
-            .execution_options(render_nulls=True)
+        result = await self.session.execute(
+            _INSERT_STAGED_EVENTS,
+            {
+                "id": ids,
+                "ingested_at": ingested_at,
+                "timestamp": timestamps,
+                "name": names,
+                "source": sources,
+                "organization_id": organization_ids,
+                "customer_id": customer_ids,
+                "external_customer_id": external_customer_ids,
+                "member_id": member_ids,
+                "external_member_id": external_member_ids,
+                "external_id": event_external_ids,
+                "pending_parent_external_id": pending_parent_external_ids,
+                "event_type_id": event_type_ids,
+                "user_metadata": user_metadata,
+            },
         )
-        result = await self.session.execute(statement, events)
         inserted = result.all()
 
         # Drop the inserted rows whose external ID is already in `events`: the
         # unique index only catches duplicates still in `staged_events`. This is
         # its own statement after the insert because an insert racing the mover
         # on the same external ID waits for the mover to commit, and only a
-        # snapshot taken after that wait sees the moved row in `events`.
-        external_ids_by_organization: dict[UUID, list[str]] = {}
-        for _, organization_id, external_id in inserted:
-            if external_id is not None:
-                external_ids_by_organization.setdefault(organization_id, []).append(
-                    external_id
-                )
-        duplicate_ids: list[UUID] = []
-        for organization_id, external_ids in external_ids_by_organization.items():
+        # snapshot taken after that wait sees the moved row in `events`. Only
+        # this insert's own rows are checked, so the mover never blocks it.
+        ids_with_external_id = [
+            id for id, _, external_id in inserted if external_id is not None
+        ]
+        duplicate_id_set: set[UUID] = set()
+        if ids_with_external_id:
             moved = await self.session.execute(
-                delete(StagedEvent)
-                .where(
-                    StagedEvent.organization_id == organization_id,
-                    StagedEvent.external_id.in_(
-                        select(Event.external_id).where(
-                            Event.organization_id == organization_id,
-                            Event.external_id.in_(external_ids),
-                        )
-                    ),
-                )
-                .returning(StagedEvent.id)
+                _DELETE_STAGED_EVENTS_ALREADY_IN_EVENTS, {"ids": ids_with_external_id}
             )
-            duplicate_ids.extend(moved.scalars())
-
-        duplicate_id_set = set(duplicate_ids)
+            duplicate_id_set = set(moved.scalars())
         inserted_ids = [id for id, _, _ in inserted if id not in duplicate_id_set]
         return inserted_ids, len(events) - len(inserted_ids)
 
@@ -203,11 +294,11 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             select(StagedEvent.id)
             .limit(limit)
             .with_for_update(skip_locked=True)
-            .scalar_subquery()
+            .cte("claimed")
         )
         moved = (
             delete(StagedEvent)
-            .where(StagedEvent.id.in_(claimed))
+            .where(StagedEvent.id.in_(select(claimed.c.id)))
             .returning(*StagedEvent.__table__.columns)
             .cte("moved")
         )
@@ -266,29 +357,46 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         if not inserted_ids:
             return []
 
+        # By primary key: a filter on pending refs would make the planner scan
+        # every pending row of ix_events_org_pending_parent instead.
+        batch_rows = (
+            await self.session.execute(
+                select(
+                    Event.id, Event.external_id, Event.pending_parent_external_id
+                ).where(Event.id.in_(inserted_ids))
+            )
+        ).all()
+        pending_refs: set[str] = set()
+        batch_external_ids: set[str] = set()
+        for _, external_id, pending_ref in batch_rows:
+            if pending_ref is not None:
+                pending_refs.add(pending_ref)
+            if external_id is not None:
+                batch_external_ids.add(external_id)
+
         # parent_1a, parent_1b, parent_1c, parent_1d
         # are all four ways we can resolve pending_parent_id to parent_id
         # (pointing to a internal event ID).
-        parent_1a = Event.__table__.alias("parent_1a")
-        await self.session.execute(
-            update(Event)
-            .values(parent_id=parent_1a.c.id, pending_parent_external_id=None)
-            .where(
-                Event.organization_id == parent_1a.c.organization_id,
-                Event.pending_parent_external_id == parent_1a.c.external_id,
-                Event.id.in_(inserted_ids),
-                Event.id != parent_1a.c.id,
+        if pending_refs:
+            parent_1a = Event.__table__.alias("parent_1a")
+            await self.session.execute(
+                update(Event)
+                .values(parent_id=parent_1a.c.id, pending_parent_external_id=None)
+                .where(
+                    Event.organization_id == parent_1a.c.organization_id,
+                    Event.pending_parent_external_id == parent_1a.c.external_id,
+                    Event.id.in_(inserted_ids),
+                    Event.id != parent_1a.c.id,
+                    # Implied by the join; makes the planner probe
+                    # ix_events_org_pending_parent instead of scanning it
+                    Event.pending_parent_external_id.in_(pending_refs),
+                )
             )
-        )
 
-        batch_pending_rows = await self.session.execute(
-            select(Event.id, Event.pending_parent_external_id).where(
-                Event.id.in_(inserted_ids),
-                Event.pending_parent_external_id.is_not(None),
-            )
-        )
         uuid_pending_in_batch: list[UUID] = []
-        for event_id, pending_ref in batch_pending_rows.all():
+        for event_id, _, pending_ref in batch_rows:
+            if pending_ref is None or pending_ref.lower().startswith("urn:uuid:"):
+                continue
             try:
                 UUID(pending_ref)
             except ValueError, TypeError:
@@ -308,18 +416,22 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 )
             )
 
-        parent_1c = Event.__table__.alias("parent_1c")
-        await self.session.execute(
-            update(Event)
-            .values(parent_id=parent_1c.c.id, pending_parent_external_id=None)
-            .where(
-                Event.organization_id == parent_1c.c.organization_id,
-                Event.pending_parent_external_id.is_not(None),
-                Event.pending_parent_external_id == parent_1c.c.external_id,
-                parent_1c.c.id.in_(inserted_ids),
-                Event.id != parent_1c.c.id,
+        if batch_external_ids:
+            parent_1c = Event.__table__.alias("parent_1c")
+            await self.session.execute(
+                update(Event)
+                .values(parent_id=parent_1c.c.id, pending_parent_external_id=None)
+                .where(
+                    Event.organization_id == parent_1c.c.organization_id,
+                    Event.pending_parent_external_id.is_not(None),
+                    Event.pending_parent_external_id == parent_1c.c.external_id,
+                    parent_1c.c.id.in_(inserted_ids),
+                    Event.id != parent_1c.c.id,
+                    # Implied by the join; makes the planner probe
+                    # ix_events_org_pending_parent instead of scanning it
+                    Event.pending_parent_external_id.in_(batch_external_ids),
+                )
             )
-        )
 
         # Pending refs are matched against the canonical lowercase string of
         # batch ids; non-canonical (e.g. uppercase) refs won't link here, but
@@ -372,18 +484,26 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         organization_id: UUID,
         external_ids: Sequence[str],
         *,
-        timestamp_from: datetime,
-        timestamp_to: datetime,
+        bucket_start: datetime,
+        bucket_end: datetime,
+        synced_end: datetime | None,
     ) -> set[str]:
-        """The given external ids of events with a timestamp in the range, stored
-        or still staged."""
+        """The given external ids of events, stored or still staged, with a timestamp
+        in the bucket, either before `synced_end` or ingested after the bucket
+        closed."""
         statement = union_all(
             *(
-                select(model.external_id).where(
+                select(NotNullable(model.external_id)).where(
                     model.organization_id == organization_id,
                     model.external_id.in_(external_ids),
-                    model.timestamp >= timestamp_from,
-                    model.timestamp < timestamp_to,
+                    model.timestamp >= bucket_start,
+                    model.timestamp < bucket_end,
+                    or_(
+                        model.timestamp < synced_end
+                        if synced_end is not None
+                        else false(),
+                        model.ingested_at >= bucket_end,
+                    ),
                 )
                 for model in (Event, StagedEvent)
             )
@@ -401,6 +521,64 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
 
+    def get_meter_resets_statement(
+        self, customer: Customer, meter_id: UUID
+    ) -> Select[Event]:
+        return self.get_base_statement().where(
+            _is_meter_reset(customer.organization_id, customer.id, str(meter_id))
+        )
+
+    def get_latest_meter_reset_timestamp_statement(
+        self,
+        organization_id: ColumnElement[UUID],
+        customer_id: ColumnElement[UUID],
+        meter_id: ColumnElement[UUID],
+    ) -> ScalarSelect[datetime]:
+        return (
+            select(func.max(Event.timestamp))
+            .where(
+                _is_meter_reset(organization_id, customer_id, cast(meter_id, String))
+            )
+            .scalar_subquery()
+        )
+
+    async def get_latest_meter_reset_timestamps(
+        self,
+        organization_id: UUID,
+        customer_ids: Collection[UUID],
+        reducer_ids: Collection[UUID],
+    ) -> dict[tuple[UUID, UUID], datetime]:
+        """The timestamp of each customer's latest reset of a meter of each reducer,
+        by reducer id and customer id."""
+        if not customer_ids:
+            return {}
+        statement = (
+            select(
+                MeterReducer.reducer_id,
+                NotNullable(Event.customer_id),
+                func.max(Event.timestamp),
+            )
+            .select_from(Event)
+            .join(
+                MeterReducer,
+                cast(MeterReducer.meter_id, String)
+                == Event.user_metadata["meter_id"].as_string(),
+            )
+            .where(
+                Event.organization_id == organization_id,
+                Event.source == EventSource.system,
+                Event.name == SystemEvent.meter_reset,
+                Event.customer_id.in_(customer_ids),
+                MeterReducer.reducer_id.in_(reducer_ids),
+            )
+            .group_by(MeterReducer.reducer_id, Event.customer_id)
+        )
+        result = await self.session.execute(statement)
+        return {
+            (reducer_id, customer_id): timestamp
+            for reducer_id, customer_id, timestamp in result
+        }
+
     async def get_latest_meter_reset(
         self,
         customer: Customer,
@@ -409,20 +587,26 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         cutoff: datetime | None = None,
     ) -> Event | None:
         statement = (
-            self.get_base_statement()
-            .where(
-                Event.organization_id == customer.organization_id,
-                Event.customer_id == customer.id,
-                Event.source == EventSource.system,
-                Event.name == SystemEvent.meter_reset,
-                Event.user_metadata["meter_id"].as_string() == str(meter_id),
-            )
+            self.get_meter_resets_statement(customer, meter_id)
             .order_by(Event.timestamp.desc())
             .limit(1)
         )
         if cutoff is not None:
             statement = statement.where(Event.timestamp < cutoff)
         return await self.get_one_or_none(statement)
+
+    async def get_meter_credit_timestamps(
+        self, customer: Customer, meter_id: UUID, *, since: datetime | None
+    ) -> Sequence[datetime]:
+        statement = select(Event.timestamp).where(
+            Event.organization_id == customer.organization_id,
+            Event.customer_id == customer.id,
+            Event.is_meter_credit,
+            Event.user_metadata["meter_id"].as_string() == str(meter_id),
+        )
+        if since is not None:
+            statement = statement.where(Event.timestamp >= since)
+        return (await self.session.scalars(statement)).all()
 
     async def has_meter_reset_ingested_after(
         self, customer: Customer, meter_id: UUID, ingested_after: datetime
@@ -472,11 +656,13 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             ),
         )
 
-    def get_meter_clause(self, meter: Meter) -> ColumnExpressionArgument[bool]:
+    def get_meter_clause(
+        self, meter: Meter, model: type[Event | StagedEvent] = Event
+    ) -> ColumnExpressionArgument[bool]:
         return and_(
-            meter.filter.get_sql_clause(Event),
+            meter.filter.get_sql_clause(model),
             # Additional clauses to make sure we work on rows with the right type for aggregation
-            meter.aggregation.get_sql_clause(Event),
+            meter.aggregation.get_sql_clause(model),
         )
 
     def get_meter_system_clause(self, meter: Meter) -> ColumnExpressionArgument[bool]:
@@ -486,11 +672,96 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             Event.user_metadata["meter_id"].as_string() == str(meter.id),
         )
 
-    def get_meter_statement(self, meter: Meter) -> Select[tuple[Event]]:
+    def get_meter_statement(self, meter: Meter) -> Select[Event]:
         return self.get_base_statement().where(
             Event.organization_id == meter.organization_id,
             self.get_meter_clause(meter),
         )
+
+    def get_staged_meter_statement(
+        self,
+        customer: Customer,
+        meter: Meter,
+        meter_reset_event: Event | None = None,
+        cutoff: datetime | None = None,
+    ) -> Select[StagedEvent]:
+        statement = select(StagedEvent).where(
+            StagedEvent.organization_id == meter.organization_id,
+            StagedEvent.source == EventSource.user,
+            self.get_meter_clause(meter, StagedEvent),
+        )
+        if customer.external_id is not None:
+            statement = statement.where(
+                or_(
+                    StagedEvent.customer_id == customer.id,
+                    StagedEvent.external_customer_id == customer.external_id,
+                )
+            )
+        else:
+            statement = statement.where(StagedEvent.customer_id == customer.id)
+
+        if meter_reset_event is not None:
+            statement = statement.where(
+                StagedEvent.ingested_at
+                >= min(meter_reset_event.timestamp, meter_reset_event.ingested_at)
+            )
+
+        if cutoff is not None:
+            statement = statement.where(StagedEvent.timestamp < cutoff)
+
+        return statement
+
+    async def get_meters_matching_customers(
+        self,
+        event_ids: Sequence[UUID],
+        meters: Sequence[Meter],
+        customer_ids: Collection[UUID],
+        external_customer_ids: Collection[str],
+    ) -> dict[UUID, tuple[set[UUID], set[str]]]:
+        """Per meter, the customers and external customers of the events it matches."""
+        matches: dict[UUID, tuple[set[UUID], set[str]]] = {
+            meter.id: (set(), set()) for meter in meters
+        }
+        meters_by_organization: dict[UUID, list[Meter]] = {}
+        for meter in meters:
+            meters_by_organization.setdefault(meter.organization_id, []).append(meter)
+
+        for organization_id, organization_meters in meters_by_organization.items():
+            for chunk in batched(organization_meters, _METER_MATCH_CHUNK_SIZE):
+                clauses = [self.get_meter_clause(meter) for meter in chunk]
+                statement = (
+                    select(
+                        Event.customer_id,
+                        Event.external_customer_id,
+                        # Label each clause: identical constant clauses (`true()` or
+                        # `false()`) would otherwise be merged into a single column
+                        *(
+                            and_(clause).label(f"meter_{index}")
+                            for index, clause in enumerate(clauses)
+                        ),
+                    )
+                    .where(
+                        Event.id.in_(event_ids),
+                        Event.organization_id == organization_id,
+                        or_(
+                            Event.customer_id.in_(customer_ids),
+                            Event.external_customer_id.in_(external_customer_ids),
+                        ),
+                        or_(*clauses),
+                    )
+                    .distinct()
+                )
+                for row in await self.session.execute(statement):
+                    customer_id, external_customer_id = row[0], row[1]
+                    for index, meter in enumerate(chunk, start=2):
+                        if not row[index]:
+                            continue
+                        matched_customer_ids, matched_external_ids = matches[meter.id]
+                        if customer_id is not None:
+                            matched_customer_ids.add(customer_id)
+                        if external_customer_id is not None:
+                            matched_external_ids.add(external_customer_id)
+        return matches
 
     async def get_meter_billing_page(
         self,
@@ -584,7 +855,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         price: UUID,
         *,
         cutoff: datetime,
-    ) -> Select[tuple[Event]]:
+    ) -> Select[Event]:
         statement = (
             self.get_base_statement()
             .join(BillingEntry, Event.id == BillingEntry.event_id)
@@ -655,32 +926,107 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         meter: UUID,
         *,
         cutoff: datetime,
-    ) -> Select[tuple[Event]]:
+    ) -> Select[Event]:
         """
         Get events for pending billing entries grouped by meter.
         Used for non-summable aggregations where we need to compute across all events
         in the period, regardless of which price was active when the event occurred.
         """
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         statement = (
             self.get_base_statement()
             .join(BillingEntry, Event.id == BillingEntry.event_id)
             .join(
-                ProductPrice,
-                BillingEntry.product_price_id == ProductPrice.id,
+                price,
+                BillingEntry.product_price_id == price.id,
             )
             .where(
-                ProductPrice.is_metered,
+                price.is_metered,
                 BillingEntry.subscription_id == subscription,
                 BillingEntry.deleted_at.is_(None),
                 BillingEntry.order_item_id.is_(None),
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id == meter,
+                price.ProductPriceMeteredUnit.meter_id == meter,
                 BillingEntry.start_timestamp < cutoff,
                 BillingEntry.created_at <= cutoff,
             )
             .order_by(Event.ingested_at.asc())
         )
         return statement
+
+    def get_by_pending_meter_entries_statement(
+        self, subscription: UUID, meter: UUID
+    ) -> Select[Event]:
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
+        return (
+            self.get_base_statement()
+            .join(BillingEntry, Event.id == BillingEntry.event_id)
+            .join(price, BillingEntry.product_price_id == price.id)
+            .where(
+                price.is_metered,
+                BillingEntry.subscription_id == subscription,
+                BillingEntry.deleted_at.is_(None),
+                BillingEntry.order_item_id.is_(None),
+                price.ProductPriceMeteredUnit.meter_id == meter,
+                Event.source == EventSource.user,
+            )
+        )
+
+    def get_by_order_item_entries_statement(
+        self, order_item_ids: Sequence[UUID]
+    ) -> Select[Event]:
+        return (
+            self.get_base_statement()
+            .join(BillingEntry, Event.id == BillingEntry.event_id)
+            .where(
+                BillingEntry.order_item_id.in_(order_item_ids),
+                Event.source == EventSource.user,
+            )
+        )
+
+    async def get_order_item_entries_identities(
+        self, order_item_ids: Sequence[UUID]
+    ) -> Sequence[tuple[UUID | None, str | None]]:
+        statement = (
+            self.get_by_order_item_entries_statement(order_item_ids)
+            .with_only_columns(Event.customer_id, Event.external_customer_id)
+            .distinct()
+        )
+        result = await self.session.execute(statement)
+        return [(row[0], row[1]) for row in result]
+
+    async def get_pending_meter_credits(
+        self,
+        subscription: UUID,
+        meter: UUID,
+        *,
+        since: datetime | None,
+        until: datetime,
+    ) -> Sequence[Event]:
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
+        statement = (
+            self.get_base_statement()
+            .join(BillingEntry, Event.id == BillingEntry.event_id)
+            .join(price, BillingEntry.product_price_id == price.id)
+            .where(
+                price.is_metered,
+                BillingEntry.subscription_id == subscription,
+                BillingEntry.deleted_at.is_(None),
+                BillingEntry.order_item_id.is_(None),
+                price.ProductPriceMeteredUnit.meter_id == meter,
+                BillingEntry.start_timestamp < until,
+                Event.source == EventSource.system,
+                Event.name == SystemEvent.meter_credited,
+            )
+        )
+        if since is not None:
+            statement = statement.where(BillingEntry.start_timestamp >= since)
+        return await self.get_all(statement)
 
     def get_eager_options(self) -> Options:
         return (joinedload(Event.customer), joinedload(Event.event_types))
@@ -796,7 +1142,9 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         start_timestamp: datetime,
         end_timestamp: datetime,
         interval: TimeInterval,
+        timezone: ZoneInfo,
     ) -> list[datetime]:
+        await self.session.execute(text(f"SET LOCAL TIME ZONE '{timezone.key}'"))
         cte = get_timestamp_series_cte(start_timestamp, end_timestamp, interval)
         result = await self.session.execute(select(cte.c.timestamp))
         return [row[0] for row in result.all()]

@@ -1,20 +1,27 @@
 from datetime import datetime
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Path
-from pydantic import UUID4, Field, field_validator
+from pydantic import MISSING, UUID4, Field, field_validator
 
-from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.customer.schemas.customer import CustomerID
+from polar.kit.schemas import IDSchema, MultipleQueryFilter, Schema, TimestampedSchema
+from polar.kit.versioning import Omissible, QuerySchema
 from polar.models.event import EventSource
+from polar.organization.schemas import OrganizationID
 
 
 class EventTypeUpdate(Schema):
     label: str = Field(
         ..., description="The label for the event type.", min_length=1, max_length=128
     )
-    label_property_selector: str | None = Field(
-        None,
-        description="Property path to extract dynamic label from event metadata (e.g., 'subject' or 'metadata.subject').",
+    label_property_selector: Omissible[str | None] = Field(
+        MISSING,
+        description=(
+            "Property path to extract a dynamic label from event metadata "
+            "(e.g., 'subject' or 'metadata.subject'). Set to `null` to clear it."
+        ),
         min_length=1,
         max_length=256,
     )
@@ -29,12 +36,10 @@ class EventTypeUpdate(Schema):
 
     @field_validator("label_property_selector")
     @classmethod
-    def strip_and_validate_label_property_selector(cls, v: str | None) -> str | None:
-        if v is not None:
-            v = v.strip()
-            if not v:
-                return None
-        return v
+    def strip_and_validate_label_property_selector(
+        cls, v: str | None | MISSING
+    ) -> str | None | MISSING:
+        return (v.strip() or None) if isinstance(v, str) else v
 
 
 class EventType(IDSchema, TimestampedSchema):
@@ -80,3 +85,37 @@ class EventTypeWithStats(Schema):
 
 
 EventTypeID = Annotated[UUID4, Path(description="The event type ID.")]
+
+
+class EventTypeListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    external_customer_id: MultipleQueryFilter[str] | None = Field(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by external customer ID.",
+    )
+    query: str | None = Field(
+        None,
+        title="Query",
+        description="Query to filter event types by name or label.",
+    )
+    root_events: bool = Field(
+        False,
+        title="Root Events Filter",
+        description="When true, only return event types with root events (parent_id IS NULL).",
+    )
+    parent_id: UUID | None = Field(
+        None,
+        title="ParentID Filter",
+        description="Filter by specific parent event ID.",
+    )
+    source: EventSource | None = Field(
+        None,
+        title="EventSource Filter",
+        description="Filter by event source (system or user).",
+    )

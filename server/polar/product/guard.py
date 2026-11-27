@@ -1,7 +1,9 @@
 import typing
+from collections.abc import Sequence
 from typing import TypeIs
 
 from polar.enums import SubscriptionRecurringInterval
+from polar.models.discount import Discount, DiscountDuration, DiscountPercentage
 from polar.models.product import Product
 from polar.models.product_price import (
     ProductPrice,
@@ -62,6 +64,24 @@ def is_seat_price(price: ProductPrice) -> TypeIs[SeatPrice]:
 
 def is_unit_price(price: ProductPrice) -> TypeIs[UnitPrice]:
     return isinstance(price, ProductPriceUnit)
+
+
+def has_future_charges(
+    prices: Sequence[ProductPrice], amount: int, discount: Discount | None
+) -> bool:
+    """Whether recurring prices can charge on a later cycle.
+
+    `amount` is the static amount before discount. Only pay-what-you-want at `0`
+    stays free: metered usage, or seats and units added beyond a free first tier,
+    can still charge later.
+    """
+    if amount == 0 and all(is_custom_price(price) or price.is_free for price in prices):
+        return False
+    return not (
+        isinstance(discount, DiscountPercentage)
+        and discount.duration == DiscountDuration.forever
+        and discount.basis_points == 10_000
+    )
 
 
 def is_discount_applicable(

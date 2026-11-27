@@ -1,19 +1,26 @@
 from unittest.mock import MagicMock
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.customer_email_update.service import TOKEN_PREFIX
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.crypto import generate_token_hash_pair
+from polar.kit.versioning import APIVersion
 from polar.models import Customer, Organization, Product
 from polar.models.customer_email_verification import CustomerEmailVerification
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import TaxIDFormat
-from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT, MEMBER_AUTH_SUBJECT
+from polar.version import V2026_04, V2026_10, V2027_01
+from tests.fixtures.auth import (
+    CUSTOMER_AUTH_SUBJECT,
+    MEMBER_AUTH_SUBJECT,
+    MEMBER_BILLING_MANAGER_AUTH_SUBJECT,
+    MEMBER_OWNER_AUTH_SUBJECT,
+)
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -21,6 +28,26 @@ from tests.fixtures.random_objects import (
     create_payment_method,
     create_subscription,
 )
+
+
+@pytest.mark.anyio
+class TestExport:
+    @pytest.mark.auth(MEMBER_AUTH_SUBJECT)
+    async def test_regular_member_forbidden(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/customer-portal/customers/me/export")
+        assert response.status_code == 403
+
+    @pytest.mark.auth(
+        CUSTOMER_AUTH_SUBJECT,
+        MEMBER_OWNER_AUTH_SUBJECT,
+        MEMBER_BILLING_MANAGER_AUTH_SUBJECT,
+    )
+    async def test_billing_access(
+        self, client: AsyncClient, customer: Customer
+    ) -> None:
+        response = await client.get("/v1/customer-portal/customers/me/export")
+        assert response.status_code == 200
+        assert response.json()["customer"]["id"] == str(customer.id)
 
 
 @pytest.mark.anyio
@@ -356,15 +383,17 @@ class TestUpdateDefaultPaymentMethod:
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     @pytest.mark.keep_session_state
-    async def test_null_default_payment_method_id_rejected(
+    @pytest.mark.api_version(V2026_04, V2026_10, V2027_01)
+    async def test_null_default_payment_method_id(
         self,
         client: AsyncClient,
+        api_version: APIVersion,
     ) -> None:
         response = await client.patch(
             "/v1/customer-portal/customers/me",
             json={"default_payment_method_id": None},
         )
-        assert response.status_code == 422
+        assert response.status_code == (422 if api_version == V2027_01 else 200)
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     @pytest.mark.keep_session_state
@@ -392,9 +421,7 @@ class TestUpdateDefaultPaymentMethod:
 
         stripe_service_mock.update_customer.assert_awaited_once()
         call_kwargs = stripe_service_mock.update_customer.await_args.kwargs
-        assert call_kwargs["invoice_settings"] == {
-            "default_payment_method": payment_method.processor_id,
-        }
+        assert "invoice_settings" not in call_kwargs
 
 
 @pytest.mark.anyio

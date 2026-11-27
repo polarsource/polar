@@ -1,6 +1,5 @@
 'use client'
 
-import { useAuth } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -41,7 +40,6 @@ function SubmitButton({ loading }: { loading: boolean }) {
 
 export function SandboxStep() {
   const router = useRouter()
-  const { reloadUser } = useAuth()
   const { clearData } = useOnboardingData()
   const createOrganization = useCreateOrganization()
   const [submitting, setSubmitting] = useState(false)
@@ -89,7 +87,6 @@ export function SandboxStep() {
       return
     }
 
-    await reloadUser()
     router.push(`/dashboard/${org.slug}`)
     clearData()
   }

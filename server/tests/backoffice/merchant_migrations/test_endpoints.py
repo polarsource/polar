@@ -2,11 +2,11 @@ import re
 from collections.abc import AsyncGenerator
 from datetime import timedelta
 
-import httpx
+import httpx2
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.backoffice import app as backoffice_app
+from polar.backoffice.app import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.kit.utils import utc_now
 from polar.merchant_migration import pan_transfer
@@ -27,13 +27,13 @@ from polar.merchant_migration.pan_transfer import (
     PanTransferStep,
 )
 from polar.merchant_migration.repository import MerchantMigrationRecordRepository
-from polar.models import MerchantMigration, Organization, User
+from polar.models import MerchantMigration, Organization
+from polar.models.backoffice_user_session import BackofficeUserSession
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
 from polar.models.merchant_migration_record import MerchantMigrationRecordStatus
-from polar.models.user_session import UserSession
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.redis import Redis, get_redis
 from tests.fixtures.database import SaveFixture
@@ -42,16 +42,15 @@ from tests.merchant_migration._helpers import pan_step_required_inputs
 
 @pytest.fixture
 async def backoffice_client(
-    session: AsyncSession, user: User, redis: Redis
-) -> AsyncGenerator[httpx.AsyncClient]:
-    user_session = UserSession(token="0" * 64, user_agent="tests", user=user)
+    session: AsyncSession, backoffice_user_session: BackofficeUserSession, redis: Redis
+) -> AsyncGenerator[httpx2.AsyncClient]:
     backoffice_app.dependency_overrides[get_db_session] = lambda: session
     backoffice_app.dependency_overrides[get_db_read_session] = lambda: session
-    backoffice_app.dependency_overrides[get_admin] = lambda: user_session
+    backoffice_app.dependency_overrides[get_admin] = lambda: backoffice_user_session
     backoffice_app.dependency_overrides[get_redis] = lambda: redis
     try:
-        async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=backoffice_app),
+        async with httpx2.AsyncClient(
+            transport=httpx2.ASGITransport(app=backoffice_app),
             base_url="http://test",
         ) as client:
             yield client
@@ -102,8 +101,8 @@ def _advance_to(key: str) -> list[PanTransferStep]:
 
 
 async def _post_action(
-    client: httpx.AsyncClient, url: str, data: dict[str, str] | None = None
-) -> httpx.Response:
+    client: httpx2.AsyncClient, url: str, data: dict[str, str] | None = None
+) -> httpx2.Response:
     """POST the way htmx does, and assert the browser is sent back to the detail
     page — without the `HX-Redirect` header the operator keeps staring at the
     pre-action page."""
@@ -129,7 +128,7 @@ async def _reload(session: AsyncSession, migration: MerchantMigration) -> None:
 class TestList:
     async def test_lists_a_migration_with_its_organization(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -142,7 +141,7 @@ class TestList:
 
     async def test_needs_ops_view_hides_a_migration_waiting_on_the_merchant(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -162,7 +161,7 @@ class TestList:
 
     async def test_needs_ops_view_shows_an_ops_owned_step(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -183,7 +182,7 @@ class TestList:
 
     async def test_completed_view_excludes_running_migrations(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -196,14 +195,14 @@ class TestList:
         assert response.status_code == 200
         assert "No migrations in this view." in response.text
 
-    async def test_completed_view_includes_cleanup(
+    async def test_completed_view_lists_finished_migrations(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         await _create_migration(
-            save_fixture, organization, step=MerchantMigrationStep.cleanup
+            save_fixture, organization, step=MerchantMigrationStep.completed
         )
 
         response = await backoffice_client.get(
@@ -212,19 +211,19 @@ class TestList:
 
         assert response.status_code == 200
         assert organization.name in response.text
-        assert "Step 7 of 7" in response.text
+        assert "Step 6 of 6" in response.text
         assert "Done" in response.text
         assert "No migrations in this view." not in response.text
         assert "close the migration out" not in response.text
 
-    async def test_active_view_excludes_cleanup(
+    async def test_active_view_excludes_finished(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         await _create_migration(
-            save_fixture, organization, step=MerchantMigrationStep.cleanup
+            save_fixture, organization, step=MerchantMigrationStep.completed
         )
 
         response = await backoffice_client.get(
@@ -234,14 +233,14 @@ class TestList:
         assert response.status_code == 200
         assert "No migrations in this view." in response.text
 
-    async def test_needs_ops_view_excludes_cleanup(
+    async def test_needs_ops_view_excludes_finished(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         await _create_migration(
-            save_fixture, organization, step=MerchantMigrationStep.cleanup
+            save_fixture, organization, step=MerchantMigrationStep.completed
         )
 
         response = await backoffice_client.get(
@@ -315,7 +314,7 @@ class TestMrr:
     async def test_list_shows_the_monthly_total(
         self,
         session: AsyncSession,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -339,7 +338,7 @@ class TestMrr:
     async def test_detail_splits_moved_from_still_to_move(
         self,
         session: AsyncSession,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -362,7 +361,7 @@ class TestMrr:
 
     async def test_a_migration_with_no_subscriptions_says_so(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -380,7 +379,7 @@ class TestMrr:
 class TestDetail:
     async def test_shows_the_checklist_and_the_ops_action(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -400,7 +399,7 @@ class TestDetail:
 
     async def test_says_the_card_transfer_has_not_started(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -416,7 +415,7 @@ class TestDetail:
     async def test_lists_failed_records_with_their_error(
         self,
         session: AsyncSession,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -447,7 +446,7 @@ class TestDetail:
 
     async def test_links_the_organization_slug_to_the_organization_page(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -463,7 +462,7 @@ class TestDetail:
         )
 
     async def test_unknown_migration_is_not_found(
-        self, backoffice_client: httpx.AsyncClient
+        self, backoffice_client: httpx2.AsyncClient
     ) -> None:
         response = await backoffice_client.get(
             f"/merchant-migrations/{MerchantMigration.generate_id()}"
@@ -471,14 +470,14 @@ class TestDetail:
 
         assert response.status_code == 404
 
-    async def test_cleanup_detail_reads_as_completed(
+    async def test_completed_detail_reads_as_done(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         migration = await _create_migration(
-            save_fixture, organization, step=MerchantMigrationStep.cleanup
+            save_fixture, organization, step=MerchantMigrationStep.completed
         )
 
         response = await backoffice_client.get(f"/merchant-migrations/{migration.id}")
@@ -492,11 +491,34 @@ class TestDetail:
 
 
 @pytest.mark.anyio
+class TestClose:
+    async def test_queues_the_close(
+        self,
+        mocker: MockerFixture,
+        backoffice_client: httpx2.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        enqueue_job = mocker.patch(
+            "polar.backoffice.merchant_migrations.endpoints.enqueue_job"
+        )
+        migration = await _create_migration(save_fixture, organization)
+
+        await _post_action(
+            backoffice_client, f"/merchant-migrations/{migration.id}/close"
+        )
+
+        enqueue_job.assert_called_once_with(
+            "merchant_migration.close", merchant_migration_id=migration.id
+        )
+
+
+@pytest.mark.anyio
 class TestCompleteStep:
     async def test_completes_an_ops_owned_step(
         self,
         session: AsyncSession,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -527,7 +549,7 @@ class TestCompleteStep:
     async def test_stores_the_inputs_the_step_collects(
         self,
         session: AsyncSession,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -552,7 +574,7 @@ class TestCompleteStep:
 
     async def test_warns_when_completing_on_the_merchants_behalf(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -573,7 +595,7 @@ class TestCompleteStep:
     async def test_a_step_that_is_not_current_is_refused(
         self,
         session: AsyncSession,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -600,7 +622,7 @@ class TestCompleteStep:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -641,7 +663,7 @@ class TestCompleteStep:
 
     async def test_unknown_step_is_not_found(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -664,7 +686,7 @@ class TestAnnotateStep:
     async def test_saves_the_note_and_the_expected_date(
         self,
         session: AsyncSession,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -697,7 +719,7 @@ class TestAnnotateStep:
     async def test_an_empty_note_clears_the_previous_one(
         self,
         session: AsyncSession,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -726,7 +748,7 @@ class TestAnnotateStep:
     async def test_clearing_the_date_drops_the_eta(
         self,
         session: AsyncSession,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -757,7 +779,7 @@ class TestAnnotateStep:
     async def test_marking_an_already_running_step_in_progress_is_a_no_op(
         self,
         session: AsyncSession,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -786,7 +808,7 @@ class TestAnnotateStep:
 
     async def test_prefills_the_form_from_the_stored_step(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:

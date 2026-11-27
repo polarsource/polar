@@ -34,10 +34,13 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+import shared
 from logo import print_banner
 from shared import (
     CLIENTS_DIR,
+    ROOT_DIR,
     SERVER_DIR,
+    CommandGroup,
     Context,
     check_env_file_exists,
     check_node_modules_exists,
@@ -48,6 +51,7 @@ from shared import (
 
 app = typer.Typer(
     name="dev",
+    cls=CommandGroup,
     help="Polar Development CLI - streamline your dev environment",
     no_args_is_help=True,
     context_settings={"help_option_names": ["-h", "--help"]},
@@ -144,7 +148,13 @@ def register_commands() -> None:
             module.register(app, prompt_setup_if_needed)
 
 
-def _track_up_step(step: str, started_at: float, success: bool, clean: bool) -> None:
+def _track_up_step(
+    step: str,
+    started_at: float,
+    success: bool,
+    clean: bool,
+    failure_reason: str | None,
+) -> None:
     try:
         import analytics
 
@@ -154,6 +164,7 @@ def _track_up_step(step: str, started_at: float, success: bool, clean: bool) -> 
             duration_ms=round((time.monotonic() - started_at) * 1000),
             success=success,
             clean=clean,
+            failure_reason=failure_reason,
         )
     except Exception:
         pass
@@ -195,11 +206,21 @@ def up(
     for i, (name, module) in enumerate(steps, 1):
         console.print(f"[bold blue][{i}/{total}][/bold blue] [bold]{name}[/bold]")
         step_started_at = time.monotonic()
+        shared.last_command_interrupted = False
         success = module.run(ctx)
-        _track_up_step(module.__name__, step_started_at, success, clean)
+        failure_reason = None
+        if not success:
+            failure_reason = (
+                "interrupted"
+                if shared.last_command_interrupted
+                else ctx.failure_reason or "unknown"
+            )
+        _track_up_step(
+            module.__name__, step_started_at, success, clean, failure_reason
+        )
         if not success:
             console.print(f"\n[red]Setup failed at step {i}/{total}: {name}[/red]")
-            console.print("Fix the issue above and run [bold]dev up[/bold] again. Finished steps are skipped.")
+            console.print("Fix the issue above and run [bold]dev up[/bold] again.")
             raise typer.Exit(1)
         console.print()
 
@@ -379,6 +400,11 @@ def _exit_code(code: object) -> int:
 
 
 if __name__ == "__main__":
+    if sys.argv[1:2] != ["polar"] and not Path.cwd().is_relative_to(ROOT_DIR):
+        console.print(
+            f"[red]Outside the Polar repo only dev polar works. Run other commands inside {ROOT_DIR}[/red]"
+        )
+        sys.exit(1)
     started_at = time.monotonic()
     try:
         import analytics

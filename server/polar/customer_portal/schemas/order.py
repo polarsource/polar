@@ -1,21 +1,24 @@
 from typing import Annotated
 
-from pydantic import UUID4, AliasChoices, AliasPath, Field, model_validator
+from pydantic import UUID4, AliasChoices, AliasPath, ConfigDict, Field, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.enums import PaymentProcessor
-from polar.kit.schemas import Schema
-from polar.kit.versioning import Version
+from polar.kit.schemas import MultipleQueryFilter, Schema, SetSchemaReference
+from polar.kit.versioning import QuerySchema, Version
+from polar.models.product import ProductBillingType
 from polar.order.schemas import OrderBase, OrderItemSchema, OrderUpdateBase
 from polar.product.schemas import (
     BenefitPublicList,
     ProductBase,
+    ProductID,
     ProductMediaList,
     ProductPrice,
     ProductPriceList,
 )
-from polar.subscription.schemas import SubscriptionBase
-from polar.version import V2026_10
+from polar.subscription.schemas import SubscriptionBase, SubscriptionID
+from polar.tax.tax_id import TaxID
+from polar.version import V2026_10, V2027_01
 
 from .organization import CustomerOrganization
 
@@ -31,6 +34,7 @@ class CustomerOrderSubscription(SubscriptionBase): ...
 
 
 class CustomerOrder(OrderBase):
+    tax_id: Annotated[TaxID | None, Version(starting_from=V2027_01)]
     user_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -57,6 +61,18 @@ class CustomerOrder(OrderBase):
     description: str = Field(
         description="A summary description of the order.", examples=["Pro Plan"]
     )
+    is_payment_required: Annotated[bool, Version(starting_from=V2027_01)] = Field(
+        description="Whether the order has a positive amount due after discounts, taxes, and applied balance."
+    )
+    is_payment_setup_required: Annotated[bool, Version(starting_from=V2027_01)] = Field(
+        description=(
+            "Whether a payment method must be set up for future subscription charges, "
+            "even if the order has no amount due."
+        )
+    )
+    payment_processor_metadata: Annotated[
+        dict[str, str], Version(starting_from=V2027_01)
+    ]
 
 
 class CustomerOrderInvoice(Schema):
@@ -71,8 +87,41 @@ class CustomerOrderReceipt(Schema):
     url: str = Field(..., description="The URL to the receipt PDF.")
 
 
+class CustomerOrderCreate(Schema):
+    subscription_id: SubscriptionID = Field(
+        description="ID of the subscription whose trial ended."
+    )
+
+
 class CustomerOrderUpdate(OrderUpdateBase):
     """Schema to update an order."""
+
+
+class CustomerOrderPayPaymentMethod(CustomerOrderUpdate):
+    model_config = ConfigDict(extra="forbid")
+
+    payment_method_id: UUID4
+
+
+class CustomerOrderPayConfirmationToken(CustomerOrderUpdate):
+    model_config = ConfigDict(extra="forbid")
+
+    payment_processor: PaymentProcessor
+    confirmation_token_id: str
+
+
+class CustomerOrderPayWithoutCredentials(CustomerOrderUpdate):
+    """Pay a zero-due order that needs no payment method for future charges."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
+CustomerOrderPay = Annotated[
+    CustomerOrderPayPaymentMethod
+    | CustomerOrderPayConfirmationToken
+    | CustomerOrderPayWithoutCredentials,
+    SetSchemaReference("CustomerOrderPay"),
+]
 
 
 class CustomerOrderPaymentStatus(Schema):
@@ -120,3 +169,25 @@ class CustomerOrderPaymentConfirmation(Schema):
         None, description="Client secret for handling additional actions."
     )
     error: str | None = Field(None, description="Error message if confirmation failed.")
+
+
+class CustomerPortalOrderListParams(QuerySchema):
+    product_id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    product_billing_type: MultipleQueryFilter[ProductBillingType] | None = Field(
+        None,
+        title="ProductBillingType Filter",
+        description=(
+            "Filter by product billing type. "
+            "`recurring` will filter data corresponding "
+            "to subscriptions creations or renewals. "
+            "`one_time` will filter data corresponding to one-time purchases."
+        ),
+    )
+    subscription_id: MultipleQueryFilter[SubscriptionID] | None = Field(
+        None, title="SubscriptionID Filter", description="Filter by subscription ID."
+    )
+    query: str | None = Field(
+        None, description="Search by product or organization name."
+    )

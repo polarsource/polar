@@ -38,8 +38,17 @@ from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.kit.schemas import Schema
 from polar.kit.visibility import Visibility
-from polar.models import Benefit, Organization, SlackApp, User, UserOrganization
+from polar.models import (
+    Benefit,
+    Catalog,
+    CatalogBenefit,
+    Organization,
+    SlackApp,
+    User,
+    UserOrganization,
+)
 from polar.models.benefit import BenefitType
+from polar.models.catalog import CatalogStatus
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
@@ -55,24 +64,21 @@ async def create_slack_integration(
         display_name="Test",
         slack_app_id="A0TESTAPPID",
         client_id="100.200",
-        client_secret="cs-test",
-        signing_secret="ss-test",
         team_id="T1",
         team_name="Test team",
         bot_user_id="U1",
-        bot_token="xoxb-test-token",
         authed_user_id="U2",
         scopes=["channels:manage"],
     )
     integration.id = SlackApp.generate_id()
     integration.client_secret_encrypted = await SlackApp.encrypt_client_secret(
-        integration.id, integration.client_secret
+        integration.id, "cs-test"
     )
     integration.signing_secret_encrypted = await SlackApp.encrypt_signing_secret(
-        integration.id, integration.signing_secret
+        integration.id, "ss-test"
     )
     integration.bot_token_encrypted = await SlackApp.encrypt_bot_token(
-        integration.id, integration.bot_token
+        integration.id, "xoxb-test-token"
     )
     await save_fixture(integration)
     return integration
@@ -190,6 +196,93 @@ class TestList:
         assert count == 1
         assert len(results) == 1
         assert results[0].id == benefit_organization.id
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_includes_previous_versions(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        previous = await create_benefit(
+            save_fixture, organization=organization, external_id="a", is_current=False
+        )
+        current = await create_benefit(
+            save_fixture, organization=organization, external_id="a"
+        )
+        session.expunge_all()
+
+        results, _ = await benefit_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
+        )
+
+        assert {benefit.id for benefit in results} == {previous.id, current.id}
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_catalog_filter(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        a1 = await create_benefit(
+            save_fixture, organization=organization, external_id="a", is_current=False
+        )
+        a2 = await create_benefit(
+            save_fixture, organization=organization, external_id="a"
+        )
+        a3 = await create_benefit(
+            save_fixture, organization=organization, external_id="a", is_current=False
+        )
+        b = await create_benefit(
+            save_fixture, organization=organization, external_id="b"
+        )
+        catalogs: dict[CatalogStatus, Catalog] = {}
+        for status, a in (
+            (CatalogStatus.archived, a1),
+            (CatalogStatus.live, a2),
+            (CatalogStatus.draft, a3),
+        ):
+            catalog = Catalog(organization=organization, status=status)
+            await save_fixture(catalog)
+            for benefit, external_id in ((a, "a"), (b, "b")):
+                await save_fixture(
+                    CatalogBenefit(
+                        catalog=catalog, benefit=benefit, external_id=external_id
+                    )
+                )
+            catalogs[status] = catalog
+        session.expunge_all()
+
+        async def ids(
+            catalog_id: list[uuid.UUID] | None = None,
+            catalog_status: list[CatalogStatus] | None = None,
+        ) -> set[uuid.UUID]:
+            results, _ = await benefit_service.list(
+                session,
+                auth_subject,
+                catalog_id=catalog_id,
+                catalog_status=catalog_status,
+                pagination=PaginationParams(1, 10),
+            )
+            return {benefit.id for benefit in results}
+
+        archived_id = catalogs[CatalogStatus.archived].id
+        draft_id = catalogs[CatalogStatus.draft].id
+        assert await ids() == {a1.id, a2.id, a3.id, b.id}
+        assert await ids(catalog_status=[CatalogStatus.live]) == {a2.id, b.id}
+        assert await ids(catalog_status=[CatalogStatus.draft]) == {a3.id, b.id}
+        assert await ids(catalog_status=[CatalogStatus.archived]) == {a1.id, b.id}
+        assert await ids(
+            catalog_status=[CatalogStatus.draft, CatalogStatus.archived]
+        ) == {a1.id, a3.id, b.id}
+        assert await ids(catalog_id=[archived_id]) == {a1.id, b.id}
+        assert await ids(catalog_id=[archived_id, draft_id]) == {a1.id, a3.id, b.id}
+        assert await ids(
+            catalog_id=[draft_id], catalog_status=[CatalogStatus.live]
+        ) == {b.id}
 
 
 @pytest.mark.anyio

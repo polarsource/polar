@@ -11,7 +11,9 @@ from sqlalchemy import select
 from polar.config import settings
 from polar.integrations.tinybird.client import TinybirdClient
 from polar.integrations.tinybird.service import _event_to_tinybird
-from polar.kit.db.postgres import create_async_engine as _create_async_engine
+from polar.kit.db.postgres import (  # lint-skip: dry-run
+    create_async_engine as _create_async_engine,
+)
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Event
 

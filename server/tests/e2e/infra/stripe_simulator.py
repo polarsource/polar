@@ -68,7 +68,7 @@ class StripeSimulator:
 
         self.mock.get_confirmation_token.return_value = SimpleNamespace(
             payment_method_preview=SimpleNamespace(
-                billing_details=SimpleNamespace(name=customer_name)
+                type="card", billing_details=SimpleNamespace(name=customer_name)
             ),
         )
         self.mock.create_customer.return_value = SimpleNamespace(

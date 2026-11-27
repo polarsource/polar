@@ -8,13 +8,14 @@ import {
 import { schemas } from '@polar-sh/client'
 import { Alert, Spinner, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ChevronLeft } from '@polar-sh/orbit/icons'
-import Link from 'next/link'
+import { BenefitsStep } from '../benefits/BenefitsStep'
+import { useBenefitsOnly } from '../benefitsOnly'
 import { PanTransferPanel } from '../cards/PanTransferPanel'
 import { ImportedStep } from '../ImportedStep'
 import { MigrationStepper } from '../MigrationStepper'
 import { PrecheckPanel } from '../PrecheckPanel'
 import { ReviewTable } from '../review/ReviewTable'
+import { SOURCE_LABELS, sourceAccountLabel } from '../sources'
 import {
   currentStepDef,
   MigrationStepDef,
@@ -22,84 +23,57 @@ import {
   visibleMigrationStep,
 } from '../steps'
 import { SwitchPanel } from '../switch/SwitchPanel'
-import { StripeMark } from '../StripeMark'
 
 interface Props {
-  organization: schemas['Organization']
   migrationId: string
 }
 
-export default function MigrationDetailPage({
-  organization,
-  migrationId,
-}: Props) {
+export default function MigrationDetailPage({ migrationId }: Props) {
   const {
     data: migration,
     isLoading,
     isError,
   } = useMerchantMigration(migrationId)
-  const basePath = `/dashboard/${organization.slug}/settings/migrations`
 
   return (
-    <DashboardBody title={null}>
-      <Box flexDirection="column" rowGap="l">
-        <Link href={basePath}>
-          <Box
-            alignItems="center"
-            columnGap="xs"
-            color={{ base: 'text-secondary', hover: 'text-primary' }}
-            cursor={{ hover: 'pointer' }}
-          >
-            <ChevronLeft size={14} />
-            <Text variant="caption" color="inherit">
-              All migrations
-            </Text>
-          </Box>
-        </Link>
-
-        {isLoading ? (
-          <Box padding="3xl" alignItems="center" justifyContent="center">
-            <Spinner />
-          </Box>
-        ) : isError ? (
-          <Alert
-            variant="danger"
-            title="We couldn't load this migration"
-            description="Something went wrong. Please refresh the page and try again."
-          />
-        ) : !migration ? (
-          <Text color="muted">This migration no longer exists.</Text>
-        ) : (
-          <MigrationLoaded migration={migration} />
-        )}
-      </Box>
+    <DashboardBody
+      title={migration ? SOURCE_LABELS[migration.source_platform] : 'Migration'}
+      header={migration ? <SourceMeta migration={migration} /> : undefined}
+    >
+      {isLoading ? (
+        <Box padding="3xl" alignItems="center" justifyContent="center">
+          <Spinner />
+        </Box>
+      ) : isError ? (
+        <Alert
+          variant="danger"
+          title="We couldn't load this migration"
+          description="Something went wrong. Please refresh the page and try again."
+        />
+      ) : !migration ? (
+        <Text color="muted">This migration no longer exists.</Text>
+      ) : (
+        <MigrationLoaded migration={migration} />
+      )}
     </DashboardBody>
   )
 }
 
-// The migration's source is the page's real subject, so it stands in for the
-// title — one line, no hero banner.
-function SourceHeader({
+function SourceMeta({
   migration,
 }: {
   migration: schemas['MerchantMigration']
 }) {
   const connected = migration.source_connected
-  const stripeUserId = migration.source?.stripe_user_id as string | undefined
+  const accountLabel = sourceAccountLabel(migration)
   const livemode = migration.source?.livemode as boolean | undefined
+  const connectedStatus =
+    livemode === undefined ? 'Connected' : livemode ? 'Live' : 'Test'
   return (
     <Box alignItems="center" columnGap="s">
-      <StripeMark size={26} />
-      <Text variant="heading-xs" as="h1">
-        Stripe
-      </Text>
-      {stripeUserId && (
-        <Text variant="caption" color="muted" monospace>
-          {stripeUserId}
-        </Text>
-      )}
+      {accountLabel && <Text color="muted">{accountLabel}</Text>}
       <Status
-        status={connected ? (livemode ? 'Live' : 'Test') : 'Not connected'}
+        status={connected ? connectedStatus : 'Not connected'}
         color="gray"
         size="small"
       />
@@ -115,28 +89,27 @@ function MigrationLoaded({
   const needsPan = migration.step === 'copy_cards'
   const pan = usePanTransfer(needsPan ? migration.id : '')
   const panCurrentStepKey = pan.data?.current_step_key ?? null
+  const benefitsOnly = useBenefitsOnly(migration)
 
-  if (needsPan && pan.isLoading) {
+  if ((needsPan && pan.isLoading) || benefitsOnly === null) {
     return (
-      <Box as="section" flexDirection="column" rowGap="xl">
-        <SourceHeader migration={migration} />
-        <Box padding="3xl" alignItems="center" justifyContent="center">
-          <Spinner />
-        </Box>
+      <Box padding="3xl" alignItems="center" justifyContent="center">
+        <Spinner />
       </Box>
     )
   }
 
   return (
-    <Box as="section" flexDirection="column" rowGap="xl">
-      <SourceHeader migration={migration} />
+    <Box as="section" flexDirection="column" rowGap="2xl">
       <MigrationStepper
         migration={migration}
         panCurrentStepKey={panCurrentStepKey}
+        benefitsOnly={benefitsOnly}
       />
       <StepContent
         migration={migration}
         panCurrentStepKey={panCurrentStepKey}
+        benefitsOnly={benefitsOnly}
       />
     </Box>
   )
@@ -145,18 +118,20 @@ function MigrationLoaded({
 function StepContent({
   migration,
   panCurrentStepKey,
+  benefitsOnly,
 }: {
   migration: schemas['MerchantMigration']
   panCurrentStepKey: string | null
+  benefitsOnly: boolean
 }) {
   if (!migration.source_connected) {
     return (
-      <Text variant="caption" color="muted">
-        Connect your Stripe account to start the migration.
+      <Text color="muted">
+        Connect your billing provider to start the migration.
       </Text>
     )
   }
-  const def = currentStepDef(migration, panCurrentStepKey)
+  const def = currentStepDef(migration, panCurrentStepKey, benefitsOnly)
   switch (visibleMigrationStep(migration, panCurrentStepKey)) {
     // The stepper shows a connected migration as assessing, but nothing is
     // staged until the first pre-check runs.
@@ -171,35 +146,68 @@ function StepContent({
       return <ReviewTable migrationId={migration.id} />
     // No `StepHeading`: the handoff panel is its own heading.
     case 'create_catalog':
-      return <ImportedStep migrationId={migration.id} />
+      if (migration.source_platform !== 'lemon_squeezy') {
+        return <ImportedStep migrationId={migration.id} />
+      }
+    // Lemon Squeezy sets benefits up before moving cards.
+    // falls through
+    case 'set_up_benefits':
+      return <BenefitsStep migration={migration} benefitsOnly={benefitsOnly} />
     case 'copy_cards':
       return (
         <Box flexDirection="column" rowGap="l">
           <StepHeading def={def} />
           <PanTransferPanel
             migrationId={migration.id}
+            source={migration.source_platform}
             sourceStripeAccountId={
               migration.source?.stripe_user_id as string | undefined
             }
           />
         </Box>
       )
-    // The switch runs here, and stays reachable at cleanup so the merchant can
-    // switch the ones an earlier run left on Stripe.
     case 'activate_subscriptions':
-    case 'cleanup':
       return (
         <Box flexDirection="column" rowGap="l">
-          {def && <StepHeading def={def} />}
+          <StepHeading def={def} />
           <SwitchPanel migrationId={migration.id} />
         </Box>
+      )
+    // Completing deleted the Stripe key, so the report stays but nothing can
+    // be switched again.
+    case 'completed':
+      if (benefitsOnly) {
+        return (
+          <Text color="muted">
+            This migration is complete. Your license keys, files and links are
+            on Polar, and Polar deleted your Lemon Squeezy API key. You can edit
+            them from Benefits.
+          </Text>
+        )
+      }
+      return (
+        <Box flexDirection="column" rowGap="l">
+          <Text variant="caption" color="muted">
+            This migration is complete, and Polar deleted your API key.
+            Subscriptions that didn&apos;t switch stay with your current
+            provider. To move them, start a new migration.
+          </Text>
+          <SwitchPanel migrationId={migration.id} readOnly />
+        </Box>
+      )
+    case 'closed':
+      return (
+        <Text variant="caption" color="muted">
+          This migration was closed after 90 days without activity. To move
+          subscriptions still with your current provider, start a new migration.
+        </Text>
       )
   }
 
   return (
     <Box flexDirection="column" rowGap="l">
       <StepHeading def={def} />
-      <Text variant="caption" color="muted">
+      <Text color="muted">
         {def === null
           ? 'This migration is complete.'
           : "This step is being rolled out. We'll keep this page up to date."}
@@ -216,14 +224,12 @@ function StepHeading({ def }: { def: MigrationStepDef | null }) {
   return (
     <Box flexDirection="column" rowGap="xs">
       <Box alignItems="center" columnGap="s">
-        <Text variant="heading-xs" as="h3">
+        <Text variant="title" as="h3">
           {def.title}
         </Text>
         {owner && <Status status={owner} color="gray" size="small" />}
       </Box>
-      <Text variant="caption" color="muted">
-        {def.description}
-      </Text>
+      <Text color="muted">{def.description}</Text>
     </Box>
   )
 }

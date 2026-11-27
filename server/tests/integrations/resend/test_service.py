@@ -1,8 +1,9 @@
 import json
+from unittest.mock import Mock
 from uuid import uuid4
 
+import httpx2
 import pytest
-import respx
 from pytest_mock import MockerFixture
 
 from polar.config import settings
@@ -23,12 +24,12 @@ class TestSyncUser:
         session: AsyncSession,
         user: User,
         mocker: MockerFixture,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
     ) -> None:
         mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", None)
         user = await resend_service.sync_user(session, user.id)
 
-        assert not respx_mock.calls
+        assert not any(mock.called for mock in http_mocks.values())
         assert user.resend_id is None
 
     @pytest.mark.usefixtures("user_organization")
@@ -38,21 +39,26 @@ class TestSyncUser:
         session: AsyncSession,
         user: User,
         mocker: MockerFixture,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         existing: bool,
     ) -> None:
         mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
         contact = {"id": "contact-id", "email": user.email, "unsubscribed": False}
-        lookup = respx_mock.get(path=f"/contacts/{user.email}").respond(
-            200 if existing else 404, json=contact if existing else None
+        lookup = http_mocks["GET", f"https://api.resend.com/contacts/{user.email}"] = (
+            Mock(
+                return_value=httpx2.Response(
+                    200 if existing else 404, json=contact if existing else None
+                )
+            )
         )
         if not existing:
-            create = respx_mock.post(path="/contacts").respond(
-                200, json={"id": "contact-id"}
+            create = http_mocks["POST", "https://api.resend.com/contacts"] = Mock(
+                return_value=httpx2.Response(200, json={"id": "contact-id"})
             )
-        segment = respx_mock.post(
-            path="/contacts/contact-id/segments/active-users"
-        ).respond(200)
+        segment = http_mocks[
+            "POST",
+            "https://api.resend.com/contacts/contact-id/segments/active-users",
+        ] = Mock(return_value=httpx2.Response(200))
 
         user = await resend_service.sync_user(session, user.id)
 
@@ -60,7 +66,7 @@ class TestSyncUser:
         assert lookup.call_count == 1
         assert segment.called
         if not existing:
-            assert json.loads(create.calls.last.request.content) == {
+            assert json.loads(create.call_args.args[0].content) == {
                 "email": user.email,
                 "unsubscribed": False,
             }
@@ -72,24 +78,27 @@ class TestSyncUser:
         session: AsyncSession,
         user: User,
         mocker: MockerFixture,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         email: str,
     ) -> None:
         mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
         user.email = "user@example.com"
         user.resend_id = "contact-id"
-        respx_mock.get(path="/contacts/contact-id").respond(
-            200, json={"id": "contact-id", "email": email, "unsubscribed": True}
+        http_mocks["GET", "https://api.resend.com/contacts/contact-id"] = Mock(
+            return_value=httpx2.Response(
+                200, json={"id": "contact-id", "email": email, "unsubscribed": True}
+            )
         )
-        segment = respx_mock.post(
-            path="/contacts/contact-id/segments/active-users"
-        ).respond(200)
+        segment = http_mocks[
+            "POST",
+            "https://api.resend.com/contacts/contact-id/segments/active-users",
+        ] = Mock(return_value=httpx2.Response(200))
 
         user = await resend_service.sync_user(session, user.id)
 
         assert user.resend_id == "contact-id"
         assert segment.called
-        assert len(respx_mock.calls) == 2
+        assert sum(mock.call_count for mock in http_mocks.values()) == 2
 
     @pytest.mark.usefixtures("user_organization")
     @pytest.mark.parametrize("linked", [False, True])
@@ -98,30 +107,43 @@ class TestSyncUser:
         session: AsyncSession,
         user: User,
         mocker: MockerFixture,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         linked: bool,
     ) -> None:
         mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
         previous_email = user.email
         user.email = "new@example.com"
         user.resend_id = "old-contact" if linked else None
-        respx_mock.get(path=f"/contacts/{previous_email}").respond(
-            200,
-            json={"id": "old-contact", "email": previous_email, "unsubscribed": True},
+        http_mocks["GET", f"https://api.resend.com/contacts/{previous_email}"] = Mock(
+            return_value=httpx2.Response(
+                200,
+                json={
+                    "id": "old-contact",
+                    "email": previous_email,
+                    "unsubscribed": True,
+                },
+            )
         )
-        respx_mock.get(path="/contacts/new@example.com").respond(404)
-        create = respx_mock.post(path="/contacts").respond(
-            200, json={"id": "new-contact"}
+        http_mocks["GET", "https://api.resend.com/contacts/new@example.com"] = Mock(
+            return_value=httpx2.Response(404)
         )
-        respx_mock.post(path="/contacts/new-contact/segments/active-users").respond(200)
-        delete = respx_mock.delete(path="/contacts/old-contact").respond(200)
+        create = http_mocks["POST", "https://api.resend.com/contacts"] = Mock(
+            return_value=httpx2.Response(200, json={"id": "new-contact"})
+        )
+        http_mocks[
+            "POST",
+            "https://api.resend.com/contacts/new-contact/segments/active-users",
+        ] = Mock(return_value=httpx2.Response(200))
+        delete = http_mocks["DELETE", "https://api.resend.com/contacts/old-contact"] = (
+            Mock(return_value=httpx2.Response(200))
+        )
 
         user = await resend_service.sync_user(
             session, user.id, previous_email=previous_email
         )
 
         assert user.resend_id == "new-contact"
-        assert json.loads(create.calls.last.request.content) == {
+        assert json.loads(create.call_args.args[0].content) == {
             "email": "new@example.com",
             "unsubscribed": True,
         }
@@ -134,7 +156,7 @@ class TestSyncUser:
         session: AsyncSession,
         user: User,
         mocker: MockerFixture,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         failure_stage: str,
     ) -> None:
         mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
@@ -142,18 +164,29 @@ class TestSyncUser:
         previous_email = user.email
         user.email = "new@example.com"
         user.resend_id = "old-contact"
-        respx_mock.get(path=f"/contacts/{previous_email}").respond(
-            200,
-            json={"id": "old-contact", "email": previous_email, "unsubscribed": True},
+        http_mocks["GET", f"https://api.resend.com/contacts/{previous_email}"] = Mock(
+            return_value=httpx2.Response(
+                200,
+                json={
+                    "id": "old-contact",
+                    "email": previous_email,
+                    "unsubscribed": True,
+                },
+            )
         )
-        respx_mock.get(path="/contacts/new@example.com").respond(404)
-        respx_mock.post(path="/contacts").respond(
-            500 if failure_stage == "create" else 200, json={"id": "new-contact"}
+        http_mocks["GET", "https://api.resend.com/contacts/new@example.com"] = Mock(
+            return_value=httpx2.Response(404)
+        )
+        http_mocks["POST", "https://api.resend.com/contacts"] = Mock(
+            return_value=httpx2.Response(
+                500 if failure_stage == "create" else 200, json={"id": "new-contact"}
+            )
         )
         if failure_stage == "segment":
-            respx_mock.post(path="/contacts/new-contact/segments/active-users").respond(
-                500
-            )
+            http_mocks[
+                "POST",
+                "https://api.resend.com/contacts/new-contact/segments/active-users",
+            ] = Mock(return_value=httpx2.Response(500))
 
         with pytest.raises(ResendAPIError):
             await resend_service.sync_user(
@@ -169,20 +202,26 @@ class TestSyncUser:
         session: AsyncSession,
         user: User,
         mocker: MockerFixture,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         linked: bool,
     ) -> None:
         mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
         user.resend_id = "contact-id" if linked else None
         user.deleted_at = utc_now()
         if linked:
-            respx_mock.get(path="/contacts/contact-id").respond(
+            http_mocks["GET", "https://api.resend.com/contacts/contact-id"] = Mock(
+                return_value=httpx2.Response(
+                    200, json={"id": "contact-id", "email": user.email}
+                )
+            )
+        http_mocks["GET", f"https://api.resend.com/contacts/{user.email}"] = Mock(
+            return_value=httpx2.Response(
                 200, json={"id": "contact-id", "email": user.email}
             )
-        respx_mock.get(path=f"/contacts/{user.email}").respond(
-            200, json={"id": "contact-id", "email": user.email}
         )
-        delete = respx_mock.delete(path="/contacts/contact-id").respond(404)
+        delete = http_mocks["DELETE", "https://api.resend.com/contacts/contact-id"] = (
+            Mock(return_value=httpx2.Response(404))
+        )
 
         user = await resend_service.sync_user(session, user.id)
 
@@ -196,25 +235,33 @@ class TestSyncUser:
         session: AsyncSession,
         user: User,
         mocker: MockerFixture,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         old_contact_exists: bool,
     ) -> None:
         mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
         user.resend_id = "old-contact"
         user.deleted_at = utc_now()
         user.email = "deleted@example.com"
-        respx_mock.get(path="/contacts/old-contact").respond(
-            200 if old_contact_exists else 404,
-            json={"id": "old-contact", "email": "old@example.com"}
-            if old_contact_exists
-            else None,
+        http_mocks["GET", "https://api.resend.com/contacts/old-contact"] = Mock(
+            return_value=httpx2.Response(
+                200 if old_contact_exists else 404,
+                json={"id": "old-contact", "email": "old@example.com"}
+                if old_contact_exists
+                else None,
+            )
         )
-        respx_mock.get(path="/contacts/new@example.com").respond(
-            200, json={"id": "new-contact", "email": "new@example.com"}
+        http_mocks["GET", "https://api.resend.com/contacts/new@example.com"] = Mock(
+            return_value=httpx2.Response(
+                200, json={"id": "new-contact", "email": "new@example.com"}
+            )
         )
         if old_contact_exists:
-            delete_old = respx_mock.delete(path="/contacts/old-contact").respond(200)
-        delete_new = respx_mock.delete(path="/contacts/new-contact").respond(200)
+            delete_old = http_mocks[
+                "DELETE", "https://api.resend.com/contacts/old-contact"
+            ] = Mock(return_value=httpx2.Response(200))
+        delete_new = http_mocks[
+            "DELETE", "https://api.resend.com/contacts/new-contact"
+        ] = Mock(return_value=httpx2.Response(200))
 
         user = await resend_service.sync_user(
             session, user.id, previous_email="new@example.com"
@@ -244,7 +291,7 @@ class TestSyncUser:
         organization: Organization,
         user_organization: UserOrganization,
         mocker: MockerFixture,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         status: OrganizationStatus,
         in_segment: bool,
     ) -> None:
@@ -252,15 +299,20 @@ class TestSyncUser:
         organization.status = status
         await save_fixture(organization)
         user.resend_id = "contact-id"
-        respx_mock.get(path="/contacts/contact-id").respond(
-            200, json={"id": "contact-id", "email": user.email, "unsubscribed": False}
+        http_mocks["GET", "https://api.resend.com/contacts/contact-id"] = Mock(
+            return_value=httpx2.Response(
+                200,
+                json={"id": "contact-id", "email": user.email, "unsubscribed": False},
+            )
         )
-        add = respx_mock.post(
-            path="/contacts/contact-id/segments/active-users"
-        ).respond(200)
-        remove = respx_mock.delete(
-            path="/contacts/contact-id/segments/active-users"
-        ).respond(200)
+        add = http_mocks[
+            "POST",
+            "https://api.resend.com/contacts/contact-id/segments/active-users",
+        ] = Mock(return_value=httpx2.Response(200))
+        remove = http_mocks[
+            "DELETE",
+            "https://api.resend.com/contacts/contact-id/segments/active-users",
+        ] = Mock(return_value=httpx2.Response(200))
 
         user = await resend_service.sync_user(session, user.id)
 
@@ -274,51 +326,63 @@ class TestSyncUser:
         session: AsyncSession,
         user: User,
         mocker: MockerFixture,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         linked: bool,
     ) -> None:
         mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
         user.resend_id = "contact-id" if linked else None
-        remove = respx_mock.delete(
-            path="/contacts/contact-id/segments/active-users"
-        ).respond(404)
+        remove = http_mocks[
+            "DELETE",
+            "https://api.resend.com/contacts/contact-id/segments/active-users",
+        ] = Mock(return_value=httpx2.Response(404))
 
         user = await resend_service.sync_user(session, user.id)
 
         assert user.resend_id == ("contact-id" if linked else None)
         assert remove.call_count == (1 if linked else 0)
-        assert len(respx_mock.calls) == remove.call_count
+        assert sum(mock.call_count for mock in http_mocks.values()) == remove.call_count
 
     async def test_no_organization_email_change(
         self,
         session: AsyncSession,
         user: User,
         mocker: MockerFixture,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
     ) -> None:
         mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
         previous_email = user.email
         user.email = "new@example.com"
         user.resend_id = "old-contact"
-        respx_mock.get(path=f"/contacts/{previous_email}").respond(
-            200,
-            json={"id": "old-contact", "email": previous_email, "unsubscribed": True},
+        http_mocks["GET", f"https://api.resend.com/contacts/{previous_email}"] = Mock(
+            return_value=httpx2.Response(
+                200,
+                json={
+                    "id": "old-contact",
+                    "email": previous_email,
+                    "unsubscribed": True,
+                },
+            )
         )
-        respx_mock.get(path="/contacts/new@example.com").respond(404)
-        create = respx_mock.post(path="/contacts").respond(
-            200, json={"id": "new-contact"}
+        http_mocks["GET", "https://api.resend.com/contacts/new@example.com"] = Mock(
+            return_value=httpx2.Response(404)
         )
-        remove = respx_mock.delete(
-            path="/contacts/new-contact/segments/active-users"
-        ).respond(404)
-        delete = respx_mock.delete(path="/contacts/old-contact").respond(200)
+        create = http_mocks["POST", "https://api.resend.com/contacts"] = Mock(
+            return_value=httpx2.Response(200, json={"id": "new-contact"})
+        )
+        remove = http_mocks[
+            "DELETE",
+            "https://api.resend.com/contacts/new-contact/segments/active-users",
+        ] = Mock(return_value=httpx2.Response(404))
+        delete = http_mocks["DELETE", "https://api.resend.com/contacts/old-contact"] = (
+            Mock(return_value=httpx2.Response(200))
+        )
 
         user = await resend_service.sync_user(
             session, user.id, previous_email=previous_email
         )
 
         assert user.resend_id == "new-contact"
-        assert json.loads(create.calls.last.request.content) == {
+        assert json.loads(create.call_args.args[0].content) == {
             "email": "new@example.com",
             "unsubscribed": True,
         }
@@ -330,12 +394,14 @@ class TestSyncUser:
         session: AsyncSession,
         user: User,
         mocker: MockerFixture,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
     ) -> None:
         mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
         previous_email = user.email
         user.email = "new@example.com"
-        lookup = respx_mock.get(path=f"/contacts/{previous_email}").respond(404)
+        lookup = http_mocks[
+            "GET", f"https://api.resend.com/contacts/{previous_email}"
+        ] = Mock(return_value=httpx2.Response(404))
 
         user = await resend_service.sync_user(
             session, user.id, previous_email=previous_email
@@ -343,13 +409,13 @@ class TestSyncUser:
 
         assert user.resend_id is None
         assert lookup.called
-        assert len(respx_mock.calls) == 1
+        assert sum(mock.call_count for mock in http_mocks.values()) == 1
 
     async def test_user_does_not_exist(
         self,
         session: AsyncSession,
         mocker: MockerFixture,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
     ) -> None:
         mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
         user_id = uuid4()
@@ -358,7 +424,7 @@ class TestSyncUser:
             await resend_service.sync_user(session, user_id)
 
         assert exc.value.status_code == 404
-        assert not respx_mock.calls
+        assert not any(mock.called for mock in http_mocks.values())
 
     @pytest.mark.usefixtures("user_organization")
     async def test_reuses_new_email_contact(
@@ -366,31 +432,43 @@ class TestSyncUser:
         session: AsyncSession,
         user: User,
         mocker: MockerFixture,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
     ) -> None:
         mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
         user.resend_id = "new-contact"
-        respx_mock.get(path="/contacts/old@example.com").respond(
-            200,
-            json={
-                "id": "old-contact",
-                "email": "old@example.com",
-                "unsubscribed": True,
-            },
+        http_mocks["GET", "https://api.resend.com/contacts/old@example.com"] = Mock(
+            return_value=httpx2.Response(
+                200,
+                json={
+                    "id": "old-contact",
+                    "email": "old@example.com",
+                    "unsubscribed": True,
+                },
+            )
         )
-        respx_mock.get(path=f"/contacts/{user.email}").respond(
-            200, json={"id": "new-contact", "email": user.email, "unsubscribed": False}
+        http_mocks["GET", f"https://api.resend.com/contacts/{user.email}"] = Mock(
+            return_value=httpx2.Response(
+                200,
+                json={"id": "new-contact", "email": user.email, "unsubscribed": False},
+            )
         )
-        unsubscribe = respx_mock.patch(path="/contacts/new-contact").respond(200)
-        respx_mock.post(path="/contacts/new-contact/segments/active-users").respond(200)
-        delete = respx_mock.delete(path="/contacts/old-contact").respond(200)
+        unsubscribe = http_mocks[
+            "PATCH", "https://api.resend.com/contacts/new-contact"
+        ] = Mock(return_value=httpx2.Response(200))
+        http_mocks[
+            "POST",
+            "https://api.resend.com/contacts/new-contact/segments/active-users",
+        ] = Mock(return_value=httpx2.Response(200))
+        delete = http_mocks["DELETE", "https://api.resend.com/contacts/old-contact"] = (
+            Mock(return_value=httpx2.Response(200))
+        )
 
         user = await resend_service.sync_user(
             session, user.id, previous_email="old@example.com"
         )
 
         assert user.resend_id == "new-contact"
-        assert json.loads(unsubscribe.calls.last.request.content) == {
+        assert json.loads(unsubscribe.call_args.args[0].content) == {
             "unsubscribed": True
         }
         assert delete.called

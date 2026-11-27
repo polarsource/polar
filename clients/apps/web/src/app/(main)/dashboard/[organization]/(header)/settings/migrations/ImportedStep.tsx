@@ -9,7 +9,13 @@ import { ReviewTable } from './review/ReviewTable'
 
 // The table steps back behind the handoff panel, but stays one click away: an
 // import can be partial, and more records can arrive from Stripe later.
-export function ImportedStep({ migrationId }: { migrationId: string }) {
+export function ImportedStep({
+  migrationId,
+  onSetUpBenefits,
+}: {
+  migrationId: string
+  onSetUpBenefits?: () => void
+}) {
   const [expanded, setExpanded] = useState(false)
   const recordsRef = useRef<HTMLDivElement>(null)
   const panelId = useId()
@@ -28,6 +34,7 @@ export function ImportedStep({ migrationId }: { migrationId: string }) {
         migrationId={migrationId}
         outcome={outcome}
         onReviewRecords={reviewRecords}
+        onSetUpBenefits={onSetUpBenefits}
       />
 
       <Box

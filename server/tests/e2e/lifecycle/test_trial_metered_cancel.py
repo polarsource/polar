@@ -29,10 +29,10 @@ import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 
-import freezegun
 import pytest
 import stripe as stripe_lib
-from httpx import AsyncClient
+import time_machine
+from httpx2 import AsyncClient
 from sqlalchemy import select
 
 from polar.auth.scope import Scope
@@ -181,7 +181,7 @@ class TestTrialMeteredCancel:
         product, meter = trial_metered_product
 
         # ── Trial purchase + mid-trial cancel via API ──
-        with freezegun.freeze_time(TRIAL_START):
+        with time_machine.travel(TRIAL_START, tick=False):
             subscription_id = await _complete_trial_checkout(
                 client, session, stripe_sim, drain, organization, product
             )
@@ -228,7 +228,7 @@ class TestTrialMeteredCancel:
             await drain(ignored_actors={"email.send"})
 
         # ── Trial end: scheduler fires `subscription.cycle` ──
-        with freezegun.freeze_time(TRIAL_END):
+        with time_machine.travel(TRIAL_END, tick=False):
             assert await scheduler_sim.get_due_count() == 1, (
                 "Expected the trialing subscription to be due at trial_end"
             )

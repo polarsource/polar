@@ -9,11 +9,10 @@ DATA = json.loads(pathlib.Path(__file__).with_name("benchmark.json").read_text()
 # 5-minute buckets: 5 minutes, 1 hour, 24 hours of usage since the last snapshot.
 COLD_UNTIL: int = DATA["cold_until"]
 BUCKET_COUNTS: list[int] = DATA["bucket_counts"]
-CHANNEL: str = DATA["channel"]
-EPOCH: str = DATA["epoch"]
 REDUCER: Reducer = DATA["reducer"]
+CREDIT_REDUCER: Reducer = DATA["credit_reducer"]
 SNAPSHOT: dict[str, typing.Any] = DATA["snapshot"]
-# Events pending in one bucket: a batch the buffer just delivered, and a backlog after a 429.
+# Events pending in one bucket: a batch a flusher just delivered, and a backlog after a 429.
 PENDING_COUNTS = [1, 100, 1000]
 # What WRITE_BUCKET stores per event: its value.
 PENDING_ENTRY = "7"
@@ -46,10 +45,6 @@ def pending_entries(ids: list[str]) -> list[str]:
 # The flat field list decode_state reads: one `bucket:<start>:<statistic>` entry per bucket.
 def encode_state(buckets: int) -> list[str]:
     fields = [
-        "epoch",
-        EPOCH,
-        "revision",
-        "4242",
         "cold_until",
         str(COLD_UNTIL),
         "snapshot_version",
@@ -62,10 +57,6 @@ def encode_state(buckets: int) -> list[str]:
         "1",
         "cold:max",
         "999",
-        "credited:meter",
-        "1000000",
-        "credited_version:meter",
-        str(COLD_UNTIL + 1),
     ]
     for index in range(buckets):
         prefix = f"bucket:{COLD_UNTIL + index * BUCKET_SIZE}:"

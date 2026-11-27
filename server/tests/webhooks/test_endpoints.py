@@ -1,16 +1,18 @@
+from datetime import timedelta
+
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.auth.scope import Scope
+from polar.kit.utils import utc_now
 from polar.models import User
 from polar.models.organization import Organization
-from polar.models.user_organization import OrganizationRole, UserOrganization
+from polar.models.user_organization import UserOrganization
 from polar.models.webhook_delivery import WebhookDelivery
-from polar.models.webhook_endpoint import WebhookEndpoint
+from polar.models.webhook_endpoint import WebhookEndpoint, WebhookFormat
 from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_webhook_endpoint
 
 
 @pytest.mark.anyio
@@ -56,88 +58,73 @@ class TestListWebhookEndpoints:
         assert len(json["items"]) == 1
         assert json["items"][0]["id"] == str(webhook_endpoint_organization.id)
 
-
-@pytest.mark.anyio
-class TestGetExternalWebhookEndpoint:
-    @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
-    async def test_valid(
+    async def test_includes_mcp_endpoints(
         self,
-        save_fixture: SaveFixture,
         client: AsyncClient,
         user_organization: UserOrganization,
-        organization: Organization,
+        webhook_endpoint_mcp: WebhookEndpoint,
     ) -> None:
-        endpoint = await create_webhook_endpoint(
-            save_fixture, organization=organization, external_id="app"
-        )
-
-        response = await client.get("/v1/webhooks/endpoints/external/app")
+        response = await client.get("/v1/webhooks/endpoints")
 
         assert response.status_code == 200
-        json = response.json()
-        assert json["id"] == str(endpoint.id)
-        assert json["external_id"] == "app"
-        assert json["secret"] == "SECRET"
+        [item] = response.json()["items"]
+        assert item["id"] == str(webhook_endpoint_mcp.id)
+        assert item["format"] == "mcp"
 
-    @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
-    async def test_other_organization(
+    async def test_excludes_expired_mcp_endpoints(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
-        user_organization: UserOrganization,
-        organization_second: Organization,
-    ) -> None:
-        await create_webhook_endpoint(
-            save_fixture, organization=organization_second, external_id="app"
-        )
-
-        response = await client.get("/v1/webhooks/endpoints/external/app")
-
-        assert response.status_code == 404
-
-    @pytest.mark.api_version(V2027_01)
-    @pytest.mark.auth
-    async def test_ambiguous_across_organizations(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        user: User,
         user_organization: UserOrganization,
         organization: Organization,
-        organization_second: Organization,
     ) -> None:
         await save_fixture(
-            UserOrganization(
-                user=user, organization=organization_second, role=OrganizationRole.admin
+            WebhookEndpoint(
+                url="https://example.com/mcp",
+                format=WebhookFormat.mcp,
+                organization=organization,
+                secret="foobar",
+                expires_at=utc_now() - timedelta(minutes=1),
             )
         )
-        for org in (organization, organization_second):
-            await create_webhook_endpoint(
-                save_fixture, organization=org, external_id="app"
-            )
 
-        response = await client.get("/v1/webhooks/endpoints/external/app")
+        response = await client.get("/v1/webhooks/endpoints")
 
-        assert response.status_code == 409
+        assert response.status_code == 200
+        assert response.json()["items"] == []
 
-    @pytest.mark.api_version(V2026_04, V2026_10)
     @pytest.mark.auth
-    async def test_not_available_before_2027_01(
+    @pytest.mark.api_version(V2027_01)
+    async def test_format_filter(
         self,
-        save_fixture: SaveFixture,
         client: AsyncClient,
         user_organization: UserOrganization,
-        organization: Organization,
+        webhook_endpoint_organization: WebhookEndpoint,
+        webhook_endpoint_mcp: WebhookEndpoint,
     ) -> None:
-        await create_webhook_endpoint(
-            save_fixture, organization=organization, external_id="app"
+        response = await client.get(
+            "/v1/webhooks/endpoints", params={"format": ["raw", "slack"]}
         )
 
-        response = await client.get("/v1/webhooks/endpoints/external/app")
+        assert response.status_code == 200
+        [item] = response.json()["items"]
+        assert item["id"] == str(webhook_endpoint_organization.id)
 
-        assert response.status_code == 404
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2026_10)
+    async def test_format_filter_ignored_before_v2027_01(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        webhook_endpoint_organization: WebhookEndpoint,
+        webhook_endpoint_mcp: WebhookEndpoint,
+    ) -> None:
+        response = await client.get("/v1/webhooks/endpoints", params={"format": "raw"})
+
+        assert response.status_code == 200
+        assert response.json()["pagination"]["total_count"] == 2
 
 
 @pytest.mark.anyio
@@ -174,6 +161,15 @@ class TestCreateWebhookEndpoint:
         response = await client.post("/v1/webhooks/endpoints", json=params)
 
         assert response.status_code == 403
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
+    )
+    async def test_mcp_format(self, client: AsyncClient) -> None:
+        params = {"url": "https://example.com/hook", "format": "mcp", "events": []}
+        response = await client.post("/v1/webhooks/endpoints", json=params)
+
+        assert response.status_code == 422
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
@@ -331,6 +327,62 @@ class TestUpdateWebhookEndpoint:
         json = response.json()
         assert json["secret"] == old_secret
         assert json["url"] == "https://example.com/hook-updated"
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
+    )
+    async def test_mcp_toggle_enabled(
+        self, client: AsyncClient, webhook_endpoint_mcp: WebhookEndpoint
+    ) -> None:
+        response = await client.patch(
+            f"/v1/webhooks/endpoints/{webhook_endpoint_mcp.id}",
+            json={"enabled": False},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["enabled"] is False
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
+    )
+    async def test_mcp_read_only(
+        self, client: AsyncClient, webhook_endpoint_mcp: WebhookEndpoint
+    ) -> None:
+        response = await client.patch(
+            f"/v1/webhooks/endpoints/{webhook_endpoint_mcp.id}",
+            json={"name": "Renamed", "enabled": True},
+        )
+
+        assert response.status_code == 403
+
+
+@pytest.mark.anyio
+class TestResetWebhookEndpointSecret:
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
+    )
+    async def test_valid(
+        self, client: AsyncClient, webhook_endpoint_organization: WebhookEndpoint
+    ) -> None:
+        old_secret = webhook_endpoint_organization.secret
+        response = await client.patch(
+            f"/v1/webhooks/endpoints/{webhook_endpoint_organization.id}/secret"
+        )
+
+        assert response.status_code == 200
+        assert response.json()["secret"] != old_secret
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
+    )
+    async def test_mcp(
+        self, client: AsyncClient, webhook_endpoint_mcp: WebhookEndpoint
+    ) -> None:
+        response = await client.patch(
+            f"/v1/webhooks/endpoints/{webhook_endpoint_mcp.id}/secret"
+        )
+
+        assert response.status_code == 403
 
 
 @pytest.mark.anyio

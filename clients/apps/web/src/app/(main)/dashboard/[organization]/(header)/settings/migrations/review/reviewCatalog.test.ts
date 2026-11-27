@@ -39,6 +39,11 @@ describe('reviewCatalogEmptyKind', () => {
     )
   })
 
+  it('offers the benefits step when a Lemon Squeezy catalog has no subscriptions', () => {
+    expect(reviewCatalogEmptyKind(0, 0, false, true)).toBe('benefits_only')
+    expect(reviewCatalogEmptyKind(58, 58, false, true)).toBe('all_switched')
+  })
+
   it('shows the table when any subscription still needs work', () => {
     expect(reviewCatalogEmptyKind(58, 20, false)).toBeNull()
   })

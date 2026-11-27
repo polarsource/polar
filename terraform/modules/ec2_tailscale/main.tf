@@ -60,6 +60,14 @@ resource "aws_security_group" "this" {
   description = "Outbound access for Tailscale and package installation."
   vpc_id      = data.aws_subnet.this.vpc_id
 
+  ingress {
+    description = "Tailscale direct connections"
+    from_port   = 41641
+    to_port     = 41641
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -85,7 +93,9 @@ resource "aws_instance" "this" {
       path        = "/usr/local/sbin/tailscale-init"
       owner       = "root:root"
       permissions = "0700"
-      content     = file("${path.module}/tailscale-init.sh")
+      content = templatefile("${path.module}/tailscale-init.sh.tftpl", {
+        advertise_connector = var.advertise_connector
+      })
       }], length(var.advertise_routes) == 0 ? [] : [{
       path        = "/etc/sysctl.d/99-tailscale.conf"
       owner       = "root:root"
@@ -100,6 +110,7 @@ resource "aws_instance" "this" {
       tostring(var.tailscale_ssh),
       join(",", var.advertise_routes),
       join(",", var.advertise_tags),
+      var.tailscale_version,
     ]]
   })}"
 

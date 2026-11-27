@@ -4,9 +4,11 @@ from typing import Any
 from uuid import UUID
 
 import structlog
+from pydantic import MISSING
 from sqlalchemy import Select, UnaryExpression, asc, desc
 from sqlalchemy.exc import IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
@@ -123,7 +125,7 @@ class MemberService:
     async def _paginate(
         self,
         repository: MemberRepository,
-        statement: Select[tuple[Member]],
+        statement: Select[Member],
         *,
         role: MemberRole | None,
         pagination: PaginationParams,
@@ -132,7 +134,7 @@ class MemberService:
         if role is not None:
             statement = statement.where(Member.role == role)
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == MemberSortProperty.created_at:
@@ -359,30 +361,40 @@ class MemberService:
 
         return deleted
 
-    async def sync_owner_email(
+    async def sync_owner(
         self,
         session: AsyncSession,
         customer: Customer,
     ) -> None:
-        """Mirror customer.email to the owner member's email for individual
-        customers. Any drift otherwise causes the portal sign-in flow to
+        """Mirror customer.email and customer.name to the owner member of an
+        individual customer. Email drift causes the portal sign-in flow to
         auto-create a duplicate owner (the owner-by-email lookup misses the
-        drifted row). Team customers legitimately have members with distinct
-        emails, so they are skipped."""
-        if customer.type != CustomerType.individual or customer.email is None:
+        drifted row); name drift shows a stale name in the customer portal.
+        Team customers legitimately have members with distinct details, so
+        they are skipped."""
+        if customer.type != CustomerType.individual:
             return
 
         repository = MemberRepository.from_session(session)
         owner = await repository.get_owner_by_customer_id(customer.id)
-        if owner is None or owner.email.lower() == customer.email.lower():
+        if owner is None:
             return
 
-        await repository.update(owner, update_dict={"email": customer.email})
+        update_dict: dict[str, str | None] = {}
+        if customer.email is not None and owner.email.lower() != customer.email.lower():
+            update_dict["email"] = customer.email
+        if owner.name != customer.name:
+            update_dict["name"] = customer.name
+        if not update_dict:
+            return
+
+        await repository.update(owner, update_dict=update_dict)
         log.info(
-            "member.sync_owner_email",
+            "member.sync_owner",
             customer_id=customer.id,
             member_id=owner.id,
             organization_id=customer.organization_id,
+            fields=sorted(update_dict),
         )
 
     async def create_owner_member(
@@ -703,9 +715,7 @@ class MemberService:
         repository = MemberRepository.from_session(session)
 
         # Individual customers can only have 1 member (the owner)
-        # NULL type is treated as 'individual' (legacy customers)
-        customer_type = customer.type or CustomerType.individual
-        if customer_type == CustomerType.individual:
+        if customer.type == CustomerType.individual:
             existing_members = await repository.list_by_customer(customer_id)
             active_members = [m for m in existing_members if not m.is_deleted]
             if len(active_members) >= 1:
@@ -805,7 +815,7 @@ class MemberService:
         new_email: str,
     ) -> None:
         # An individual customer's only member is its owner, whose email is
-        # auto-synced from customer.email (see sync_owner_email). A direct edit
+        # auto-synced from customer.email (see sync_owner). A direct edit
         # would be silently reverted and could spawn a duplicate owner on portal
         # sign-in.
         customer_repository = CustomerRepository.from_session(session)
@@ -846,11 +856,11 @@ class MemberService:
         session: AsyncSession,
         member: Member,
         *,
-        name: str | None = None,
-        role: MemberRole | None = None,
+        name: str | MISSING = MISSING,
+        role: MemberRole | MISSING = MISSING,
         caller_member: Member | None = None,
         allow_ownership_transfer: bool = False,
-        email: str | None = None,
+        email: str | MISSING = MISSING,
     ) -> Member:
         """
         Update a member.
@@ -875,7 +885,7 @@ class MemberService:
         transferred = False
         current_owner: Member | None = None
 
-        if role is not None and member.role != role:
+        if role is not MISSING and member.role != role:
             members = await repository.list_by_customer(member.customer_id)
             owner_count = sum(1 for m in members if m.role == MemberRole.owner)
 
@@ -933,14 +943,14 @@ class MemberService:
                 )
 
         new_email: str | None = None
-        if email is not None and email.strip() != member.email:
+        if email is not MISSING and email.strip() != member.email:
             new_email = email.strip()
             await self._validate_email_change(session, member, new_email)
 
         update_dict = {}
-        if name is not None:
+        if isinstance(name, str):
             update_dict["name"] = name
-        if role is not None and role != member.role and not transferred:
+        if role is not MISSING and role != member.role and not transferred:
             update_dict["role"] = role
         if new_email is not None:
             update_dict["email"] = new_email

@@ -1,12 +1,14 @@
 import uuid
+from collections.abc import Sequence
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import selectinload
 
 from polar.kit.db.postgres import Session as SyncSession
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import generate_uuid, utc_now
-from polar.models import OAuth2Grant
+from polar.models import OAuth2Grant, OAuth2GrantOrganization
 
 from ..sub_type import SubType
 
@@ -23,6 +25,7 @@ class OAuth2GrantService(ResourceServiceReader[OAuth2Grant]):
         sub_id: uuid.UUID,
         client_id: str,
         scope: str,
+        organization_ids: Sequence[uuid.UUID],
     ) -> OAuth2Grant:
         if sub_type == SubType.user:
             constraint = _USER_GRANT_CONSTRAINT
@@ -52,7 +55,25 @@ class OAuth2GrantService(ResourceServiceReader[OAuth2Grant]):
             .returning(OAuth2Grant)
             .execution_options(populate_existing=True)
         )
-        return session.execute(statement).unique().scalar_one()
+        grant = session.execute(statement).unique().scalar_one()
+        session.execute(
+            delete(OAuth2GrantOrganization).where(
+                OAuth2GrantOrganization.oauth2_grant_id == grant.id
+            )
+        )
+        if organization_ids:
+            session.execute(
+                insert(OAuth2GrantOrganization),
+                [
+                    {
+                        "oauth2_grant_id": grant.id,
+                        "organization_id": organization_id,
+                    }
+                    for organization_id in organization_ids
+                ],
+            )
+        session.expire(grant, ["organization_scopes"])
+        return grant
 
     def has_granted_scope(
         self,
@@ -63,7 +84,7 @@ class OAuth2GrantService(ResourceServiceReader[OAuth2Grant]):
         client_id: str,
         scope: str,
     ) -> bool:
-        grant = self._get_by_sub_and_client_id(
+        grant = self.get_by_sub_and_client_id(
             session, sub_type=sub_type, sub_id=sub_id, client_id=client_id
         )
         if grant is None:
@@ -72,7 +93,7 @@ class OAuth2GrantService(ResourceServiceReader[OAuth2Grant]):
         scopes = set(scope.strip().split())
         return scopes.issubset(grant.scopes)
 
-    def _get_by_sub_and_client_id(
+    def get_by_sub_and_client_id(
         self,
         session: SyncSession,
         *,
@@ -80,7 +101,11 @@ class OAuth2GrantService(ResourceServiceReader[OAuth2Grant]):
         sub_id: uuid.UUID,
         client_id: str,
     ) -> OAuth2Grant | None:
-        statement = select(OAuth2Grant).where(OAuth2Grant.client_id == client_id)
+        statement = (
+            select(OAuth2Grant)
+            .where(OAuth2Grant.client_id == client_id)
+            .options(selectinload(OAuth2Grant.organization_scopes))
+        )
         if sub_type == SubType.user:
             statement = statement.where(OAuth2Grant.user_id == sub_id)
         elif sub_type == SubType.organization:

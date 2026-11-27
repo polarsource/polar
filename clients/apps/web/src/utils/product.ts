@@ -118,6 +118,7 @@ const _getProductById = async (
     }),
     {
       404: notFound,
+      422: notFound,
     },
   )
 }
@@ -162,6 +163,7 @@ export const productToCreateForm = (
 
   return {
     ...productBase,
+    external_id: product.external_id ?? undefined,
     name: `Copy of ${product.name}`,
     full_medias: product.medias.map((media) => ({ ...media })),
     prices: product.prices.map((price) => {

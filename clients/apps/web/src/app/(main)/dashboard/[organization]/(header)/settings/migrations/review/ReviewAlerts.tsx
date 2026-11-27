@@ -7,11 +7,13 @@ export function ReviewAlerts({
   stalled,
   refreshError,
   importError,
+  paymentMethodSummary,
 }: {
   rerunning: boolean
   stalled: boolean
   refreshError?: string
   importError?: string
+  paymentMethodSummary?: string | null
 }) {
   return (
     <>
@@ -28,7 +30,7 @@ export function ReviewAlerts({
       {refreshError && (
         <Alert
           variant="danger"
-          title="We couldn't refresh from Stripe"
+          title="We couldn't refresh your catalog"
           description={refreshError}
         />
       )}
@@ -37,6 +39,13 @@ export function ReviewAlerts({
           variant="danger"
           title="We couldn't prepare these subscriptions"
           description={importError}
+        />
+      )}
+      {paymentMethodSummary && (
+        <Alert
+          variant="warning"
+          title="Some payment methods won't carry over"
+          description={paymentMethodSummary}
         />
       )}
     </>

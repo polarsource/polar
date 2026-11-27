@@ -67,6 +67,7 @@ export const ProductBenefits = ({
           icon={<Gift />}
           title="No benefits"
           description="This product has no benefits applied"
+          fill
         />
       ) : (
         <Box flexDirection="column" gap="l">

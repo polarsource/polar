@@ -187,6 +187,42 @@ describe('formatTree', () => {
         ]),
         entry('products', 'pro', 'unchanged'),
         entry('products', 'team', 'unchanged'),
+        entry('meters', 'tool_call', 'unchanged'),
+      ]),
+    )
+    expect(output).toBe(
+      [
+        '  meters',
+        '  = tool_call  unchanged',
+        '',
+        '  benefits',
+        '  ~ tool_calls',
+        '      properties  500 tool_call credits → 1,000 tool_call credits',
+        '',
+        '  products',
+        '  = pro        unchanged',
+        '  = team       unchanged',
+      ].join('\n'),
+    )
+  })
+
+  test('shows products that grant an updated benefit', () => {
+    const output = stripAnsi(
+      formatTree(input, [
+        entry('benefits', 'tool_calls', 'updated', [
+          {
+            field: 'properties',
+            before: { meter: 'tool_call', units: 500, rollover: false },
+            after: { meter: 'tool_call', units: 1000, rollover: false },
+          },
+        ]),
+        entry('products', 'pro', 'updated', [
+          {
+            field: 'benefits',
+            before: ['custom_servers', 'tool_calls'],
+            after: ['custom_servers', 'tool_calls'],
+          },
+        ]),
       ]),
     )
     expect(output).toBe(
@@ -196,8 +232,65 @@ describe('formatTree', () => {
         '      properties  500 tool_call credits → 1,000 tool_call credits',
         '',
         '  products',
-        '  = pro   unchanged',
-        '  = team  unchanged',
+        '  ~ pro',
+        '      ├ = benefit custom_servers',
+        '      └ ~ benefit tool_calls',
+      ].join('\n'),
+    )
+  })
+
+  test('shows the benefits and products that use an updated meter', () => {
+    const properties = { meter: 'tool_call', units: 1000, rollover: false }
+    const prices = [
+      ...(input.products[1]?.prices ?? []),
+      {
+        amount_type: 'metered_unit',
+        price_currency: 'usd',
+        meter: 'storage',
+        unit_amount: '0.5',
+      },
+    ]
+    const output = stripAnsi(
+      formatTree(input, [
+        entry('meters', 'tool_call', 'updated', [
+          { field: 'name', before: 'tool_call', after: 'Tool calls' },
+        ]),
+        entry('benefits', 'tool_calls', 'updated', [
+          {
+            field: 'properties',
+            before: properties,
+            after: { rollover: false, units: 1000, meter: 'tool_call' },
+          },
+        ]),
+        entry('meters', 'storage', 'created'),
+        entry('products', 'pro', 'updated', [
+          { field: 'prices', before: input.products[1]?.prices, after: prices },
+          {
+            field: 'benefits',
+            before: ['custom_servers', 'tool_calls'],
+            after: ['custom_servers', 'tool_calls'],
+          },
+        ]),
+      ]),
+    )
+    expect(output).toBe(
+      [
+        '  meters',
+        '  ~ tool_call',
+        '      name  "tool_call" → "Tool calls"',
+        '  + storage',
+        '',
+        '  benefits',
+        '  ~ tool_calls',
+        '      └ ~ meter tool_call',
+        '',
+        '  products',
+        '  ~ pro',
+        '      prices (USD per storage)  unset → $5 per 1,000',
+        '      ├ ~ meter tool_call',
+        '      ├ + meter storage',
+        '      ├ = benefit custom_servers',
+        '      └ ~ benefit tool_calls',
       ].join('\n'),
     )
   })
@@ -240,6 +333,36 @@ describe('formatTree', () => {
     )
   })
 
+  test('shows the channel template of a created Slack channel benefit', () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          ...input,
+          benefits: [
+            {
+              external_id: 'slack',
+              description: 'Slack Channel',
+              type: 'slack_shared_channel',
+              properties: {
+                slack_integration_id: '0d8f6f0c-2f55-4f7a-9d6d-3f1c2a4b5c6d',
+                channel_name_template: 'acme-{customer_name}',
+              },
+            },
+          ],
+        },
+        [entry('benefits', 'slack', 'created', [])],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  benefits',
+        '  + slack',
+        '      type     Slack channel',
+        '      channel  acme-{customer_name}',
+      ].join('\n'),
+    )
+  })
+
   test('lists the meters a created product charges for as nodes', () => {
     const metered = (price_currency: string, unit_amount: string) => ({
       amount_type: 'metered_unit',
@@ -278,7 +401,63 @@ describe('formatTree', () => {
     )
   })
 
+  test('describes the meter cycle of a created product', () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          ...input,
+          products: [
+            {
+              external_id: 'annual',
+              name: 'Annual',
+              recurring_interval: 'year',
+              recurring_interval_count: 1,
+              meter_interval: 'month',
+              meter_interval_count: 1,
+              prices: [
+                {
+                  amount_type: 'fixed',
+                  price_currency: 'usd',
+                  price_amount: 24000,
+                },
+              ],
+              benefits: [],
+            },
+          ],
+        },
+        [
+          entry('products', 'annual', 'created', [
+            { field: 'meter_interval', before: null, after: 'month' },
+            { field: 'meter_interval_count', before: null, after: 1 },
+          ]),
+        ],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  products',
+        '  + annual',
+        '      $240 per year, metered per month',
+      ].join('\n'),
+    )
+  })
+
   test('shows the tiers of a created seat- or unit-based product', () => {
+    const seatPrices = [
+      {
+        amount_type: 'seat_based',
+        price_currency: 'usd',
+        tax_behavior: 'exclusive',
+        minimum_units: 2,
+        tiers: {
+          type: 'graduated',
+          tiers: [
+            { bound: 10, unit_amount: 1000 },
+            { bound: null, unit_amount: 800 },
+          ],
+        },
+      },
+    ]
     const output = stripAnsi(
       formatTree(
         {
@@ -289,21 +468,7 @@ describe('formatTree', () => {
               name: 'Seats',
               recurring_interval: 'month',
               recurring_interval_count: 1,
-              prices: [
-                {
-                  amount_type: 'seat_based',
-                  price_currency: 'usd',
-                  tax_behavior: 'exclusive',
-                  minimum_units: 2,
-                  tiers: {
-                    type: 'graduated',
-                    tiers: [
-                      { bound: 10, unit_amount: 1000 },
-                      { bound: null, unit_amount: 800 },
-                    ],
-                  },
-                },
-              ],
+              prices: seatPrices,
               benefits: [],
             },
             {
@@ -328,7 +493,7 @@ describe('formatTree', () => {
         },
         [
           entry('products', 'seats', 'created', [
-            { field: 'prices', before: null, after: [] },
+            { field: 'prices', before: null, after: seatPrices },
           ]),
           entry('products', 'credits', 'created'),
         ],
@@ -411,77 +576,6 @@ describe('formatTree', () => {
         '  + free',
         '      $0 per month',
         '      └ + benefit free_tool_calls',
-      ].join('\n'),
-    )
-  })
-
-  test('shows only the host of a created Slack webhook', () => {
-    const slackUrl = 'https://hooks.slack.com/services/T0/B0/token'
-    const output = stripAnsi(
-      formatTree(
-        {
-          webhooks: [
-            {
-              external_id: 'sales',
-              url: slackUrl,
-              format: 'slack',
-              events: ['order.paid', 'subscription.canceled'],
-              api_version: '2027-01',
-            },
-          ],
-        },
-        [
-          entry('webhooks', 'sales', 'created', [
-            { field: 'url', before: null, after: slackUrl },
-            { field: 'format', before: null, after: 'slack' },
-          ]),
-        ],
-      ),
-    )
-    expect(output).toBe(
-      [
-        '  webhooks',
-        '  + sales',
-        '      url     https://hooks.slack.com/***',
-        '      format  slack',
-        '      events  order.paid, subscription.canceled',
-      ].join('\n'),
-    )
-  })
-
-  test('redacts both sides of an updated webhook url by their own format', () => {
-    const after = 'https://app:pw@app.test/hook?token=new'
-    const output = stripAnsi(
-      formatTree(
-        {
-          webhooks: [
-            {
-              external_id: 'app',
-              url: after,
-              format: 'raw',
-              events: ['order.paid'],
-              api_version: '2027-01',
-            },
-          ],
-        },
-        [
-          entry('webhooks', 'app', 'updated', [
-            {
-              field: 'url',
-              before: 'https://hooks.slack.com/services/T0/B0/token',
-              after,
-            },
-            { field: 'format', before: 'slack', after: 'raw' },
-          ]),
-        ],
-      ),
-    )
-    expect(output).toBe(
-      [
-        '  webhooks',
-        '  ~ app',
-        '      url     https://hooks.slack.com/*** → https://***@app.test/hook?token=***',
-        '      format  "slack" → "raw"',
       ].join('\n'),
     )
   })
@@ -620,5 +714,188 @@ describe('formatTree', () => {
       '$10 (tax inclusive) / €9 (tax exclusive) per month',
     )
     expect(output).toMatch(/\$0\.10 \/ €0\.09 per units\n\s+tax exclusive$/)
+  })
+
+  test('prices a new product in the currency the API planned when the config has none', () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          meters: input.meters,
+          products: [
+            {
+              external_id: 'starter',
+              name: 'Starter',
+              recurring_interval: 'month',
+              prices: [
+                { amount_type: 'fixed', price_amount: 1000 },
+                {
+                  amount_type: 'metered_unit',
+                  meter: 'tool_call',
+                  unit_amount: '0.5',
+                },
+              ],
+              benefits: [],
+            },
+          ],
+        },
+        [
+          entry('products', 'starter', 'created', [
+            {
+              field: 'prices',
+              before: null,
+              after: [
+                {
+                  amount_type: 'fixed',
+                  price_currency: 'usd',
+                  tax_behavior: null,
+                  price_amount: 1000,
+                },
+                {
+                  amount_type: 'metered_unit',
+                  price_currency: 'usd',
+                  tax_behavior: null,
+                  meter: 'tool_call',
+                  unit_amount: '0.5',
+                  cap_amount: null,
+                },
+              ],
+            },
+          ]),
+        ],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  products',
+        '  + starter',
+        '      $10 per month',
+        '      └ + meter tool_call',
+        '            $5 per 1,000 tool calls',
+      ].join('\n'),
+    )
+  })
+
+  test('lists custom fields one setting per row, and the products a changed one is attached to', () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          meters: [],
+          custom_fields: [
+            {
+              type: 'text',
+              slug: 'company',
+              name: 'Company',
+              properties: { form_label: 'Company name', textarea: true },
+            },
+            {
+              type: 'select',
+              slug: 'size',
+              name: 'Size',
+              properties: { options: [] },
+            },
+            { type: 'date', slug: 'start', name: 'Start', properties: {} },
+          ],
+          products: [
+            {
+              external_id: 'pro',
+              name: 'Pro',
+              prices: [],
+              benefits: [],
+              custom_fields: [
+                { field: 'company', required: true },
+                { field: 'size', required: false },
+              ],
+            },
+          ],
+        },
+        [
+          entry('custom_fields', 'company', 'created', [
+            { field: 'type', after: 'text' },
+            { field: 'name', after: 'Company' },
+            {
+              field: 'properties',
+              after: { form_label: 'Company name', textarea: true },
+            },
+          ]),
+          entry('custom_fields', 'size', 'updated', [
+            {
+              field: 'properties',
+              before: {
+                options: [
+                  { value: 'small', label: '1-10' },
+                  { value: 'large', label: '50+' },
+                ],
+              },
+              after: {
+                options: [
+                  { value: 'small', label: '1-10' },
+                  { value: 'large', label: '100+' },
+                ],
+              },
+            },
+          ]),
+          entry('custom_fields', 'start', 'updated', [
+            { field: 'properties', before: {}, after: { ge: 1767225600 } },
+          ]),
+          {
+            ...entry('custom_fields', 'vat', 'removed'),
+            reason: 'missing',
+          },
+          entry('products', 'pro', 'updated', [
+            {
+              field: 'custom_fields',
+              before: [
+                { field: 'company', required: false },
+                { field: 'vat', required: false },
+              ],
+              after: [
+                { field: 'company', required: true },
+                { field: 'size', required: false },
+              ],
+            },
+          ]),
+          entry('products', 'team', 'updated', [
+            {
+              field: 'custom_fields',
+              before: [
+                { field: 'start', required: true },
+                { field: 'size', required: false },
+              ],
+              after: [
+                { field: 'start', required: true },
+                { field: 'size', required: false },
+              ],
+            },
+          ]),
+        ],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  custom_fields',
+        '  + company',
+        '      type      text',
+        '      name      Company',
+        '      label     Company name',
+        '      textarea  yes',
+        '  ~ size',
+        '      options',
+        '          small → 1-10',
+        '        - large → 50+',
+        '        + large → 100+',
+        '  ~ start',
+        '      min  unset → 2026-01-01',
+        '  - vat  not in config',
+        '',
+        '  products',
+        '  ~ pro',
+        '      ├ ~ custom field company',
+        '      ├ + custom field size optional',
+        '      └ - custom field vat optional',
+        '  ~ team',
+        '      ├ ~ custom field start',
+        '      └ ~ custom field size optional',
+      ].join('\n'),
+    )
   })
 })

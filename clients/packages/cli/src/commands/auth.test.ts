@@ -234,6 +234,7 @@ describe('auth whoami', () => {
     expect(output()).toContain('Not logged in')
     expect(output()).toContain('polar auth login --sandbox')
     expect(output()).toContain('polar auth login --production')
+    expect(output()).toContain('Or set POLAR_ACCESS_TOKEN')
   })
 
   test('shows the only organization of a token override', async () => {
@@ -398,6 +399,25 @@ describe('auth org', () => {
     expect(output()).toContain(
       'Organization selection requires an interactive terminal',
     )
+    expect(output()).toContain('polar auth org <id>')
+  })
+
+  test('selects the given organization without a terminal', async () => {
+    const { promise, output } = run(['org', 'org-2'])
+    await promise
+
+    expect(output()).toContain('Active organization Beta beta production')
+    expect(organizations.state.selected).toEqual({
+      id: 'org-2',
+      environment: 'production',
+    })
+  })
+
+  test('fails when the given organization cannot be found', async () => {
+    const { promise } = run(['org', 'missing'])
+
+    await expect(promise).rejects.toThrow()
+    expect(organizations.state.selected).toBeUndefined()
   })
 
   test('marks the active organization in the prompt', async () => {

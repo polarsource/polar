@@ -1,5 +1,6 @@
-from collections.abc import AsyncGenerator, Mapping, Sequence
+from collections.abc import AsyncGenerator, Collection, Mapping, Sequence
 from dataclasses import replace
+from datetime import datetime
 from typing import Any, cast
 from uuid import UUID
 
@@ -38,6 +39,7 @@ from polar.models import (
     MerchantMigrationSourcePlatform,
     PaymentMethod,
 )
+from polar.models.merchant_migration import MERCHANT_MIGRATION_FINISHED_STEPS
 from polar.models.merchant_migration_operation import (
     MerchantMigrationOperationSelection,
 )
@@ -71,6 +73,13 @@ type CanonicalRow = tuple[
 ]
 
 
+# The key in ``source_credentials`` that names the source account.
+_ACCOUNT_ID_KEYS = {
+    MerchantMigrationSourcePlatform.stripe: "stripe_user_id",
+    MerchantMigrationSourcePlatform.lemon_squeezy: "store_id",
+}
+
+
 class MerchantMigrationRepository(
     RepositorySoftDeletionIDMixin[MerchantMigration, UUID],
     RepositorySoftDeletionMixin[MerchantMigration],
@@ -78,21 +87,31 @@ class MerchantMigrationRepository(
 ):
     model = MerchantMigration
 
-    async def lock_stripe_account(self, stripe_account_id: str) -> None:
+    async def lock_source_account(
+        self, source_platform: MerchantMigrationSourcePlatform, account_id: str
+    ) -> None:
         await pg_advisory_xact_lock(
-            self.session, "merchant_migration.stripe_account", stripe_account_id
+            self.session,
+            f"merchant_migration.{source_platform.value}_account",
+            account_id,
         )
 
-    async def stripe_account_id_exists(
-        self, stripe_account_id: str, *, exclude_organization_id: UUID
+    async def source_account_exists(
+        self,
+        source_platform: MerchantMigrationSourcePlatform,
+        account_id: str,
+        *,
+        exclude_organization_id: UUID,
     ) -> bool:
+        """Another organization already migrates this source account."""
         statement = select(
             self.get_base_statement()
             .where(
-                MerchantMigration.source_platform
-                == MerchantMigrationSourcePlatform.stripe,
-                MerchantMigration.source_credentials["stripe_user_id"].astext
-                == stripe_account_id,
+                MerchantMigration.source_platform == source_platform,
+                MerchantMigration.source_credentials[
+                    _ACCOUNT_ID_KEYS[source_platform]
+                ].astext
+                == account_id,
                 MerchantMigration.organization_id != exclude_organization_id,
             )
             .exists()
@@ -101,7 +120,7 @@ class MerchantMigrationRepository(
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[MerchantMigration]]:
+    ) -> Select[MerchantMigration]:
         statement = self.get_base_statement()
         if is_user(auth_subject):
             statement = statement.where(
@@ -121,7 +140,22 @@ class MerchantMigrationRepository(
         takes the lock but keeps the stale attributes already in the session."""
         await self.session.refresh(migration, with_for_update=True)
 
-    def get_ops_statement(self) -> Select[tuple[MerchantMigration]]:
+    async def list_idle_ids(self, idle_since: datetime) -> Sequence[UUID]:
+        statement = (
+            select(MerchantMigration.id)
+            .where(
+                MerchantMigration.deleted_at.is_(None),
+                MerchantMigration.step.not_in(MERCHANT_MIGRATION_FINISHED_STEPS),
+                func.coalesce(
+                    MerchantMigration.modified_at, MerchantMigration.created_at
+                )
+                < idle_since,
+            )
+            .order_by(MerchantMigration.created_at)
+        )
+        return (await self.session.scalars(statement)).all()
+
+    def get_ops_statement(self) -> Select[MerchantMigration]:
         """Every migration across every organization, newest first.
 
         Deliberately unscoped: the backoffice watches all migrations at once and
@@ -164,8 +198,12 @@ class MerchantMigrationRecordRepository(
 ):
     model = MerchantMigrationRecord
 
-    async def has_moved_subscription(self, subscription_id: UUID) -> bool:
-        statement = select(
+    async def get_moved_subscription_source(
+        self, subscription_id: UUID
+    ) -> MerchantMigrationSourcePlatform | None:
+        """The platform the subscription switched from, or None if it didn't
+        switch."""
+        statement = (
             self.get_base_statement()
             .join(
                 MerchantMigration,
@@ -180,9 +218,10 @@ class MerchantMigrationRecordRepository(
                 == MerchantMigrationCutoverStatus.moved,
                 MerchantMigration.deleted_at.is_(None),
             )
-            .exists()
+            .with_only_columns(MerchantMigration.source_platform)
+            .limit(1)
         )
-        return bool(await self.session.scalar(statement))
+        return await self.session.scalar(statement)
 
     async def get_by_source(
         self,
@@ -197,6 +236,29 @@ class MerchantMigrationRecordRepository(
             MerchantMigrationRecord.source_id == source_id,
         )
         return await self.get_one_or_none(statement)
+
+    async def get_imported_target_ids(
+        self,
+        *,
+        organization_id: UUID,
+        type: MerchantMigrationRecordType,
+        source_ids: Collection[str],
+    ) -> dict[str, UUID]:
+        statement = select(
+            MerchantMigrationRecord.source_id, MerchantMigrationRecord.target_id
+        ).where(
+            MerchantMigrationRecord.organization_id == organization_id,
+            MerchantMigrationRecord.type == type,
+            MerchantMigrationRecord.source_id.in_(source_ids),
+            MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
+            MerchantMigrationRecord.deleted_at.is_(None),
+        )
+        result = await self.session.execute(statement)
+        return {
+            source_id: target_id
+            for source_id, target_id in result.all()
+            if target_id is not None
+        }
 
     async def set_subscription_tax_behavior(
         self, migration_id: UUID, tax_behavior: TaxBehavior
@@ -231,7 +293,9 @@ class MerchantMigrationRecordRepository(
             )
             .execution_options(synchronize_session=False)
         )
-        result = cast(CursorResult[Any], await self.session.execute(statement))
+        result = cast(
+            CursorResult[*tuple[Any, ...]], await self.session.execute(statement)
+        )
         return result.rowcount
 
     async def list_by_migration(
@@ -476,7 +540,7 @@ class MerchantMigrationRecordRepository(
 
     def _product_by_price_statement(
         self, organization_id: UUID, price_source_id: str
-    ) -> Select[tuple[MerchantMigrationRecord]]:
+    ) -> Select[MerchantMigrationRecord]:
         # An archived price can sit on two rows; the oldest is the one earlier
         # moves used.
         return (
@@ -545,7 +609,7 @@ class MerchantMigrationRecordRepository(
 
     def _switchable_subscriptions_statement(
         self, migration_id: UUID
-    ) -> Select[tuple[MerchantMigrationRecord]]:
+    ) -> Select[MerchantMigrationRecord]:
         """Subscriptions whose dependencies are ready for card checks and cutover.
 
         Ordered so a batched pass and a chained one see the same sequence.
@@ -784,6 +848,29 @@ class MerchantMigrationRecordRepository(
         result = await self.session.execute(statement)
         return {status: count for status, count in result.all()}
 
+    async def copied_cards(
+        self, migration_id: UUID, *, exact: bool = False, pending_only: bool = False
+    ) -> dict[UUID, dict[str, Any]]:
+        """The card each switchable subscription record would renew with, as its
+        stored metadata: the customer's default card when it is one of them."""
+        statement = self._payment_method_coverage_statement(
+            migration_id, exact=exact
+        ).with_only_columns(
+            MerchantMigrationRecord.id,
+            PaymentMethod.id == Customer.default_payment_method_id,
+            PaymentMethod.method_metadata,
+        )
+        if pending_only:
+            statement = statement.where(
+                MerchantMigrationRecord.cutover_status.is_(None)
+            )
+        result = await self.session.execute(statement)
+        cards: dict[UUID, dict[str, Any]] = {}
+        for record_id, is_default, method_metadata in result.all():
+            if is_default or record_id not in cards:
+                cards[record_id] = method_metadata
+        return cards
+
     async def payment_method_coverage(
         self, migration_id: UUID, *, exact: bool = False
     ) -> set[UUID]:
@@ -813,7 +900,7 @@ class MerchantMigrationRecordRepository(
 
     def _payment_method_coverage_statement(
         self, migration_id: UUID, *, exact: bool
-    ) -> Select[tuple[UUID]]:
+    ) -> Select[UUID]:
         CustomerRecord = aliased(MerchantMigrationRecord)
         payment_method_filters = [
             PaymentMethod.customer_id == Customer.id,
@@ -917,6 +1004,26 @@ class MerchantMigrationRecordRepository(
                 MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
             )
         )
+
+    async def delete_pending_batch(self, migration_id: UUID, *, batch_size: int) -> int:
+        # Postgres has no `DELETE ... LIMIT`, so the batch is bounded by a subquery.
+        batch = (
+            select(MerchantMigrationRecord.id)
+            .where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
+            )
+            .limit(batch_size)
+        )
+        result = cast(
+            CursorResult[*tuple[Any, ...]],
+            await self.session.execute(
+                delete(MerchantMigrationRecord).where(
+                    MerchantMigrationRecord.id.in_(batch)
+                )
+            ),
+        )
+        return result.rowcount
 
     def _restore_subscription_tax(
         self,

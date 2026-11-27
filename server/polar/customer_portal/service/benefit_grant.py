@@ -5,6 +5,7 @@ from typing import Any, cast
 
 from sqlalchemy import Select, UnaryExpression, and_, asc, desc, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject, Customer, Member, is_customer, is_member
 from polar.customer.repository import CustomerRepository
@@ -121,7 +122,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         if member_id is not None:
             statement = statement.where(BenefitGrant.member_id.in_(member_id))
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == CustomerBenefitGrantSortProperty.granted_at:
@@ -155,7 +156,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         benefit_grant: BenefitGrant,
         benefit_grant_update: CustomerBenefitGrantUpdate,
     ) -> BenefitGrant:
-        if benefit_grant.is_revoked:
+        if benefit_grant.is_revoked or benefit_grant.manually_revoked_at is not None:
             raise NotPermitted("Cannot update a revoked benefit grant.")
 
         if benefit_grant_update.benefit_type != benefit_grant.benefit.type:
@@ -189,7 +190,9 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
                     member_repository = MemberRepository.from_session(session)
                     member = await member_repository.get_by_id(benefit_grant.member_id)
                     if member is not None:
-                        oauth_account = member.get_oauth_account(account_id, platform)
+                        oauth_account = await member.get_oauth_account(
+                            account_id, platform
+                        )
 
                 # Fall back to customer
                 if oauth_account is None:
@@ -198,7 +201,9 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
                         benefit_grant.customer_id
                     )
                     assert customer is not None
-                    oauth_account = customer.get_oauth_account(account_id, platform)
+                    oauth_account = await customer.get_oauth_account(
+                        account_id, platform
+                    )
 
                 if oauth_account is None:
                     raise PolarRequestValidationError(
@@ -245,7 +250,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
     def _get_readable_benefit_grant_statement(
         self, auth_subject: AuthSubject[Customer | Member]
-    ) -> Select[tuple[BenefitGrant]]:
+    ) -> Select[BenefitGrant]:
         statement = (
             select(BenefitGrant)
             .join(Benefit, onclause=Benefit.id == BenefitGrant.benefit_id)

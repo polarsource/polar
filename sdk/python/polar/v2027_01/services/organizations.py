@@ -13,8 +13,8 @@ from polar.v2027_01.errors import (
     CannotCreateOrganizationError,
     HTTPValidationError,
     OrganizationsUpdate403Error,
+    OrganizationsUpdate409Error,
     ResourceNotFound,
-    SSOEnforcementRequiresConnection,
 )
 from polar.v2027_01.inputs import (
     OrganizationCreate,
@@ -50,7 +50,7 @@ class OrganizationsSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -99,7 +99,7 @@ class OrganizationsSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -139,7 +139,7 @@ class OrganizationsSync(SyncServiceBase):
         **Scopes**: `organizations:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -181,7 +181,7 @@ class OrganizationsSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -224,7 +224,7 @@ class OrganizationsSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -232,7 +232,7 @@ class OrganizationsSync(SyncServiceBase):
         Raises:
             OrganizationsUpdate403Error: You don't have the permission to update this organization, or dispute auto-accept isn't enabled for it.
             ResourceNotFound: Organization not found.
-            SSOEnforcementRequiresConnection: Cannot enforce SSO without an enabled connection.
+            OrganizationsUpdate409Error: Cannot enforce SSO without an enabled connection and a verified domain.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -253,7 +253,7 @@ class OrganizationsSync(SyncServiceBase):
         method_errors = {
             403: OrganizationsUpdate403Error,
             404: ResourceNotFound,
-            409: SSOEnforcementRequiresConnection,
+            409: OrganizationsUpdate409Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Organization, method_errors)
@@ -280,7 +280,7 @@ class OrganizationsAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -329,7 +329,7 @@ class OrganizationsAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -370,7 +370,7 @@ class OrganizationsAsync(AsyncServiceBase):
         **Scopes**: `organizations:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -412,7 +412,7 @@ class OrganizationsAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -455,7 +455,7 @@ class OrganizationsAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -463,7 +463,7 @@ class OrganizationsAsync(AsyncServiceBase):
         Raises:
             OrganizationsUpdate403Error: You don't have the permission to update this organization, or dispute auto-accept isn't enabled for it.
             ResourceNotFound: Organization not found.
-            SSOEnforcementRequiresConnection: Cannot enforce SSO without an enabled connection.
+            OrganizationsUpdate409Error: Cannot enforce SSO without an enabled connection and a verified domain.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -484,7 +484,7 @@ class OrganizationsAsync(AsyncServiceBase):
         method_errors = {
             403: OrganizationsUpdate403Error,
             404: ResourceNotFound,
-            409: SSOEnforcementRequiresConnection,
+            409: OrganizationsUpdate409Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Organization, method_errors)

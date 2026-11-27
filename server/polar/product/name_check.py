@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from pydantic_ai import Agent, Choices
 from pydantic_ai.models.typesafe import TypeSafeModel
 from pydantic_ai.providers.typesafe import TypeSafeProvider
-from typesafe_sdk import AsyncTypeSafeClient
+from typesafe_sdk import AsyncTypeSafeClient, RetryPolicy
 
 from polar.config import settings
 
@@ -17,6 +17,7 @@ log = structlog.get_logger()
 
 JEV_GATEWAY_URL = "https://gateway-us.pydantic.dev/proxy/jev"
 FLAGGED_CONFIDENCE_THRESHOLD = 0.7
+JEV_TIMEOUT_SECONDS = 3.0
 
 FLAGGED_PRODUCT_PHRASES: dict[str, str] = {
     "human services": "consulting, consultation, coaching, mentorship, 1-on-1, 1:1, done-for-you, custom, freelance, call, book a session",
@@ -82,6 +83,8 @@ def jev_agent() -> Agent[None, ProductNameJudgment]:
                     api_key=settings.PYDANTIC_AI_GATEWAY_API_KEY,
                     base_url=JEV_GATEWAY_URL,
                     compression=False,
+                    timeout=JEV_TIMEOUT_SECONDS,
+                    retry=RetryPolicy(max_retries=0),
                 )
             ),
         ),

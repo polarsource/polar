@@ -58,7 +58,12 @@ export type { SubnavItemProps, SubnavProps } from './components/Subnav'
 export { Switch } from './components/Switch'
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './components/Tabs'
 export { Text } from './components/Text'
-export type { TextColor, TextStyleProps, TextVariant } from './components/Text'
+export type {
+  TextColor,
+  TextStyleProps,
+  TextVariant,
+  TextWeight,
+} from './components/Text'
 export { TextArea } from './components/TextArea'
 export type { TextAreaProps } from './components/TextArea'
 export {

@@ -1,16 +1,17 @@
 from collections.abc import Sequence
-from typing import Any
 from uuid import UUID
+
+from pydantic import MISSING
 
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
-from polar.models import Organization, OrganizationDomain, OrganizationSSOConnection
+from polar.models import Organization, OrganizationSSOConnection
+from polar.organization_domain.service import (
+    organization_domain as organization_domain_service,
+)
 from polar.postgres import AsyncReadSession, AsyncSession
 
-from .repository import (
-    OrganizationDomainRepository,
-    OrganizationSSOConnectionRepository,
-)
+from .repository import OrganizationSSOConnectionRepository
 from .schemas import (
     OrganizationSSOConnectionCreate,
     OrganizationSSOConnectionUpdate,
@@ -35,6 +36,13 @@ class LastSSOConnectionRequired(PolarError):
         )
 
 
+class SSORequiresVerifiedDomain(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This organization must verify a domain before setting up SSO.", 409
+        )
+
+
 class OrganizationSSOConnectionService:
     async def list(
         self,
@@ -49,21 +57,6 @@ class OrganizationSSOConnectionService:
         statement = repository.get_statement_by_organization(organization.id).order_by(
             OrganizationSSOConnection.created_at.desc()
         )
-        return await paginate(session, statement, pagination=pagination)
-
-    async def list_domains(
-        self,
-        session: AsyncReadSession,
-        organization: Organization,
-        *,
-        pagination: PaginationParams,
-    ) -> tuple[Sequence[OrganizationDomain], int]:
-        if not organization.is_sso_enabled:
-            raise SSONotEnabled(organization)
-        repository = OrganizationDomainRepository.from_session(session)
-        statement = repository.get_verified_statement_by_organization(
-            organization.id
-        ).order_by(OrganizationDomain.domain)
         return await paginate(session, statement, pagination=pagination)
 
     async def get(
@@ -85,10 +78,18 @@ class OrganizationSSOConnectionService:
     ) -> OrganizationSSOConnection:
         if not organization.is_sso_enabled:
             raise SSONotEnabled(organization)
+        if not await organization_domain_service.has_verified(session, organization):
+            raise SSORequiresVerifiedDomain()
         repository = OrganizationSSOConnectionRepository.from_session(session)
+        id = OrganizationSSOConnection.generate_id()
+        configuration = create.configuration.model_dump()
         connection = OrganizationSSOConnection(
-            organization=organization,
             **create.model_dump(),
+            id=id,
+            organization=organization,
+            client_secret_encrypted=await OrganizationSSOConnection.encrypt_client_secret(
+                id, configuration.get("client_secret")
+            ),
         )
         return await repository.create(connection, flush=True)
 
@@ -108,16 +109,16 @@ class OrganizationSSOConnectionService:
         ):
             raise LastSSOConnectionRequired()
         repository = OrganizationSSOConnectionRepository.from_session(session)
-        update_dict: dict[str, Any] = {
-            field: value
-            for field, value in update.model_dump(
-                exclude_unset=True, exclude={"configuration"}
-            ).items()
-            if value is not None or field == "name"
-        }
+        update_dict = update.model_dump(exclude_unset=True, exclude={"configuration"})
 
-        if update.configuration is not None:
-            update_dict["configuration"] = update.configuration.model_dump()
+        if update.configuration is not MISSING:
+            configuration = update.configuration.model_dump()
+            update_dict["configuration"] = configuration
+            update_dict[
+                "client_secret_encrypted"
+            ] = await OrganizationSSOConnection.encrypt_client_secret(
+                connection.id, configuration.get("client_secret")
+            )
 
         return await repository.update(connection, update_dict=update_dict)
 

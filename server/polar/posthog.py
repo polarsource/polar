@@ -2,12 +2,9 @@ from typing import Any, Literal
 
 from posthog import Posthog
 
-from polar.auth.models import AuthSubject, Subject, is_organization, is_user
 from polar.config import settings
 from polar.logging import ClientContext
-from polar.models import Agent, Organization, User
-
-ORGANIZATION_EVENT_DISTINCT_ID = "organization_event"
+from polar.models import Agent, User
 
 EventCategory = Literal[
     "agent",
@@ -60,20 +57,6 @@ class Service:
         self.client.disabled = settings.is_testing()
         self.client.debug = settings.POSTHOG_DEBUG
 
-    def has_feature_flag(self, auth_subject: AuthSubject[Subject], flag: str) -> bool:
-        if not self.client:
-            return True
-
-        if is_user(auth_subject):
-            return (
-                self.client.feature_enabled(
-                    flag, distinct_id=auth_subject.subject.posthog_distinct_id
-                )
-                or False
-            )
-
-        return False
-
     def capture(
         self,
         distinct_id: str,
@@ -93,40 +76,6 @@ class Service:
                 **self._get_common_properties(),
                 # Mobile client identification
                 **ClientContext.get(),
-                **(properties or {}),
-            },
-        )
-
-    def auth_subject_event(
-        self,
-        auth_subject: AuthSubject[Subject],
-        category: EventCategory,
-        noun: EventNoun,
-        verb: EventVerb,
-        properties: dict[str, Any] | None = None,
-    ) -> None:
-        if is_user(auth_subject):
-            self.user_event(auth_subject.subject, category, noun, verb, properties)
-        elif is_organization(auth_subject):
-            self.organization_event(
-                auth_subject.subject, category, noun, verb, properties
-            )
-        else:
-            self.anonymous_event(category, noun, verb, properties)
-
-    def anonymous_event(
-        self,
-        category: EventCategory,
-        noun: EventNoun,
-        verb: EventVerb,
-        properties: dict[str, Any] | None = None,
-    ) -> None:
-        """Shorthand for one-off anonymous event capture."""
-        self.capture(
-            distinct_id="polar_anonymous",
-            event=_build_event_key(category, noun, verb),
-            properties={
-                **self._get_common_properties(),
                 **(properties or {}),
             },
         )
@@ -166,50 +115,6 @@ class Service:
                 **(properties or {}),
             },
         )
-
-    def organization_event(
-        self,
-        organization: Organization,
-        category: EventCategory,
-        noun: EventNoun,
-        verb: EventVerb,
-        properties: dict[str, Any] | None = None,
-    ) -> None:
-        self.capture(
-            ORGANIZATION_EVENT_DISTINCT_ID,  # Ref: https://posthog.com/docs/product-analytics/group-analytics#advanced-server-side-only-capturing-group-events-without-a-user
-            event=_build_event_key(category, noun, verb),
-            groups={
-                "organization": str(organization.id),
-            },
-            properties={
-                **self._get_common_properties(),
-                **(properties or {}),
-            },
-        )
-
-    def identify(self, user: User) -> None:
-        if not self.client:
-            return
-
-        self.client.set(
-            distinct_id=user.posthog_distinct_id,
-            properties={
-                **self._get_common_properties(),
-                **self._get_user_properties(user),
-            },
-        )
-
-    def user_login(
-        self, user: User, method: Literal["github", "google", "apple", "ml", "code"]
-    ) -> None:
-        self.identify(user)
-        self.user_event(user, "user", "login", "done", {"method": method})
-
-    def user_signup(
-        self, user: User, method: Literal["github", "google", "apple", "ml", "code"]
-    ) -> None:
-        self.identify(user)
-        self.user_event(user, "user", "signup", "done", {"method": method})
 
     def _get_common_properties(self) -> dict[str, Any]:
         return {

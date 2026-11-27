@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, Uuid
+from sqlalchemy import Column, ForeignKey, Index, String, Uuid, func
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -13,8 +13,14 @@ if TYPE_CHECKING:
 
 class TrialRedemption(RecordModel):
     __tablename__ = "trial_redemptions"
+    __table_args__ = (
+        Index(
+            "ix_trial_redemptions_customer_email_lower",
+            func.lower(Column("customer_email")),
+        ),
+    )
 
-    customer_email: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    customer_email: Mapped[str] = mapped_column(String, nullable=False)
     payment_method_fingerprint: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True
     )

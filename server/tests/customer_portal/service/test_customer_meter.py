@@ -10,6 +10,7 @@ from polar.customer_portal.service.customer_meter import (
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.models import Customer, CustomerMeter, Organization, SubscriptionMeter
+from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_active_subscription, create_meter
@@ -23,6 +24,7 @@ class TestList:
         auth_subject: AuthSubject[Customer],
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         organization: Organization,
         customer: Customer,
     ) -> None:
@@ -87,6 +89,7 @@ class TestList:
 
         results, count = await customer_meter_service.list(
             session,
+            redis,
             auth_subject,
             query="API Requests",
             pagination=PaginationParams(1, 10),
@@ -101,6 +104,7 @@ class TestList:
         auth_subject: AuthSubject[Customer],
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         organization: Organization,
         customer: Customer,
     ) -> None:
@@ -161,7 +165,11 @@ class TestList:
         await save_fixture(customer_meter_without)
 
         results, count = await customer_meter_service.list(
-            session, auth_subject, query="50%", pagination=PaginationParams(1, 10)
+            session,
+            redis,
+            auth_subject,
+            query="50%",
+            pagination=PaginationParams(1, 10),
         )
 
         assert count == 1
@@ -173,6 +181,7 @@ class TestList:
         auth_subject: AuthSubject[Customer],
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         organization: Organization,
         customer: Customer,
     ) -> None:
@@ -233,7 +242,11 @@ class TestList:
         await save_fixture(customer_meter_without)
 
         results, count = await customer_meter_service.list(
-            session, auth_subject, query="api_calls", pagination=PaginationParams(1, 10)
+            session,
+            redis,
+            auth_subject,
+            query="api_calls",
+            pagination=PaginationParams(1, 10),
         )
 
         assert count == 1

@@ -35,7 +35,8 @@ def create_review_task(
     after the eval run.
 
     Args:
-        model: Override the model (uses settings.PYDANTIC_AI_GATEWAY_MODEL if None).
+        model: Override the model (uses settings.PYDANTIC_AI_GATEWAY_ORGANIZATION_REVIEW_MODEL
+            if None).
         policy_override: If set, use this policy text instead of fetching live.
     """
     analyzer = ReviewAnalyzer(model)

@@ -95,7 +95,7 @@ export const ProductCheckoutSection = ({
                   <p className="dark:text-polar-500 text-sm text-gray-500">
                     <Link
                       className="text-blue-500 hover:underline"
-                      href={`/dashboard/${organization.slug}/settings/custom-fields`}
+                      href={`/dashboard/${organization.slug}/products/custom-fields`}
                       target="_blank"
                     >
                       Manage Custom Fields

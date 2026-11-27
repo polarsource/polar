@@ -8,9 +8,8 @@ import {
   type Filter,
   type FilterClause,
   type Reducer,
-  getBucketStart,
   getMatcher,
-  reduce,
+  matchEvent,
   withMatchers,
 } from "./reducer";
 
@@ -45,7 +44,6 @@ const makeEvents = (count: number): Event[] => {
 };
 
 const events = makeEvents(count);
-const oldestBucketStart = getBucketStart(START);
 
 const clause = (
   property: string,
@@ -57,6 +55,7 @@ const any = (...clauses: (Filter | FilterClause)[]): Filter => ({ conjunction: "
 
 const reducerOf = (id: string, filter: Filter, aggregation: Aggregation): Reducer => ({
   id,
+  kind: "usage",
   filter,
   aggregation,
 });
@@ -107,20 +106,18 @@ describe("getMatcher", () => {
   });
 });
 
-describe("reduce", () => {
+describe("matchEvent", () => {
+  // A count reads no property of the event; every other aggregation reads one.
   const aggregations: Aggregation[] = [
     { func: "count" },
     { func: "sum", property: "metadata.tokens" },
-    { func: "min", property: "metadata.tokens" },
-    { func: "max", property: "metadata.tokens" },
-    { func: "avg", property: "metadata.tokens" },
   ];
   for (const aggregation of aggregations) {
     const matchers = withMatchers([
       reducerOf("tokens", all(clause("name", "eq", "llm.call")), aggregation),
     ]);
     bench(`${aggregation.func}, one reducer, 1,000 events`, () => {
-      reduce(matchers, events, oldestBucketStart);
+      for (const event of events) matchEvent(matchers, event);
     });
   }
   const tenReducers = Array.from({ length: 10 }, (_, index) =>
@@ -135,11 +132,11 @@ describe("reduce", () => {
   );
   const tenMatchers = withMatchers(tenReducers);
   bench("sum, ten reducers, 1,000 events", () => {
-    reduce(tenMatchers, events, oldestBucketStart);
+    for (const event of events) matchEvent(tenMatchers, event);
   });
   const llmCall = events.find((event) => event.name === "llm.call")!;
   const oneMatcher = withMatchers([tenReducers[0]]);
   bench("sum, one reducer, one matching event", () => {
-    reduce(oneMatcher, [llmCall], oldestBucketStart);
+    matchEvent(oneMatcher, llmCall);
   });
 });

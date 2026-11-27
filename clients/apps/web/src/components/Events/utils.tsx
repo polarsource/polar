@@ -7,6 +7,24 @@ import { SubscriptionEventCard } from './EventCard/SubscriptionEventCard'
 import { UserEventCard } from './EventCard/UserEventCard'
 import { EventCostBadge } from './EventCostBadge'
 
+const DEDICATED_CARD_EVENTS = new Set([
+  'benefit.granted',
+  'benefit.cycled',
+  'benefit.updated',
+  'benefit.revoked',
+  'benefit.manually_granted',
+  'benefit.manually_revoked',
+  'benefit.unrevoked',
+  'subscription.cycled',
+  'subscription.revoked',
+  'subscription.product_updated',
+  'order.paid',
+  'order.refunded',
+])
+
+export const hasDedicatedEventCard = (event: schemas['Event']) =>
+  event.source === 'system' && DEDICATED_CARD_EVENTS.has(event.name)
+
 export const useEventCard = (event: schemas['Event']) => {
   return useMemo(() => {
     switch (event.source) {
@@ -16,6 +34,9 @@ export const useEventCard = (event: schemas['Event']) => {
           case 'benefit.cycled':
           case 'benefit.updated':
           case 'benefit.revoked':
+          case 'benefit.manually_granted':
+          case 'benefit.manually_revoked':
+          case 'benefit.unrevoked':
             return <BenefitEventCard event={event} />
           case 'subscription.cycled':
           case 'subscription.revoked':

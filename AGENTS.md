@@ -18,6 +18,9 @@ per-area `AGENTS.md` linked from the Architecture and Conventions sections befor
   `gh pr create`. Run the `open-pr` skill only when the user names it (`/open-pr`):
   it runs lint, type-check, tests and two review passes, and takes several minutes.
   Do not mark a PR ready for review unless told so.
+- This is an open source repository: PR titles, descriptions and comments are public.
+  Never include numbers from production (e.g. how many customers, orders or
+  organizations are affected), or other PII or internal business data.
 
 ## Architecture
 
@@ -48,6 +51,7 @@ polar/
 ├── sdk/                    # SDKs and generators
 │   ├── generator/              # Internal SDK code generator
 │   ├── python/                 # Generated Python SDK
+│   ├── typescript/             # Generated TypeScript SDK
 │   └── overlays/               # OpenAPI Overlay tweaks for Speakeasy-generated SDKs
 ├── .agents/                # Agent Skills (Cursor, Claude, Codex)
 └── .claude/                # Claude Code config (settings, hooks). skills/ → ../.agents/skills
@@ -55,6 +59,12 @@ polar/
 
 The TypeScript API client is generated from the backend's OpenAPI schema. After changing the
 API, run `pnpm run generate` in `clients/packages/client`.
+
+**Never edit `sdk/python/` or `sdk/typescript/` directly.** Every file in them is generated, and
+the SDK release deletes both directories and regenerates them. A direct edit, even to a
+hand-written-looking file like `src/metering/buffered.ts` or a new test, is silently reverted on
+the next release. Change the template in `sdk/generator/{python,typescript}/template/` (or the
+emitter), then regenerate. See `sdk/generator/AGENTS.md`.
 
 ## Setup
 
@@ -146,22 +156,39 @@ Detailed, review-enforced patterns live next to the code — read the relevant f
   `lazy="raise"` relationships, status-coded `PolarError`, endpoints return ORM models,
   authentication (`AuthSubject` + scopes).
 - **Frontend** → `clients/AGENTS.md`: Orbit `<Box />` design system (raw Tailwind is **deprecated**
-  for layout/spacing/color/etc.), TanStack Query for data, Zustand for state, 250-line `max-lines` limit.
+  for layout/spacing/color/etc.), TanStack Query for data, Zustand for state, 250-line `max-lines` limit,
+  React Compiler is on for web/orbit (no manual memoization there; react-hook-form via `useWatch`/`useFormState`).
 - **Backoffice** → `server/polar/backoffice/AGENTS.md`: HTMX + DaisyUI patterns.
 
 **i18n:** add new translatable strings only to `clients/packages/i18n/src/locales/en.ts` — a CI
 job auto-translates the rest. Don't edit other locale files. (More in `clients/AGENTS.md`.)
 
+**Effect** (`clients/apps/mcp`, `clients/packages/{cli,polar,ingestion}`, `sdk/cli-commands`,
+`sdk/generator/cli_commands/template`): don't write Effect from memory. Before writing or changing
+Effect code, search the Effect and opencode sources for the established pattern (errors, services
+and layers, schemas, CLI, HTTP, testing). Clone them if missing (`git -C <dir> pull` refreshes them):
+
+```bash
+mkdir -p ~/.local/share/effect-solutions
+[ -d ~/.local/share/effect-solutions/effect ] || git clone --depth 1 https://github.com/effect-ts/effect ~/.local/share/effect-solutions/effect
+[ -d ~/.local/share/effect-solutions/opencode ] || git clone --depth 1 https://github.com/anomalyco/opencode ~/.local/share/effect-solutions/opencode
+```
+
+Start with Effect's `LLMS.md` and `ai-docs/src/` (e.g. `01_effect/04_errors`), and
+`packages/core/src/` in opencode. The Effect checkout tracks `main` (Effect 4) and may be newer
+than the version pinned here: confirm every API against the package's installed
+`node_modules/effect` before using it.
+
 ## Architecture Decisions (ADRs)
 
 Significant, cross-cutting, or hard-to-reverse decisions are recorded as short ADRs in
-`handbook/engineering/decisions/` (see the [index](handbook/engineering/decisions/index.mdx)).
+`adr/` (see the [index](adr/README.md)).
 Treat **Accepted** ADRs as binding:
 
 - Before changing a load-bearing pattern, check for a relevant ADR (grep that directory).
 - If code contradicts an Accepted ADR, flag it and cite the id (e.g. "violates ADR-0002").
 - If a change makes a significant decision no ADR covers, propose a new one from
-  `handbook/engineering/decisions/template.mdx` rather than losing the rationale in the diff.
+  `adr/template.md` rather than losing the rationale in the diff.
 - **ADR-0012:** AI API prompts send only the fields the feature needs. Do not
   dump a whole org, customer, or payment object into a model call.
 
@@ -175,14 +202,15 @@ directory. Invoke as `/name` in Cursor and Claude Code, or `$name` in Codex.
 
 ## Documentation
 
-- **Handbook**: https://handbook.polar.sh/engineering/
-- **Design docs**: `handbook/engineering/design-documents/` — write one only when
+- Keep the security policy in `docs/security.mdx` and `SECURITY.md` in sync. Apply policy edits to both files in the same change.
+- **Handbook**: [Engineering Handbook](https://linear.app/polarsh/document/engineering-handbook-438113df8882)
+- **Design docs**: [Design documents](https://linear.app/polarsh/document/design-documents-1b03e0f6e82b) — write one only when
   Polar stores or processes new data, changes login or permissions, adds a
-  new system, or adds a third-party tool that can see Polar data. Not every
-  new API endpoint. Copy `template.mdx`.
-  https://handbook.polar.sh/engineering/design-documents/
-- **API guidelines**: https://handbook.polar.sh/engineering/rest-api-guidelines
-- **User/developer docs**: `docs/` (Mintlify) — `cd docs && pnpm dev` to serve locally.
+  new system, or adds a third-party tool that can see Polar data. Start from the
+  [design document template](https://linear.app/polarsh/document/design-document-template-02c5d83b61b2).
+- **API guidelines**: [REST API Guidelines](https://linear.app/polarsh/document/rest-api-guidelines-65841b9f4bcc)
+- **User/developer docs**: `docs/` (Mintlify) — `cd docs && pnpm dev` to serve locally. Read the
+  `docs-writing` skill before writing or editing a page.
 
 Mintlify API reference is generated from committed `docs/openapi/{version}.openapi.json`. After
 changing public endpoints or webhooks, from `sdk/generator/`:
@@ -203,120 +231,37 @@ Add new operations and webhooks to the matching groups in `docs/docs.json`; that
 - **Redis**: cache and job queue.
 - **PostgreSQL**: primary database.
 
-## Claude Code on the web
+## Driving the local UI
 
-`.claude/hooks/session-start.sh` runs as a `SessionStart` hook and leaves the container ready to
-run tests and linters. It mirrors `.github/workflows/test_server.yaml` rather than `dev up`,
-because `dev up` targets interactive local development: it aborts if the Tinybird CLI install
-fails, curl-installs nvm, calls `systemctl start docker`, prompts for GitHub/Stripe, and — worst
-for an agent — swallows a failed email-renderer build, the artifact that blocks config import.
-
-It is idempotent, skips work already done, and reports failed steps in its output rather than
-aborting. It fires on session start and resume, not on every compaction. Read the script for
-what it does; its log is `polar-session-start.log` in `$TMPDIR` (`/tmp` unless overridden), and
-the Docker daemon's is `polar-dockerd.log` next to it.
-
-The image's pnpm switches to the `packageManager` version without running its postinstall,
-which leaves a shim turbo can't exec ("Exec format error" on a cache miss). The hook installs
-that version's native binary under `~/.local/share/polar-pnpm/` and links it into
-`~/.local/bin`, ahead of the image's pnpm on `PATH`.
-
-Deliberately excluded, none of it needed for tests or linters: `dev seed`, `dev start`/tmux,
-Stripe keys or CLI, GitHub App setup, the Tinybird CLI, `dev docker`, and the web build. Redis is
-replaced by `FakeAsyncRedis` in tests, Stripe objects are fakes, and Tinybird tests self-skip.
-`fonts-noto-cjk` is also left out — install it only if a PDF or invoice test fails on glyphs.
-
-Two things to know when running tests here:
-
-- An unscoped `pnpm test` runs 19 turbo tasks at concurrency 10 on 4 CPUs and produces spurious
-  `Test timed out in 5000ms` failures in `packages/checkout` and `apps/web` that pass in
-  isolation. Scope with `--filter`, or pass `--concurrency=2`.
-- `packages/cli` tests need `bun`.
-
-## Cursor Cloud specific instructions
-
-Prefer the Polar Development CLI (`dev/cli/`, alias `dev`) — the same path local developers use.
-See `dev/cli/README.md` for the full command list. Do **not** use `dev docker` (the heavier
-image-based stack from the `local-environment` skill) unless you specifically need it.
-Standard lint/test commands live in `server/AGENTS.md` and `clients/AGENTS.md`.
-
-**Day-to-day start sequence**
-
-```bash
-# Once per VM boot (Docker isn't managed by systemd here):
-sudo dockerd > /tmp/dockerd.log 2>&1 &
-
-dev up --skip-integrations   # deps, infra (incl. Tinybird), migrations, builds
-dev seed                     # sample orgs/products + admin@polar.sh (NOT part of `dev up`)
-dev start                    # api + worker + web (+ stripe) in tmux session `polar`
-# Stop with:  dev stop
-# Status:     dev status
-```
-
-`--skip-integrations` avoids interactive GitHub/Stripe prompts. `dev up` does **not** load
-sample data; run `dev seed` afterward. That creates
-`admin@polar.sh` with access to seeded orgs (notably `admin-org` with a `Pro` product, plus
-`acme-corp`, `polar`, etc.). Login OTP codes print in the API pane. If seed says "Already
-seeded" (exit 2), the DB already has `acme-corp` — use `dev seed --reset` only when you
-intentionally want a wipe.
-
-`dev start` ends by *attaching* to the `polar` tmux session; in a non-interactive agent shell,
-create/attach then immediately `tmux detach-client -s polar`, or run `dev api` / `dev worker` /
-`dev web` as individual detached processes. The stripe pane of `dev start` will prompt to
-install the Stripe CLI via Homebrew — decline on Linux (no Homebrew); checkout/payment testing
-needs a real Stripe sandbox later (`dev stripe`, see the `local-environment` skill's
-`payment-testing` rule).
-
-**One-time shell wiring** (specific to the Cursor Cloud VM snapshot — verify before relying on
-any of it, none of it holds in other cloud containers): `./dev/cli/install` adds the `dev`
-alias; Node 24 is installed via nvm; `uv` is at `~/.local/bin/uv`. Source `~/.bashrc` (or start
-a login shell) so `nvm use 24` and the `dev` alias are active. Where the alias is absent, call
-`./dev/cli/dev` directly. The root `.nvmrc` pins Node 24 for the whole repo.
-
-**Docker caveats** (again Cursor Cloud VM specific). `/etc/docker/daemon.json` is pinned to
-`fuse-overlayfs` with `features.containerd-snapshotter: false` — required for Docker 29 in that
-VM; don't remove it. The `ubuntu` user is in the `docker` group. Elsewhere the file may not
-exist and the daemon may run as root on `overlayfs`; check `docker info` rather than assuming.
-
-**Backend config artifacts.** Config import fails without the email renderer binary
-(`server/emails/bin/react-email-pkg`, built by `dev up` / `uv run task emails`) → pydantic
-`EMAIL_RENDERER_BINARY_PATH` error. `server/.env` is **not** among them for tests:
-under `POLAR_ENV=testing` (which `tests/conftest.py` forces) `polar/config.py` loads the
-committed `server/.env.testing`. `server/.env` is still required before `docker compose up -d`,
-which interpolates it. `dev status` reports "Worker unknown (check manually)" by design —
-confirm with `pgrep -af dramatiq` or the `polar` tmux pane.
-
-**Tests need no manual DB setup** — an autouse `sqlalchemy_utils` fixture creates and drops
-`polar_test_<worker_id>` (`polar_test_master` without xdist), not `polar_test` itself. Run
-`uv run task test_fast` or a subset with `POLAR_ENV=testing uv run python -m pytest <path>`.
-`dev/create-test-db` creates a plain, unmigrated `polar_test` and is not part of this path.
-
-**Login.** Email OTP codes are printed in the API pane / log (`LOGIN CODE: …`). Grab with
-`tmux capture-pane -t polar:services.0 -p | grep -a "LOGIN CODE" | tail -1`. `admin@polar.sh`
-is the conventional test account.
+**Login.** Enter the email on the login page, then run `dev otp` to print a code for that
+sign-in (`dev otp <email>` when several are waiting). It issues a new code, so the one in the
+API log (`LOGIN CODE: …`) stops working. `admin@polar.sh` is the conventional test account.
+The `local-login` skill has the full steps.
 
 **Onboarding gotcha.** The org-creation wizard's "Launch Dashboard" button only submits once the
 Product step's required fields are filled (description ≥30 chars, ≥1 selling category, ≥1 pricing
 model). The AUP AI check auto-APPROVEs when `PYDANTIC_AI_GATEWAY_API_KEY` is unset.
 
-## Temporary eMudhra CA mitigations — recheck October 23, 2026
+## Cloud agent environments
 
-On or after **2026-10-23**, recheck the [upstream disclosure](https://emudhra.we-have-a-problem.com/)
-and the certificate stores shipped by our actual base images, runtimes and Stripe SDK.
+Running in Claude Code on the web or a Cursor Cloud VM? Read `dev/CLOUD_AGENTS.md` first: it
+covers the `SessionStart` hook, the pnpm shim, Docker caveats and the `dev` start sequence.
+
+## Temporary eMudhra CA mitigations — recheck December 10, 2026
+
+On or after **2026-12-10**, recheck the [upstream disclosure](https://emudhra.we-have-a-problem.com/)
+and the certificate stores shipped by our actual base images and runtimes.
 If upstream fixes cover every affected path, remove the manual mitigations consistently:
 the `sed` root exclusions and `trust extract` blocklists in Dockerfiles under `server/`,
 `dev/docker/` and `infra/`, the EC2 host mitigations in `terraform/modules/`
-(e.g. `ec2_tailscale/tailscale-init.sh` and `planetscale_migration/user-data.sh`),
-plus the Stripe workaround that sets
-`stripe_lib.ca_bundle_path = certifi.where()` in `polar.integrations.stripe` before platform
-and merchant migration HTTP clients are constructed. Remove that override only after
-Stripe's own bundle is verified safe for both client paths. Keep patched dependency
-versions and security minimums.
+(e.g. `ec2_tailscale/tailscale-init.sh.tftpl` and `planetscale_migration/user-data.sh`).
+Keep patched dependency versions and security minimums, including Stripe Python 14.4.2
+or later for the SDK's bundled roots.
 
 Before removing a mitigation, verify the replacement without that workaround rejects all
-twelve compromised test chains from the disclosure while legitimate, credential-free HTTPS
-connections still succeed. Check build stages, API/workers, Lambda, merchant migration clients,
-Node and EC2 hosts separately; one updated trust store does not establish protection
+compromised test chains from the disclosure while legitimate, credential-free HTTPS
+connections still succeed. Check build stages, API/workers, Lambda, Node and EC2 hosts
+separately; one updated trust store does not establish protection
 for the others.
 If upstream coverage is incomplete, retain the necessary workarounds and update this note
 with the remaining gaps and a new review date. Update regression tests alongside any cleanup.

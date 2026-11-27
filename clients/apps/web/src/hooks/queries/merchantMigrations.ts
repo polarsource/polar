@@ -177,6 +177,49 @@ const panTransferHandlers = (id: string) => ({
   },
 })
 
+// Keyed on the operation too: the list says which benefits exist, and that only
+// changes when a set-up run moves on.
+export const useMigrationBenefits = (
+  id: string,
+  operation: schemas['MerchantMigrationOperation'] | null | undefined,
+  enabled: boolean,
+) =>
+  useQuery({
+    queryKey: [
+      'merchantMigrationBenefits',
+      { id, operation: `${operation?.kind}:${operation?.status}` },
+    ],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/merchant-migrations/{id}/benefits', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: enabled && !!id,
+  })
+
+export const useSetUpMigrationBenefits = (id: string) =>
+  useMutation({
+    mutationFn: (body: schemas['MerchantMigrationBenefitsCreate']) =>
+      dataOrThrow(
+        api.POST('/v1/merchant-migrations/{id}/benefits', {
+          params: { path: { id } },
+          body,
+        }),
+        "We couldn't set up these benefits. Please try again.",
+      ),
+    onSuccess: (migration) => {
+      getQueryClient().setQueryData(['merchantMigration', { id }], migration)
+      // The run ends on `done` like the import before it, so the list read
+      // before it would otherwise be reused.
+      getQueryClient().invalidateQueries({
+        queryKey: ['merchantMigrationBenefits', { id }],
+      })
+      invalidateMigration(id)
+    },
+  })
+
 export const useStartPanTransfer = (id: string) =>
   useMutation({
     mutationFn: () =>
@@ -187,6 +230,21 @@ export const useStartPanTransfer = (id: string) =>
         "We couldn't start the card transfer.",
       ),
     ...panTransferHandlers(id),
+  })
+
+export const useFinishMerchantMigration = (id: string) =>
+  useMutation({
+    mutationFn: () =>
+      dataOrThrow(
+        api.POST('/v1/merchant-migrations/{id}/finish', {
+          params: { path: { id } },
+        }),
+        "We couldn't finish this migration. Please try again.",
+      ),
+    onSuccess: (migration) => {
+      getQueryClient().setQueryData(['merchantMigration', { id }], migration)
+      invalidateMigration(id)
+    },
   })
 
 export const useCompletePanTransferStep = (id: string) =>

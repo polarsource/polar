@@ -127,9 +127,7 @@ class _SubscriptionScheduleJobStore(BaseJobStore):
     def remove_all_jobs(self) -> None:
         raise RuntimeError("This job store does not support managing jobs directly.")
 
-    def _list_jobs_from_statement(
-        self, statement: Select[tuple[Subscription]]
-    ) -> list[Job]:
+    def _list_jobs_from_statement(self, statement: Select[Subscription]) -> list[Job]:
         jobs: list[Job] = []
         with Session(self.engine) as session:
             results = session.execute(
@@ -156,7 +154,7 @@ class _SubscriptionScheduleJobStore(BaseJobStore):
         return jobs
 
     @staticmethod
-    def scheduling_statement() -> Select[tuple[Subscription]]:
+    def scheduling_statement() -> Select[Subscription]:
         raise NotImplementedError
 
 
@@ -173,12 +171,15 @@ class SubscriptionJobStore(_SubscriptionScheduleJobStore):
         return cast(ColumnElement[datetime.datetime | None], _next_run_time())
 
     @staticmethod
-    def scheduling_statement() -> Select[tuple[Subscription]]:
+    def scheduling_statement() -> Select[Subscription]:
         """Base query for subscriptions eligible for cycle scheduling.
 
         Returns an engine-agnostic ``Select`` — safe to execute via either
         a sync ``Session`` (production APScheduler) or an async ``AsyncSession``
         (E2E tests).
+
+        Served by ``ix_subscriptions_cycle_schedule``: when the ordering or the
+        subscription filters change, update the index expression and predicate.
         """
         return (
             select(Subscription)
@@ -207,7 +208,7 @@ class SubscriptionResumeJobStore(_SubscriptionScheduleJobStore):
         return cast(ColumnElement[datetime.datetime | None], Subscription.resumes_at)
 
     @staticmethod
-    def scheduling_statement() -> Select[tuple[Subscription]]:
+    def scheduling_statement() -> Select[Subscription]:
         """Paused subscriptions eligible for auto-resume. Excludes renewals-disabled
         orgs — resuming charges immediately (the API path guards separately)."""
         return (
@@ -223,4 +224,34 @@ class SubscriptionResumeJobStore(_SubscriptionScheduleJobStore):
                 Subscription.resumes_at.is_not(None),
             )
             .order_by(Subscription.resumes_at.asc())
+        )
+
+
+class SubscriptionTrialEndedJobStore(_SubscriptionScheduleJobStore):
+    """Triggers ``subscription.cancel_expired_trial_ended`` at each trial_ended
+    subscription's ``ends_at``."""
+
+    job_id_prefix = "subscriptions:trial_ended"
+    actor_name = "subscription.cancel_expired_trial_ended"
+
+    @property
+    def trigger_column(self) -> ColumnElement[datetime.datetime | None]:
+        return cast(ColumnElement[datetime.datetime | None], Subscription.ends_at)
+
+    @staticmethod
+    def scheduling_statement() -> Select[Subscription]:
+        """Served by ``ix_subscriptions_trial_ended_schedule``."""
+        return (
+            select(Subscription)
+            .join(Customer, onclause=Customer.id == Subscription.customer_id)
+            .join(Organization, onclause=Organization.id == Customer.organization_id)
+            .where(
+                ~Customer.is_deleted,
+                ~Organization.is_deleted,
+                ~Subscription.is_deleted,
+                Subscription.scheduler_locked_at.is_(None),
+                Subscription.status == SubscriptionStatus.trial_ended,
+                Subscription.ends_at.is_not(None),
+            )
+            .order_by(Subscription.ends_at.asc())
         )

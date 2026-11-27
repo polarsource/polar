@@ -2,7 +2,7 @@ from collections.abc import AsyncGenerator
 
 import pytest
 from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 from polar.v2026_04 import PolarAsync
 
 from polar.auth.scope import Scope

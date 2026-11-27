@@ -15,13 +15,13 @@ import { ProductFormType } from './ProductForm'
 export interface ProductInfoSectionProps {
   className?: string
   compact?: boolean
-  nameFlagged?: boolean
+  flaggedCategory?: string
 }
 
 export const ProductInfoSection = ({
   className,
   compact,
-  nameFlagged,
+  flaggedCategory,
 }: ProductInfoSectionProps) => {
   const { control } = useFormContext<ProductFormType>()
 
@@ -57,9 +57,11 @@ export const ProductInfoSection = ({
                 <Input {...field} value={field.value || ''} />
               </FormControl>
               <FormMessage />
-              {nameFlagged && (
+              {flaggedCategory && (
                 <Text variant="caption" color="warning">
-                  This name suggests a product that is not permitted under our{' '}
+                  This name suggests{' '}
+                  <strong className="font-semibold">{flaggedCategory}</strong>,
+                  which is not permitted under our{' '}
                   <a
                     href="https://polar.sh/legal/acceptable-use-policy"
                     className="underline"

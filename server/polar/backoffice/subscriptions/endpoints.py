@@ -107,6 +107,8 @@ def subscription_status_badge(subscription: Subscription) -> Generator[None]:
             classes("badge-info")
         elif status in {SubscriptionStatus.unpaid, SubscriptionStatus.past_due}:
             classes("badge-error")
+        elif status == SubscriptionStatus.trial_ended:
+            classes("badge-warning")
         else:  # canceled, incomplete, incomplete_expired
             classes("badge-neutral")
         text(status.value.replace("_", " ").title())

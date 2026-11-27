@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util'
 import type { AppliedEntry } from '@/schemas/BillingConfig'
 import {
   ALL_EVENTS,
@@ -5,6 +6,7 @@ import {
   aggregation,
   count,
   filter,
+  isSet,
   money,
   name,
   record,
@@ -15,7 +17,6 @@ import {
   unitScale,
 } from '@/utils/billing-config/describe'
 import * as ui from '@/utils/ui'
-import { redactUrl } from '@/utils/url'
 
 const fields = (pairs: ReadonlyArray<readonly [string, string]>) => {
   const width = Math.max(...pairs.map(([label]) => label.length))
@@ -31,6 +32,9 @@ export const recurrence = (interval: unknown, count: unknown) => {
     ? `per ${name(interval)}`
     : `per ${times} ${name(interval)}s`
 }
+
+export const meterCycle = (interval: unknown, count: unknown) =>
+  isSet(interval) ? recurrence(interval, count) : 'with billing'
 
 const CURRENCIES = ' / '
 
@@ -81,8 +85,11 @@ const pricing = (product: Record<string, unknown>) => {
     .join(CURRENCIES)
   const billed = amounts === '' ? `billed ${cycle}` : `${amounts} ${cycle}`
   const shared = uniform ? taxes[0] : undefined
+  const billing = shared === undefined ? billed : `${billed}, ${shared}`
   return [
-    shared === undefined ? billed : `${billed}, ${shared}`,
+    isSet(product['meter_interval'])
+      ? `${billing}, metered ${meterCycle(product['meter_interval'], product['meter_interval_count'])}`
+      : billing,
     ...tiers.flatMap((price, index) =>
       tierTable(price, tierUnit(price) ?? 'unit', own(fixed.length + index)),
     ),
@@ -131,6 +138,28 @@ const unitFacts = (
   ]
 }
 
+const meteredPrices = (product: Record<string, unknown>) => [
+  ...prices(product, 'metered_unit'),
+  ...prices(product, 'metered_tiers'),
+]
+
+type Side = 'before' | 'after'
+
+const diffMeters = (change: AppliedEntry['diff'][number], side: Side) => {
+  const value = change[side]
+  if (change.field === 'prices') {
+    return meteredPrices({ prices: value }).map((price) => name(price['meter']))
+  }
+  const meter =
+    change.field === 'properties' ? record(value)?.['meter'] : undefined
+  return meter === undefined ? [] : [name(meter)]
+}
+
+export const usedMeters = ({ action, diff }: AppliedEntry, side: Side) =>
+  action === 'updated'
+    ? [...new Set(diff.flatMap((change) => diffMeters(change, side)))]
+    : []
+
 export const productMeters = (
   input: unknown,
   unitOf: (meter: string) => string,
@@ -138,10 +167,7 @@ export const productMeters = (
   const product = record(input)
   if (product === undefined) return []
   const byMeter = new Map<string, Record<string, unknown>[]>()
-  for (const price of [
-    ...prices(product, 'metered_unit'),
-    ...prices(product, 'metered_tiers'),
-  ]) {
+  for (const price of meteredPrices(product)) {
     const id = name(price['meter'])
     byMeter.set(id, [...(byMeter.get(id) ?? []), price])
   }
@@ -163,11 +189,8 @@ export const productMeters = (
 
 export const meterUnit = (input: unknown) => {
   const meter = record(input)
-  return meter?.['unit'] === 'custom'
-    ? name(meter['custom_label'])
-    : meter?.['unit'] === 'token'
-      ? 'tokens'
-      : 'units'
+  if (meter?.['unit'] === 'custom') return name(meter['custom_label'])
+  return meter?.['unit'] === 'token' ? 'tokens' : 'units'
 }
 
 export const productSentence = (input: unknown) => {
@@ -201,6 +224,13 @@ export const benefitSentence = (input: unknown) => {
       ...visibility,
     ])
   }
+  if (benefit['type'] === 'slack_shared_channel' && properties !== undefined) {
+    return fields([
+      ['type', 'Slack channel'],
+      ['channel', name(properties['channel_name_template'])],
+      ...visibility,
+    ])
+  }
   return fields([
     [
       'type',
@@ -212,52 +242,101 @@ export const benefitSentence = (input: unknown) => {
   ])
 }
 
-// Slack and Discord carry their credential in the path, so only the host is shown.
-export const webhookUrl = (url: unknown, format: unknown) => {
-  const shown = redactUrl(name(url))
-  if (format === 'raw') return shown
-  const parsed = URL.parse(shown)
-  return parsed ? `${parsed.origin}/***` : shown
+// A changed meter re-sends the prices and properties that use it as they were
+const changed = ({ before, after }: AppliedEntry['diff'][number]) =>
+  !isDeepStrictEqual(before, after)
+
+const FIELD_PROPERTIES: Record<string, string> = {
+  form_label: 'label',
+  form_help_text: 'help',
+  form_placeholder: 'placeholder',
+  min_length: 'min length',
+  max_length: 'max length',
+  ge: 'min',
+  le: 'max',
 }
 
-const shownUrl = (url: unknown, format: unknown) =>
-  url === undefined || url === null
-    ? url
-    : new Rendered(webhookUrl(url, format))
+const propertyValue = (property: string, value: unknown, type: unknown) => {
+  if (value === undefined || value === null) return value
+  if (property === 'options' && Array.isArray(value)) {
+    return new Rendered(
+      value
+        .map(record)
+        .map(
+          (option) => `${name(option?.['value'])} → ${name(option?.['label'])}`,
+        )
+        .join('\n'),
+    )
+  }
+  if (type === 'date' && typeof value === 'number') {
+    return new Rendered(new Date(value * 1000).toISOString().slice(0, 10))
+  }
+  if (typeof value === 'boolean') return new Rendered(value ? 'yes' : 'no')
+  return value
+}
 
-// Webhook URLs in a diff are redacted by the format on their own side.
+const propertyText = (property: string, value: unknown, type: unknown) => {
+  const shown = propertyValue(property, value, type)
+  return shown instanceof Rendered
+    ? shown.text.replaceAll('\n', ', ')
+    : name(shown)
+}
+
+export const customFieldSentence = (input: unknown) => {
+  const field = record(input)
+  if (field === undefined) return undefined
+  return fields([
+    ['type', name(field['type'])],
+    ['name', name(field['name'])],
+    ...Object.entries(record(field['properties']) ?? {})
+      .filter(([, value]) => isSet(value))
+      .map(
+        ([key, value]) =>
+          [
+            FIELD_PROPERTIES[key] ?? key,
+            propertyText(key, value, field['type']),
+          ] as const,
+      ),
+  ])
+}
+
+// A custom field's properties show as one row each, with readable names.
+const customFieldProperties = (
+  change: AppliedEntry['diff'][number],
+  type: unknown,
+): AppliedEntry['diff'] => {
+  const before = record(change.before) ?? {}
+  const after = record(change.after) ?? {}
+  return [...new Set([...Object.keys(before), ...Object.keys(after)])]
+    .filter((key) => !isDeepStrictEqual(before[key], after[key]))
+    .map((key) => ({
+      field: FIELD_PROPERTIES[key] ?? key,
+      before: propertyValue(key, before[key], type),
+      after: propertyValue(key, after[key], type),
+    }))
+}
+
 export const shownDiff = (
   section: string,
-  diff: AppliedEntry['diff'],
+  raw: AppliedEntry['diff'],
   document: unknown,
 ): AppliedEntry['diff'] => {
-  if (section !== 'webhooks') return diff
-  const format = diff.find((change) => change.field === 'format')
-  const before =
-    format === undefined ? record(document)?.['format'] : format.before
-  const after = record(document)?.['format']
-  return diff.map((change) =>
-    change.field === 'url'
-      ? {
-          ...change,
-          before: shownUrl(change.before, before),
-          after: shownUrl(change.after, after),
-        }
-      : change,
-  )
+  const diff = raw.filter(changed)
+  if (section === 'custom_fields') {
+    return diff.flatMap((change) =>
+      change.field === 'properties'
+        ? customFieldProperties(change, record(document)?.['type'])
+        : [change],
+    )
+  }
+  return diff
 }
 
-export const webhookSentence = (input: unknown) => {
-  const webhook = record(input)
-  if (webhook === undefined) return undefined
-  const events = Array.isArray(webhook['events']) ? webhook['events'] : []
-  return fields([
-    ['url', webhookUrl(webhook['url'], webhook['format'])],
-    ...(webhook['format'] !== 'raw'
-      ? [['format', name(webhook['format'])] as const]
-      : []),
-    ['events', events.map((event) => name(event)).join(', ')],
-  ])
+const unitField = (meter: Record<string, unknown>) => {
+  if (meter['unit'] === 'custom') {
+    return [['unit', name(meter['custom_label'])] as const]
+  }
+  return meter['unit'] === 'token' ? [['unit', 'tokens'] as const] : []
 }
 
 export const meterSentence = (input: unknown) => {
@@ -272,10 +351,6 @@ export const meterSentence = (input: unknown) => {
   return fields([
     ['events', events],
     ['aggregation', func === undefined ? 'count' : aggregation(func)],
-    ...(meter['unit'] === 'custom'
-      ? [['unit', name(meter['custom_label'])] as const]
-      : meter['unit'] === 'token'
-        ? [['unit', 'tokens'] as const]
-        : []),
+    ...unitField(meter),
   ])
 }

@@ -1,6 +1,6 @@
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { useProduct } from '@/hooks/queries'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import {
   AllInclusiveOutlined,
   ArrowForwardOutlined,
@@ -8,7 +8,6 @@ import {
 import { schemas } from '@polar-sh/client'
 import { Status, type StatusColor } from '@polar-sh/orbit'
 import Link from 'next/link'
-import { useContext } from 'react'
 import { EventCardBase } from './EventCardBase'
 
 export interface SubscriptionEventCardProps {
@@ -30,7 +29,7 @@ const SubscriptionBillingEventCard = ({
     | schemas['SubscriptionRevokedEvent']
   status: [string, StatusColor]
 }) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const { data: product, isLoading } = useProduct(event.metadata.product_id)
 
   const { amount, currency, recurring_interval, recurring_interval_count } =
@@ -74,7 +73,7 @@ const SubscriptionProductUpdatedEventCard = ({
 }: {
   event: schemas['SubscriptionProductUpdatedEvent']
 }) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const { data: oldProduct, isLoading: isLoadingOldProduct } = useProduct(
     event.metadata.old_product_id,
   )

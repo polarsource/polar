@@ -1,0 +1,113 @@
+---
+title: "Skills and plugins"
+description: "See what the Polar plugin and skills contain, what polar agent setup installs for each coding agent, and how to install them by hand."
+---
+
+The **Polar plugin** packages everything a coding agent needs to work with Polar: the two [MCP servers](/integrate/mcp) and four skills. A **skill** is a set of instructions, in the [Agent Skills](https://agentskills.io/) format, that the agent loads when a task matches. The plugin and skills live in the open source [polarsource/agent-toolkit](https://github.com/polarsource/agent-toolkit) repository.
+
+## What's included
+
+| Skill | What it does |
+| --- | --- |
+| `setup-polar` | Guided setup from scratch: connects the MCP server, creates an organization and a first product, then hands off to `polar-integration`. |
+| `polar-integration` | Adds checkout, Customer Portal and webhook endpoints with `@polar-sh/sdk` to a TypeScript or JavaScript app, such as Next.js, Express, Hono, Astro, SvelteKit, Remix, Nuxt or Cloudflare Workers. |
+| `polar-testing` | Tests an integration against the sandbox: test cards, local webhooks with `polar webhook listen` and `polar webhook trigger`, mocks and CI. |
+| `polar-migration` | Guides a migration to Polar: the assisted migration from Stripe Billing, or recreating the catalog and moving customers from another provider. |
+
+The MCP servers are `polar-sandbox` (`https://mcp.polar.sh/mcp/polar-sandbox`) and `polar` (`https://mcp.polar.sh/mcp/polar-mcp`). Both use OAuth, so nothing connects until you sign in and authorize an organization.
+
+The plugin contains instructions and MCP configuration only. It runs no scripts or hooks on your machine.
+
+## Set up with the CLI
+
+```bash Terminal
+polar agent setup
+```
+
+The command detects Claude Code, Codex and Cursor and asks which to set up:
+
+| Agent | What it installs |
+| --- | --- |
+| Claude Code | The `polar` plugin from the `polarsource/agent-toolkit` marketplace, with both MCP servers and the skills |
+| Codex | The `polar` plugin from OpenAI's plugin directory. It connects to your live organization; add `polar-sandbox` as shown in [MCP server](/integrate/mcp) |
+| Cursor | Both MCP servers in `~/.cursor/mcp.json` and the skills in `~/.cursor/skills` |
+
+Useful flags:
+
+| Flag | What it does |
+| --- | --- |
+| `--status` | Shows what's set up, without changing anything |
+| `--client claude-code` | Sets up one agent only (`claude-code`, `codex` or `cursor`) |
+| `--force` | Reinstalls even when an agent is already set up. Use it to update |
+| `--confirm` | Sets up every detected agent without asking, for scripts |
+| `--skills project` | Also installs the skills into `.agents/skills` in the current directory, for agents without a Polar plugin |
+| `--skills global` | Installs them into `~/.agents/skills` instead |
+
+See the [`polar agent` reference](/integrate/cli/reference/agent) for every flag.
+
+## Install by hand
+
+<Tabs>
+  <Tab title="Claude Code">
+    ```text
+    /plugin install polar --marketplace polarsource/agent-toolkit
+    ```
+
+    Then run `/mcp`, select `polar` or `polar-sandbox` and sign in. Skills are available as `/polar:setup-polar`, `/polar:polar-integration` and so on.
+  </Tab>
+  <Tab title="ChatGPT and Codex">
+    Polar is in OpenAI's plugin directory, which ChatGPT and Codex share.
+
+    - **Codex CLI:** run `/plugins`, search for Polar and install it, then start a new session.
+    - **ChatGPT and the Codex app:** open the **Plugins** tab, search for Polar and install it.
+
+    Sign in to Polar when prompted. The plugin connects to your live organization. To test against the sandbox, add `polar-sandbox` as shown in [MCP server](/integrate/mcp).
+  </Tab>
+  <Tab title="Cursor">
+    Open **Customize**, choose **From GitHub Repository** and enter `https://github.com/polarsource/agent-toolkit`. Then sign in to `polar` or `polar-sandbox` from Cursor's MCP settings.
+  </Tab>
+  <Tab title="Gemini CLI">
+    ```bash
+    gemini extensions install https://github.com/polarsource/agent-toolkit
+    ```
+
+    Then sign in with `/mcp auth polar` or `/mcp auth polar-sandbox`.
+  </Tab>
+  <Tab title="Antigravity">
+    ```bash
+    agy plugin install https://github.com/polarsource/agent-toolkit
+    ```
+
+    Then sign in to `polar` or `polar-sandbox` from Antigravity's MCP settings.
+  </Tab>
+  <Tab title="Other agents">
+    Install the skills into `.agents/skills`:
+
+    ```bash
+    polar agent setup --skills project
+    ```
+
+    Then connect the MCP servers as shown in [MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+## Try it
+
+After setup, ask your agent:
+
+```text Prompt
+Add Polar checkout and a webhook handler for my Pro plan to this app, using my Polar sandbox.
+```
+
+```text Prompt
+Send a sandbox order.paid event to my local webhook handler and check that it works.
+```
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Build with agents](/agents/overview) | When to use the plugin, MCP server, CLI or skills |
+| [MCP server](/integrate/mcp) | Connect a client by hand, read-only mode, telemetry |
+| [MCP operations](/agents/mcp-operations) | What the agent can call |
+| [agent-toolkit on GitHub](https://github.com/polarsource/agent-toolkit) | Source, changelog and issues |

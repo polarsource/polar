@@ -53,32 +53,32 @@ export function createPolar(options: PolarOptions) {
   const client = createPolarCore(options);
 
   const services = {
-    organizations: createOrganizationsService(client),
-    subscriptions: createSubscriptionsService(client),
-    oauth2: createOauth2Service(client),
-    benefits: createBenefitsService(client),
-    benefitGrants: createBenefitGrantsService(client),
-    webhooks: createWebhooksService(client),
-    products: createProductsService(client),
-    orders: createOrdersService(client),
-    refunds: createRefundsService(client),
-    disputes: createDisputesService(client),
-    checkouts: createCheckoutsService(client),
-    files: createFilesService(client),
-    metrics: createMetricsService(client),
-    licenseKeys: createLicenseKeysService(client),
-    checkoutLinks: createCheckoutLinksService(client),
-    customFields: createCustomFieldsService(client),
-    discounts: createDiscountsService(client),
-    customers: createCustomersService(client),
-    customerPortal: createCustomerPortalService(client),
-    customerSeats: createCustomerSeatsService(client),
-    customerSessions: createCustomerSessionsService(client),
     events: createEventsService(client),
-    eventTypes: createEventTypesService(client),
-    meters: createMetersService(client),
+    customerPortal: createCustomerPortalService(client),
+    customers: createCustomersService(client),
+    checkouts: createCheckoutsService(client),
+    subscriptions: createSubscriptionsService(client),
+    products: createProductsService(client),
+    licenseKeys: createLicenseKeysService(client),
+    orders: createOrdersService(client),
+    organizations: createOrganizationsService(client),
     customerMeters: createCustomerMetersService(client),
+    metrics: createMetricsService(client),
+    discounts: createDiscountsService(client),
+    oauth2: createOauth2Service(client),
+    meters: createMetersService(client),
+    benefits: createBenefitsService(client),
     payments: createPaymentsService(client),
+    disputes: createDisputesService(client),
+    refunds: createRefundsService(client),
+    webhooks: createWebhooksService(client),
+    benefitGrants: createBenefitGrantsService(client),
+    checkoutLinks: createCheckoutLinksService(client),
+    customerSessions: createCustomerSessionsService(client),
+    files: createFilesService(client),
+    customerSeats: createCustomerSeatsService(client),
+    customFields: createCustomFieldsService(client),
+    eventTypes: createEventTypesService(client),
   };
 
   return {
@@ -88,11 +88,11 @@ export function createPolar(options: PolarOptions) {
      *
      * @param options.buffered Batch and retry options; defaults to 100 events, a 1000-ms
      * collection interval, a 5000-ms shutdown timeout, and 3 attempts.
-     * @param options.outpost true or Outpost options to enable Outpost. Disabled by default.
-     * Pass false to disable; explicit options require a Redis URL.
+     * @param options.outpost Outpost from `outpost()` in `@polar-sh/sdk/outpost`. Disabled by
+     * default.
      * @param options.strategies Replace all defaults with custom strategies. Cannot be
      * combined with buffered or outpost.
-     * @returns An metering helper to start before use.
+     * @returns A metering helper that starts on its first operation.
      */
     metering: (options?: MeteringOptions) => createMetering(services, client, options),
   };

@@ -3,12 +3,13 @@ from datetime import UTC, datetime
 import pytest
 
 from polar.models.account import Account
+from polar.models.backoffice_user import BackofficeUser
 from polar.models.dispute import DisputeStatus
 from polar.models.organization import Organization
 from polar.models.payment import PaymentStatus
 from polar.models.product import Product
 from polar.models.product_price import ProductPriceSource
-from polar.models.user import User
+from polar.models.webhook_endpoint import WebhookEndpoint, WebhookFormat
 from polar.organization_review.report import (
     AgentReportV2,
     AnyAgentReport,
@@ -212,7 +213,7 @@ class TestGetLatestHumanFeedback:
         self,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         repo = OrganizationReviewRepository.from_session(session)
         agent_review = await repo.save_agent_review(
@@ -231,13 +232,13 @@ class TestGetLatestHumanFeedback:
         )
         await repo.record_human_decision(
             organization_id=organization.id,
-            reviewer_id=user.id,
+            backoffice_reviewer=backoffice_user,
             decision=DecisionType.DENY,
         )
         await session.flush()
         await repo.record_human_decision(
             organization_id=organization.id,
-            reviewer_id=user.id,
+            backoffice_reviewer=backoffice_user,
             decision=DecisionType.APPROVE,
         )
         await session.flush()
@@ -279,7 +280,7 @@ class TestRecordHumanDecision:
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         """review_context is derived from the agent review's review_type."""
         repo = OrganizationReviewRepository.from_session(session)
@@ -296,7 +297,7 @@ class TestRecordHumanDecision:
 
         decision = await repo.record_human_decision(
             organization_id=organization.id,
-            reviewer_id=user.id,
+            backoffice_reviewer=backoffice_user,
             decision=DecisionType.APPROVE,
             reason="Looks good",
         )
@@ -308,6 +309,9 @@ class TestRecordHumanDecision:
         assert decision.verdict == "APPROVE"
         assert decision.risk_score == 15.0  # LOW
         assert decision.reason == "Looks good"
+        assert decision.backoffice_reviewer_id == backoffice_user.id
+        assert decision.backoffice_reviewer is not None
+        assert decision.backoffice_reviewer.email == backoffice_user.email
         assert decision.is_current is True
 
     async def test_with_agent_review_override(
@@ -315,7 +319,7 @@ class TestRecordHumanDecision:
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         """Human overrides AI DENY verdict to APPROVE."""
         repo = OrganizationReviewRepository.from_session(session)
@@ -332,7 +336,7 @@ class TestRecordHumanDecision:
 
         decision = await repo.record_human_decision(
             organization_id=organization.id,
-            reviewer_id=user.id,
+            backoffice_reviewer=backoffice_user,
             decision=DecisionType.APPROVE,
             reason="False positive",
         )
@@ -347,7 +351,7 @@ class TestRecordHumanDecision:
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         """Explicit review_context takes precedence over agent review."""
         repo = OrganizationReviewRepository.from_session(session)
@@ -364,7 +368,7 @@ class TestRecordHumanDecision:
 
         decision = await repo.record_human_decision(
             organization_id=organization.id,
-            reviewer_id=user.id,
+            backoffice_reviewer=backoffice_user,
             decision=DecisionType.APPROVE,
             review_context=ReviewContext.APPEAL,
         )
@@ -376,13 +380,13 @@ class TestRecordHumanDecision:
         self,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         """Falls back to 'manual' when no agent review exists."""
         repo = OrganizationReviewRepository.from_session(session)
         decision = await repo.record_human_decision(
             organization_id=organization.id,
-            reviewer_id=user.id,
+            backoffice_reviewer=backoffice_user,
             decision=DecisionType.APPROVE,
         )
         await session.flush()
@@ -399,20 +403,20 @@ class TestRecordHumanDecision:
         self,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         """New human decision deactivates the previous one."""
         repo = OrganizationReviewRepository.from_session(session)
         first = await repo.record_human_decision(
             organization_id=organization.id,
-            reviewer_id=user.id,
+            backoffice_reviewer=backoffice_user,
             decision=DecisionType.DENY,
         )
         await session.flush()
 
         second = await repo.record_human_decision(
             organization_id=organization.id,
-            reviewer_id=user.id,
+            backoffice_reviewer=backoffice_user,
             decision=DecisionType.APPROVE,
             review_context=ReviewContext.APPEAL,
         )
@@ -426,12 +430,12 @@ class TestRecordHumanDecision:
         self,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         repo = OrganizationReviewRepository.from_session(session)
         decision = await repo.record_human_decision(
             organization_id=organization.id,
-            reviewer_id=user.id,
+            backoffice_reviewer=backoffice_user,
             decision=DecisionType.DENY,
             reason="Crypto trading bot",
             violated_aup_section=AUPSection.TRADING_FINANCIAL,
@@ -445,12 +449,12 @@ class TestRecordHumanDecision:
         self,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         repo = OrganizationReviewRepository.from_session(session)
         decision = await repo.record_human_decision(
             organization_id=organization.id,
-            reviewer_id=user.id,
+            backoffice_reviewer=backoffice_user,
             decision=DecisionType.DENY,
             reason="legacy-style denial",
         )
@@ -483,7 +487,7 @@ class TestSaveReviewDecision:
         assert decision.review_context == ReviewContext.THRESHOLD
         assert decision.verdict == "APPROVE"
         assert decision.risk_score == 15.0
-        assert decision.reviewer_id is None
+        assert decision.backoffice_reviewer_id is None
         assert decision.is_current is True
 
     async def test_human_decision(
@@ -491,7 +495,7 @@ class TestSaveReviewDecision:
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         repo = OrganizationReviewRepository.from_session(session)
 
@@ -513,7 +517,7 @@ class TestSaveReviewDecision:
             decision=DecisionType.APPROVE,
             review_context=ReviewContext.MANUAL,
             agent_review_id=agent_review.id,
-            reviewer_id=user.id,
+            backoffice_reviewer=backoffice_user,
             verdict=ReviewVerdict.DENY,
             risk_score=85.0,
             reason="Verified legitimate business",
@@ -523,7 +527,7 @@ class TestSaveReviewDecision:
         assert decision.organization_id == organization.id
         assert decision.actor_type == ActorType.HUMAN
         assert decision.decision == DecisionType.APPROVE
-        assert decision.reviewer_id == user.id
+        assert decision.backoffice_reviewer_id == backoffice_user.id
         assert decision.agent_review_id == agent_review.id
         assert decision.verdict == "DENY"
         assert decision.reason == "Verified legitimate business"
@@ -550,7 +554,7 @@ class TestSaveReviewDecision:
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         repo = OrganizationReviewRepository.from_session(session)
         decision = await repo.save_review_decision(
@@ -558,7 +562,7 @@ class TestSaveReviewDecision:
             actor_type=ActorType.HUMAN,
             decision=DecisionType.DENY,
             review_context=ReviewContext.MANUAL,
-            reviewer_id=user.id,
+            backoffice_reviewer=backoffice_user,
             reason="OSINT platform",
             violated_aup_section=AUPSection.OSINT,
         )
@@ -1367,3 +1371,31 @@ class TestDisputeStats:
         repo = OrganizationReviewRepository.from_session(session)
         assert await repo.get_dispute_stats(organization.id) == (2, 2000)
         assert await repo.get_chargeback_stop_stats(organization.id) == (3, 3000)
+
+
+@pytest.mark.anyio
+class TestGetWebhookEndpoints:
+    async def test_excludes_mcp_endpoints(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        endpoint = WebhookEndpoint(
+            url="https://myapp.com/webhook",
+            format=WebhookFormat.raw,
+            secret="secret",
+            organization=organization,
+        )
+        await save_fixture(endpoint)
+        await save_fixture(
+            WebhookEndpoint(
+                url="https://chatgpt.com/mcp/events",
+                format=WebhookFormat.mcp,
+                secret="secret",
+                organization=organization,
+            )
+        )
+
+        repo = OrganizationReviewRepository.from_session(session)
+        assert await repo.get_webhook_endpoints(organization.id) == [endpoint]

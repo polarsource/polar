@@ -187,6 +187,22 @@ async def delete_customer(external_id: Annotated[str, LoggableField]) -> None:
 
 
 @actor(
+    actor_name="polar_self.revoke_subscription",
+    priority=TaskPriority.LOW,
+)
+async def revoke_subscription(
+    external_customer_id: Annotated[str, LoggableField],
+) -> None:
+    client = get_client()
+    subscription = await client.get_active_subscription(
+        external_customer_id=external_customer_id
+    )
+    if subscription is None:
+        return
+    await client.revoke_subscription(subscription_id=subscription.id)
+
+
+@actor(
     actor_name="polar_self.track_event_ingestion_v2",
     cron_trigger=CronTrigger.from_crontab("*/5 * * * *"),
     priority=TaskPriority.LOW,
@@ -228,30 +244,6 @@ async def track_organization_review_usage(
     await get_client().track_organization_review_usage(
         external_customer_id=external_customer_id,
         review_context=review_context,
-        vendor=vendor,
-        model=model,
-        input_tokens=input_tokens,
-        output_tokens=output_tokens,
-        cost_usd=Decimal(cost_usd),
-        usage_id=usage_id,
-    )
-
-
-@actor(
-    actor_name="polar_self.track_compass_assistant_usage",
-    priority=TaskPriority.LOW,
-)
-async def track_compass_assistant_usage(
-    external_customer_id: Annotated[str, LoggableField],
-    vendor: Annotated[str, LoggableField],
-    model: Annotated[str, LoggableField],
-    input_tokens: Annotated[int, LoggableField],
-    output_tokens: Annotated[int, LoggableField],
-    cost_usd: Annotated[str, LoggableField],
-    usage_id: Annotated[str, LoggableField],
-) -> None:
-    await get_client().track_compass_assistant_usage(
-        external_customer_id=external_customer_id,
         vendor=vendor,
         model=model,
         input_tokens=input_tokens,
@@ -370,4 +362,4 @@ async def webhook_subscription_revoked(
             session, ExternalEventSource.polar, event_id
         ) as event:
             payload = deserialize(event.data, WebhookSubscriptionRevokedPayload)
-            await polar_self.handle_subscription_revoked_event(payload)
+            await polar_self.handle_subscription_revoked_event(session, payload)

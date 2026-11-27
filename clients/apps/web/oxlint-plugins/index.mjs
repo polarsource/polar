@@ -2,6 +2,7 @@ import noBrokenMdxLinks from './no-broken-mdx-links.mjs'
 import noClassnameBox from './no-classname-box.mjs'
 import noClassnameText from './no-classname-text.mjs'
 import noExternalLinkComponent from './no-external-link-component.mjs'
+import noFormStateRead from './no-form-state-read.mjs'
 import noMerchantApiCallsInCustomerPortal from './no-merchant-api-calls-in-customer-portal.mjs'
 import noMerchantQueriesInCustomerPortal from './no-merchant-queries-in-customer-portal.mjs'
 import noNextImage from './no-next-image.mjs'
@@ -21,6 +22,7 @@ const polarPlugin = {
     'no-classname-box': noClassnameBox,
     'no-classname-text': noClassnameText,
     'no-external-link-component': noExternalLinkComponent,
+    'no-form-state-read': noFormStateRead,
     'no-merchant-api-calls-in-customer-portal':
       noMerchantApiCallsInCustomerPortal,
     'no-merchant-queries-in-customer-portal': noMerchantQueriesInCustomerPortal,

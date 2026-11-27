@@ -1,7 +1,7 @@
 {
   "name": "@polar-sh/cli",
   "private": true,
-  "version": "3.0.0",
+  "version": "3.4.1",
   "description": "",
   "bin": "bin/cli.js",
   "type": "module",
@@ -40,7 +40,7 @@
     "@effect/platform-bun": "4.0.1",
     "@napi-rs/keyring": "2.1.0",
     "@polar-sh/cli-commands": "file:../../../sdk/cli-commands",
-    "@polar-sh/polar": "workspace:*",
+    "@polar-sh/config": "workspace:*",
     "@polar-sh/sdk": "1.0.3-alpha.4",
     "effect": "catalog:",
     "jsonc-parser": "^3.3.1",
@@ -50,6 +50,10 @@
   },
   "devDependencies": {
     "@effect/tsgo": "0.45.0",
+    "@opentelemetry/otlp-transformer": "^0.223.0",
+    "@opentelemetry/resources": "^2.12.0",
+    "@opentelemetry/sdk-metrics": "^2.12.0",
+    "@opentelemetry/sdk-trace": "^2.12.0",
     "@sindresorhus/tsconfig": "^8.1.0",
     "@types/bun": "^1.4.2",
     "@types/node": "catalog:",

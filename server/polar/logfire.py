@@ -6,7 +6,11 @@ import httpx
 import logfire
 from fastapi import FastAPI, Request, WebSocket
 from logfire.sampling import SpanLevel
-from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+from opentelemetry.instrumentation.httpx import (
+    HTTPX2ClientInstrumentor,
+    HTTPXClientInstrumentor,
+)
+from opentelemetry.instrumentation.redis import RedisInstrumentor
 from opentelemetry.sdk.trace import ReadableSpan, Span, SpanProcessor
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.trace.sampling import (
@@ -16,6 +20,7 @@ from opentelemetry.sdk.trace.sampling import (
     Sampler,
     SamplingResult,
 )
+from starlette.routing import Host
 
 from polar.observability.http_telemetry import HttpURLSpanProcessor, server_request_hook
 from polar.observability.s3_span_exporter import S3SpanExporter
@@ -30,6 +35,7 @@ from polar.config import settings
 from polar.kit.aws import get_credentials
 from polar.kit.db.postgres import Engine
 from polar.observability.otel_prometheus import PrometheusMeterProvider
+from polar.redis import Redis
 
 Matcher = Callable[[str, "Attributes | None"], bool]
 
@@ -121,8 +127,6 @@ def _scrubbing_callback(match: logfire.ScrubMatch) -> Any | None:
         ("attributes", "message", "actor_name"),
         ("message", "actor"),
         ("message", "actor_name"),
-        # Don't scrub auth subject in log messages
-        ("attributes", "subject"),
         # Don't scrub thread stacks from the event loop watchdog — they contain
         # "session" via SQLAlchemy frames which triggers the default scrubber,
         # but these are stack traces, not secrets.
@@ -221,7 +225,9 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
         sampling=logfire.SamplingOptions.level_or_duration(
             head=ParentBased(
                 IgnoreSampler((_healthz_matcher, _worker_health_matcher)),
-                local_parent_sampled=LevelSampler(),
+                local_parent_sampled=ALWAYS_OFF
+                if settings.LOGFIRE_ROOT_SPANS_ONLY
+                else LevelSampler(),
             ),
             level_threshold=cast(logfire.LevelName, settings.LOG_LEVEL.lower()),
         ),
@@ -251,6 +257,7 @@ def instrument_httpx(client: httpx.AsyncClient | httpx.Client | None = None) -> 
     if client:
         HTTPXClientInstrumentor().instrument_client(client)
     else:
+        HTTPX2ClientInstrumentor().instrument()
         HTTPXClientInstrumentor().instrument()
 
 
@@ -267,6 +274,9 @@ def _request_attributes_mapper(
 
 
 def instrument_fastapi(app: FastAPI) -> None:
+    for route in app.routes:
+        if isinstance(route, Host) and isinstance(route.app, FastAPI):
+            instrument_fastapi(route.app)
     logfire.instrument_fastapi(
         app,
         capture_headers=False,
@@ -285,8 +295,13 @@ def instrument_sqlalchemy(engines: Sequence[Engine]) -> None:
     logfire.instrument_sqlalchemy(engines=engines, meter_provider=_meter_provider)
 
 
+def instrument_redis(client: Redis) -> None:
+    RedisInstrumentor.instrument_client(client)
+
+
 __all__ = [
     "configure_logfire",
     "instrument_fastapi",
+    "instrument_redis",
     "instrument_sqlalchemy",
 ]

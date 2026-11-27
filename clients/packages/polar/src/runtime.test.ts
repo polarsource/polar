@@ -1,9 +1,17 @@
+import { Schema } from 'effect'
 import { afterEach, expect, expectTypeOf, test, vi } from 'vitest'
 import { z } from 'zod'
 import { EventValidationError } from './client/actor'
 import { RuntimeSDK } from './runtime'
-import { defineConfig } from './schema/config'
-import { and, eq, gte } from './schema/meter'
+import {
+  and,
+  defineConfig,
+  eq,
+  gte,
+  type CostMetadata,
+  type EventHelpers,
+  type LLMMetadata,
+} from '@polar-sh/config'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -91,20 +99,27 @@ test('connected configs validate and ingest typed events and track the meters th
     throw new Error(`Unexpected request ${url}`)
   })
   const config = defineConfig({
-    events: {
-      tool_call: z.object({
-        tool: z.enum(['search', 'fetch']),
-        durationMs: z.int(),
-        region: z.string().default('eu'),
-      }),
-      'llm.completion': z.object({ model: z.string(), inputTokens: z.int() }),
-    },
+    events: ({ event }) => ({
+      tool_call: event(
+        z.object({
+          tool: z.enum(['search', 'fetch']),
+          durationMs: z.int(),
+          region: z.string().default('eu'),
+        }),
+      ),
+      'llm.completion': event(z.object({ feature: z.string() }))
+        .withTokens()
+        .withCosts(),
+    }),
     meters: ({ meter, events }) => ({
       searches: meter()
         .on(events.tool_call)
         .where(eq(events.tool_call.tool, 'search'))
         .count(),
-      completions: meter().on(events['llm.completion']).count(),
+      completions: meter()
+        .on(events['llm.completion'])
+        .where(eq(events['llm.completion']._llm.vendor, 'anthropic'))
+        .sum('_llm.total_tokens'),
     }),
   })
   const customer = RuntimeSDK(config, {
@@ -127,12 +142,48 @@ test('connected configs validate and ingest typed events and track the meters th
   await customer.track('tool_call', { tool: 'search', durationMs: 5 })
   expect(await pristine()).toEqual({ searches: false, completions: true })
 
-  await customer.track('llm.completion', { model: 'claude', inputTokens: 10 })
+  const usage = {
+    vendor: 'anthropic',
+    model: 'claude',
+    input_tokens: 10,
+    output_tokens: 5,
+    total_tokens: 15,
+  }
+  const cost = { amount: 0.5, currency: 'usd' } as const
+  expectTypeOf(customer.track<'llm.completion'>)
+    .parameter(1)
+    .toEqualTypeOf<{
+      feature: string
+      readonly _llm: LLMMetadata
+      readonly _cost: CostMetadata
+    }>()
+
+  await customer.track('llm.completion', {
+    feature: 'chat',
+    _llm: { ...usage, vendor: 'openai' },
+    _cost: cost,
+  })
+  expect(await pristine()).toEqual({ searches: false, completions: true })
+
+  await customer.track('llm.completion', {
+    feature: 'chat',
+    _llm: usage,
+    _cost: cost,
+  })
   expect(await pristine()).toEqual({ searches: false, completions: false })
 
   await expect(
-    customer.track('llm.completion', { model: 'claude', inputTokens: 1.5 }),
+    customer.track('llm.completion', {
+      feature: 'chat',
+      _llm: { ...usage, total_tokens: 1.5 },
+      _cost: cost,
+    }),
   ).rejects.toBeInstanceOf(EventValidationError)
+  const typeOnly = () => {
+    // @ts-expect-error usage is required
+    void customer.track('llm.completion', { feature: 'chat', _cost: cost })
+  }
+  expectTypeOf(typeOnly).toBeFunction()
 
   expect(ingested).toMatchObject([
     {
@@ -144,7 +195,14 @@ test('connected configs validate and ingest typed events and track the meters th
       name: 'tool_call',
       metadata: { tool: 'search', durationMs: 5, region: 'eu' },
     },
-    { name: 'llm.completion', metadata: { model: 'claude', inputTokens: 10 } },
+    {
+      name: 'llm.completion',
+      metadata: { feature: 'chat', _llm: { vendor: 'openai' }, _cost: cost },
+    },
+    {
+      name: 'llm.completion',
+      metadata: { feature: 'chat', _llm: usage, _cost: cost },
+    },
   ])
 })
 
@@ -205,4 +263,111 @@ test('access types granted metadata from the benefit declared in the config', as
   )
     .returns.resolves.extract<{ granted: true }>()
     .toEqualTypeOf<{ granted: true; metadata: { readonly limit: number } }>()
+})
+
+const events = ({ event }: EventHelpers) => ({
+  tool_call: event(
+    z.object({
+      tool: z.enum(['search', 'fetch']),
+      durationMs: z.int(),
+    }),
+  ),
+  'llm.completion': event(
+    Schema.toStandardSchemaV1(
+      Schema.Struct({ model: Schema.String, inputTokens: Schema.Int }),
+    ),
+  ),
+  'llm.embedding': event(
+    z.object({
+      model: z.string(),
+      inputTokens: z.int(),
+      dimensions: z.int(),
+    }),
+  ),
+})
+
+test('RuntimeSDK rejects duplicate IDs without changing JSON serialization', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => [
+      ['calls', meter('First').count()],
+      ['calls', meter('Second').count()],
+    ],
+  })
+  expect(config.toJSON().meters).toHaveLength(2)
+  expect(() => RuntimeSDK(config, { accessToken: 'test' })).toThrow(
+    'duplicate meter external IDs',
+  )
+})
+
+test('connected configs type and validate track with the declared event schemas', async () => {
+  const config = defineConfig({
+    events,
+    meters: ({ meter, events }) => ({
+      searches: meter().on(events.tool_call).count(),
+    }),
+  })
+  const customer = RuntimeSDK(config, { accessToken: 'test' }).actor({
+    customerId: 'customer-1',
+  })
+
+  expectTypeOf(customer.track<'tool_call'>)
+    .parameter(1)
+    .toEqualTypeOf<{ tool: 'search' | 'fetch'; durationMs: number }>()
+  expectTypeOf(customer.track)
+    .parameter(0)
+    .extract<string>()
+    .toEqualTypeOf<'tool_call' | 'llm.completion' | 'llm.embedding'>()
+  await expect(
+    customer.track('tool_call', { tool: 'search', durationMs: 1.5 }),
+  ).rejects.toThrow('Invalid metadata for event "tool_call"')
+
+  const untyped = RuntimeSDK(
+    defineConfig({
+      meters: ({ meter }) => ({ calls: meter('Calls').count() }),
+    }),
+    { accessToken: 'test' },
+  ).actor({ customerId: 'customer-1' })
+  expectTypeOf(untyped.track)
+    .parameter(0)
+    .extract<string>()
+    .toEqualTypeOf<string>()
+})
+
+test('RuntimeSDK exposes configured benefits by external ID', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => ({ tool_call: meter().count() }),
+    benefits: ({ flag }) => ({ custom_servers: flag() }),
+  })
+  const { actor } = RuntimeSDK(config, { accessToken: 'test' })
+  expectTypeOf(actor({ customerId: 'customer-id' }).access)
+    .parameter(0)
+    .toEqualTypeOf<'custom_servers'>()
+})
+
+test('RuntimeSDK rejects duplicate benefit external IDs', () => {
+  const config = defineConfig({
+    meters: () => ({}),
+    benefits: ({ flag }) => [
+      ['flag', flag('First')],
+      ['flag', flag('Second')],
+    ],
+  })
+  expect(() => RuntimeSDK(config, { accessToken: 'test' })).toThrow(
+    'duplicate benefit external IDs',
+  )
+})
+
+test('deprecated meters stay in the client', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => ({
+      apples: meter('Apples').deprecated().count(),
+      pears: meter('Pears').count(),
+    }),
+  })
+  expectTypeOf(
+    RuntimeSDK(config, { accessToken: 'test' }).actor({ customerId: 'c' })
+      .balance,
+  )
+    .parameter(0)
+    .toEqualTypeOf<'apples' | 'pears'>()
 })

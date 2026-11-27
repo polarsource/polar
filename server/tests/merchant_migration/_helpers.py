@@ -27,7 +27,10 @@ from polar.merchant_migration.pan_transfer import (
     PanTransferMethod,
     PanTransferStep,
 )
-from polar.merchant_migration.repository import MerchantMigrationRepository
+from polar.merchant_migration.repository import (
+    MerchantMigrationRecordRepository,
+    MerchantMigrationRepository,
+)
 from polar.merchant_migration.service import (
     SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT,
     StripeSourceCredentials,
@@ -62,6 +65,14 @@ async def assert_no_migrations(
         )
     )
     assert len(migrations) == 0
+
+
+async def record_source_ids(
+    session: AsyncSession, migration: MerchantMigration
+) -> set[str]:
+    repository = MerchantMigrationRecordRepository.from_session(session)
+    records = await repository.list_by_migration(migration.id)
+    return {record.source_id for record in records}
 
 
 async def build_stripe_credentials(

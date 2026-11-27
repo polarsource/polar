@@ -1,171 +1,196 @@
 ---
-title: "LLM Strategy"
-description: "Ingestion strategy for LLM Usage"
+title: "Track LLM tokens"
+description: "Send token usage and cost for every LLM call, from the Vercel AI SDK in TypeScript or PydanticAI in Python, and create a meter that sums it."
 ---
 
-## Javascript SDK
+To track LLM usage, send one event per model call with its token counts, and create a meter that sums them. Bill for the meter, or use it only to see what each customer consumes and costs you. This page shows both, plus how to record what each call cost you.
 
-### LLM Strategy
+The examples use the sandbox and API version `2026-10`, with the sample customer `user_123` and the event name `ai_usage`. See [Usage](/concepts/usage) for how events and meters work.
 
-Wrap any LLM model from the `@ai-sdk/*` library, to automatically fire prompt- & completion tokens used by every model call.
+## TypeScript: AI SDK
 
-```
+The LLM strategy from `@polar-sh/ingestion` wraps an [AI SDK](https://ai-sdk.dev) model. Every call through the wrapped model sends an event with its token usage. It works with AI SDK 5, 6 and 7, for `generateText`, `streamText` and anything else built on them.
+
+```bash
 pnpm add @polar-sh/ingestion ai @ai-sdk/openai
 ```
 
 ```typescript
 import { Ingestion } from "@polar-sh/ingestion";
 import { LLMStrategy } from "@polar-sh/ingestion/strategies/LLM";
-import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { generateText } from "ai";
 
-// Setup the LLM Ingestion Strategy
-const llmIngestion = Ingestion({ accessToken: process.env.POLAR_ACCESS_TOKEN })
-  .strategy(new LLMStrategy(openai("gpt-4o")))
-  .cost((ctx) => ({ amount: 123, currency: "usd" })) // Optional: Set the cost of the LLM usage
-  .ingest("openai-usage");
+const llm = Ingestion({ accessToken: process.env.POLAR_ACCESS_TOKEN, server: "sandbox" })
+  .strategy(new LLMStrategy(openai("gpt-4.1-nano")))
+  .ingest("ai_usage");
 
-export async function POST(req: Request) {
-  const { prompt }: { prompt: string } = await req.json();
+export async function POST(request: Request) {
+  const { prompt }: { prompt: string } = await request.json();
 
-  // Get the wrapped LLM model with ingestion capabilities
-  // Pass Customer Id to properly annotate the ingestion events with a specific customer
-  const model = llmIngestion.client({
-    customerId: "xxx",
-  });
-
-  const { text } = await generateText({
-    model,
-    system: "You are a helpful assistant.",
-    prompt,
-  });
+  const model = llm.client({ externalCustomerId: "user_123" });
+  const { text } = await generateText({ model, prompt });
 
   return Response.json({ text });
 }
 ```
 
-#### Ingestion Payload
+Pass the user's ID from your session instead of `"user_123"`. With `streamText`, the event is sent when the stream finishes.
 
-```json
+Each call sends its event in its own request. If sending fails, the strategy logs the error and your call still succeeds, but that event is lost.
+
+Requires Node.js 24 or later. More strategies, for S3, streams and timings, are on [Ingestion strategies](/features/usage-based-billing/ingestion-strategies/ingestion-strategy).
+
+### The event it sends
+
+```json Event
 {
-  "customerId": "123",
-  "name": "openai-usage",
+  "name": "ai_usage",
+  "external_customer_id": "user_123",
   "metadata": {
-    "inputTokens": 100,
-    "outputTokens": 200,
-    "cachedInputTokens": 10,
-    "totalTokens": 300,
-    "model": "gpt-4o",
-    "provider": "openai.responses",
+    "vendor": "openai.responses",
+    "model": "gpt-4.1-nano",
+    "inputTokens": 58,
+    "cachedInputTokens": 0,
+    "outputTokens": 19,
+    "totalTokens": 77,
     "strategy": "LLM",
-    "_cost": {
-      "amount": 123, // Amount is expected to be in cents. $1.23 should be represented as 123
-      "currency": "usd"
-    },
     "_llm": {
-      ... //
+      "vendor": "openai.responses",
+      "model": "gpt-4.1-nano",
+      "input_tokens": 58,
+      "cached_input_tokens": 0,
+      "output_tokens": 19,
+      "total_tokens": 77
     }
   }
 }
 ```
 
-## Python SDK
+`vendor` is the model's AI SDK provider ID. The `_llm` object is what Polar reads for the **By Model** and **By Vendor** views in [Cost insights](/features/cost-insights/introduction).
 
-The Python SDK has no ingestion helper or strategies. Send usage events with `polar.events.ingest` from the [Python SDK](/integrate/sdk/python) instead.
+### Record the cost
 
-<CodeGroup>
+Add `.cost()` to attach what each call cost you, in cents. It receives the token counts:
 
-```bash pip
-pip install polar-sdk
+```typescript
+const INPUT_CENTS_PER_TOKEN = 0.00001;
+const OUTPUT_CENTS_PER_TOKEN = 0.00004;
+
+const llm = Ingestion({ accessToken: process.env.POLAR_ACCESS_TOKEN, server: "sandbox" })
+  .strategy(new LLMStrategy(openai("gpt-4.1-nano")))
+  .cost((ctx) => ({
+    amount: ctx.inputTokens * INPUT_CENTS_PER_TOKEN + ctx.outputTokens * OUTPUT_CENTS_PER_TOKEN,
+    currency: "usd",
+  }))
+  .ingest("ai_usage");
 ```
 
-```bash uv
-uv add polar-sdk
+Use your provider's current rates. The result is added to the event as `_cost`.
+
+## Python: PydanticAI
+
+There's no strategy package for Python. Read the usage from the run and send it with `polar.events.ingest`.
+
+```bash
+pip install polar-sdk pydantic-ai
 ```
-
-</CodeGroup>
-
-### Ingesting events
 
 ```python
 import os
 
 from polar.v2026_10 import Polar
-
-polar = Polar(os.environ["POLAR_ACCESS_TOKEN"])
-
-polar.events.ingest(
-    events=[
-        {
-            "name": "my-event",
-            "external_customer_id": "CUSTOMER_ID",
-            "metadata": {
-                "usage": 13.37,
-            },
-        }
-    ]
-)
-```
-
-`events.ingest` sends the request synchronously. To avoid blocking your request path, batch events and send them from a background task, or use `PolarAsync` in asynchronous applications.
-
-### PydanticAI
-
-[PydanticAI](https://ai.pydantic.dev) is an AI agent framework for Python. A common use-case with AI applications is to track the usage of LLMs, like the number of input and output tokens, and bill the customer accordingly.
-
-Read the token usage from the agent run and ingest it as an event:
-
-```python
-import os
-
-from polar.v2026_10 import Polar
-from pydantic import BaseModel
 from pydantic_ai import Agent
 
-polar = Polar(os.environ["POLAR_ACCESS_TOKEN"])
+polar = Polar(os.environ["POLAR_ACCESS_TOKEN"], environment="sandbox")
+agent = Agent("openai:gpt-4.1-nano")
 
 
-class MyModel(BaseModel):
-    city: str
-    country: str
-
-
-agent = Agent("gpt-4.1-nano", output_type=MyModel)
-
-if __name__ == "__main__":
-    result = agent.run_sync("The windy city in the US of A.")
-    print(result.output)
-
+def answer(user_id: str, prompt: str) -> str:
+    result = agent.run_sync(prompt)
     usage = result.usage
+
     polar.events.ingest(
         events=[
             {
                 "name": "ai_usage",
-                "external_customer_id": "CUSTOMER_ID",
+                "external_customer_id": user_id,
                 "metadata": {
-                    "requests": usage.requests,
-                    "total_tokens": usage.total_tokens,
-                    "input_tokens": usage.input_tokens,
-                    "output_tokens": usage.output_tokens,
+                    "_llm": {
+                        "vendor": "openai",
+                        "model": "gpt-4.1-nano",
+                        "input_tokens": usage.input_tokens,
+                        "cached_input_tokens": usage.cache_read_tokens,
+                        "output_tokens": usage.output_tokens,
+                        "total_tokens": usage.total_tokens,
+                    },
                 },
             }
         ]
     )
+    return result.output
+
+
+print(answer("user_123", "Where is the windy city?"))
 ```
 
-_This example is inspired from the [Pydantic Model example](https://ai.pydantic.dev/examples/pydantic-model/) of PydanticAI documentation._
+This sends one request per call. To send fewer requests, collect events and send them in batches. See [Send events in batches](/features/usage-based-billing/event-ingestion#send-events-in-batches).
 
-#### Ingestion Payload
+This uses PydanticAI 2.x, where `result.usage` is a property. To record the cost, add `"_cost": {"amount": ..., "currency": "usd"}` next to `_llm`, with the amount in cents.
 
-```json
-{
-  "name": "ai_usage",
-  "external_customer_id": "CUSTOMER_ID",
-  "metadata": {
-    "requests": 1,
-    "total_tokens": 78,
-    "input_tokens": 58,
-    "output_tokens": 20
-  }
-}
+The same pattern works for any Python LLM client: read the token counts from its response and send them.
+
+## Create the meter
+
+Sum `_llm.total_tokens` across `ai_usage` events. The same meter works for events from both examples.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Catalog → Meters**
+    - Click **Create Meter**
+    - Set **Name** to "AI tokens"
+    - Under **Filters**, add a condition: **Name** equals `ai_usage`
+    - Set **Aggregation** to **Sum** over the property `_llm.total_tokens`
+    - Set **Unit** to **Token**
+    - Click **Create Meter**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar meters create --name "AI tokens" --unit token \
+      --filter '{"conjunction":"and","clauses":[{"property":"name","operator":"eq","value":"ai_usage"}]}' \
+      --aggregation '{"func":"sum","property":"_llm.total_tokens"}'
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Create a meter called "AI tokens" in my Polar sandbox organization that sums _llm.total_tokens across ai_usage events, with the token unit.
+    ```
+
+    Uses the `meters_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+To bill input and output tokens at different prices, create two meters, one summing `_llm.input_tokens` and one summing `_llm.output_tokens`, and add a metered price for each. See [Usage-based pricing](/features/usage-based-billing/billing).
+
+## Verify it works
+
+Make one call as `user_123`, then open **Catalog → Meters → AI tokens**. The call's tokens show on the **Overview** tab, and the event on the **Events** tab. Or run:
+
+```bash
+polar meters quantities <meter-id> --external-customer-id user_123 \
+  --start-timestamp 2026-11-01T00:00:00Z --end-timestamp 2026-12-01T00:00:00Z --interval day
 ```
+
+<Visibility for="agents">
+  The TypeScript LLM strategy sends `_llm` in snake_case (`input_tokens`, `cached_input_tokens`, `output_tokens`, `total_tokens`) plus camelCase copies at the top level of `metadata`. Meter on `_llm.total_tokens` so TypeScript and Python events share one meter. Never pass `customerId: "xxx"` placeholders: use the app's user ID as `externalCustomerId`. Use the sandbox until the user says otherwise.
+</Visibility>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Send events](/features/usage-based-billing/event-ingestion) | Event fields, batching and limits |
+| [Meters](/features/usage-based-billing/meters) | Filters, aggregations and units |
+| [Usage-based pricing](/features/usage-based-billing/billing) | Charge per token |
+| [Credits](/features/usage-based-billing/credits) | Include tokens in a plan |
+| [Cost insights](/features/cost-insights/introduction) | Compare token costs with revenue per customer |

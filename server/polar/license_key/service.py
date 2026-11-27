@@ -178,6 +178,12 @@ class LicenseKeyService:
         update_dict = updates.model_dump(exclude_unset=True)
 
         status = update_dict.get("status")
+        if status == LicenseKeyStatus.granted:
+            grant = await self._get_grant(session, license_key, for_update=True)
+            if grant is not None and grant.manually_revoked_at is not None:
+                raise NotPermitted(
+                    "Cannot reactivate a license key for a manually revoked benefit grant."
+                )
         if status is not None and status != license_key.status:
             await self._enqueue_grant_lifecycle(session, license_key, status)
 
@@ -260,7 +266,11 @@ class LicenseKeyService:
         enqueue_job("customer.state_changed", loaded.customer_id)
 
     async def _get_grant(
-        self, session: AsyncSession, license_key: LicenseKey
+        self,
+        session: AsyncSession,
+        license_key: LicenseKey,
+        *,
+        for_update: bool = False,
     ) -> BenefitGrant | None:
         grant_repository = BenefitGrantRepository.from_session(session)
         return await grant_repository.get_by_property_and_organization(
@@ -268,6 +278,8 @@ class LicenseKeyService:
             "license_key_id",
             str(license_key.id),
             benefit_id=license_key.benefit_id,
+            customer_id=license_key.customer_id,
+            for_update=for_update,
         )
 
     async def _enqueue_grant_lifecycle(
@@ -300,17 +312,18 @@ class LicenseKeyService:
             customer_id=license_key.customer_id,
             benefit_id=license_key.benefit_id,
         )
-        await session.refresh(
-            license_key,
-            attribute_names=[
-                "status",
-                "expires_at",
-                "usage",
-                "limit_usage",
-                "validations",
-            ],
-            with_for_update=True,
-        )
+        if validate.increment_usage:
+            await session.refresh(
+                license_key,
+                attribute_names=[
+                    "status",
+                    "expires_at",
+                    "usage",
+                    "limit_usage",
+                    "validations",
+                ],
+                with_for_update=True,
+            )
         if not license_key.is_active():
             bound_logger.info("license_key.validate.invalid_status")
             raise ResourceNotFound("License key is no longer active.")
@@ -352,9 +365,15 @@ class LicenseKeyService:
                 )
                 raise BadRequest(f"License key only has {remaining} more usages.")
 
-        license_key.mark_validated(increment_usage=validate.increment_usage)
         await session.refresh(license_key, attribute_names=["subscription", "order"])
-        session.add(license_key)
+        if validate.increment_usage:
+            license_key.mark_validated(increment_usage=validate.increment_usage)
+            session.add(license_key)
+        elif not await LicenseKeyRepository.from_session(session).record_validation(
+            license_key
+        ):
+            bound_logger.info("license_key.validate.invalid_status")
+            raise ResourceNotFound("License key is no longer active.")
         bound_logger.info("license_key.validate")
         return license_key
 
@@ -657,7 +676,7 @@ class LicenseKeyService:
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[Customer | Member],
-    ) -> Select[tuple[LicenseKey]]:
+    ) -> Select[LicenseKey]:
         repository = LicenseKeyRepository.from_session(session)
         return repository.get_customer_statement(auth_subject).options(
             joinedload(LicenseKey.customer), joinedload(LicenseKey.member)

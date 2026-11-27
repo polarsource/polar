@@ -17,6 +17,7 @@ class TestSendSeatInvitationEmail:
         send_seat_invitation_email(
             customer_email="test@example.com",
             seat=customer_seat_pending,
+            invitation_token="claim-token",
             organization=organization,
             product_name="Test Product",
             billing_manager_email="manager@example.com",
@@ -26,34 +27,11 @@ class TestSendSeatInvitationEmail:
         email = mock_enqueue.call_args[0][0]
         assert isinstance(email, SeatInvitationEmail)
         assert email.props.organization.id == organization.id
-        assert customer_seat_pending.invitation_token is not None
-        assert customer_seat_pending.invitation_token in email.props.claim_url
+        assert email.props.claim_url.endswith("?token=claim-token")
 
         enqueue_kwargs = mock_enqueue.call_args[1]
         assert enqueue_kwargs["to_email_addr"] == "test@example.com"
         assert "Test Product" in enqueue_kwargs["subject"]
-
-    def test_send_invitation_no_token(
-        self,
-        mocker: MockerFixture,
-        customer_seat_claimed: CustomerSeat,
-        organization: Organization,
-    ) -> None:
-        customer_seat_claimed.invitation_token = None
-
-        mock_enqueue = mocker.patch("polar.customer_seat.sender.enqueue_email_template")
-        mock_log = mocker.patch("polar.customer_seat.sender.log")
-
-        send_seat_invitation_email(
-            customer_email="test@example.com",
-            seat=customer_seat_claimed,
-            organization=organization,
-            product_name="Test Product",
-            billing_manager_email="manager@example.com",
-        )
-
-        mock_log.warning.assert_called_once()
-        mock_enqueue.assert_not_called()
 
     def test_send_invitation_with_email_props(
         self,
@@ -66,6 +44,7 @@ class TestSendSeatInvitationEmail:
         send_seat_invitation_email(
             customer_email="test@example.com",
             seat=customer_seat_pending,
+            invitation_token="claim-token",
             organization=organization,
             product_name="Test Product",
             billing_manager_email="manager@example.com",

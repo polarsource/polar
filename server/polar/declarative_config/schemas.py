@@ -5,7 +5,9 @@ from typing import Annotated, Any, Literal, Self
 from annotated_types import Gt
 from pydantic import (
     UUID4,
+    AfterValidator,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Discriminator,
     Field,
@@ -16,20 +18,49 @@ from polar.benefit.strategies.base.schemas import (
     BENEFIT_DESCRIPTION_MAX_LENGTH,
     BENEFIT_DESCRIPTION_MIN_LENGTH,
 )
-from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
+from polar.benefit.strategies.slack_shared_channel.schemas import (
+    BenefitSlackSharedChannelCreateProperties,
+)
+from polar.custom_field.schemas import (
+    CheckboxPropertiesInput,
+    DatePropertiesInput,
+    Name,
+    NumberPropertiesInput,
+    SelectPropertiesInput,
+    Slug,
+    TextPropertiesInput,
+)
+from polar.enums import (
+    MeterInterval,
+    ProrationBehaviorSetting,
+    SubscriptionRecurringInterval,
+    TaxBehaviorOption,
+)
 from polar.kit.currency import PresentmentCurrency
+from polar.kit.external_id import ExternalID
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputType
-from polar.kit.schemas import Int32, Schema, SetSchemaReference
+from polar.kit.schemas import IDSchema, Int32, Schema, SetSchemaReference
 from polar.kit.trial import TrialConfigurationInputMixin, TrialInterval
+from polar.kit.versioning import QuerySchema
 from polar.kit.visibility import Visibility
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
 from polar.meter.schemas import MeterCreateBase
 from polar.meter.unit import MeterUnit
 from polar.models.benefit import BenefitType, BenefitVisibility
+from polar.models.catalog import CatalogStatus
+from polar.models.custom_field import (
+    CustomFieldCheckboxProperties,
+    CustomFieldDateProperties,
+    CustomFieldNumberProperties,
+    CustomFieldSelectProperties,
+    CustomFieldTextProperties,
+    CustomFieldType,
+)
 from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPriceAmountType
 from polar.organization.schemas import OrganizationID
+from polar.product.meter_interval import meter_interval_divides_billing_interval
 from polar.product.schemas import (
     PriceAmount,
     ProductDescription,
@@ -41,26 +72,21 @@ from polar.product.schemas import (
     UnitLabel,
 )
 from polar.product.tiers import TiersInput, TierType
-from polar.webhook.schemas import (
-    AvailableAPIVersion,
-    EndpointEvents,
-    EndpointFormat,
-    EndpointURL,
-)
 
 MAXIMUM_METERS = 100
 MAXIMUM_BENEFITS = 100
 MAXIMUM_PRODUCTS = 100
-MAXIMUM_WEBHOOK_ENDPOINTS = 25
+MAXIMUM_CUSTOM_FIELDS = 100
 
 
 class ConfigDeprecationMixin(BaseModel):
-    deprecated: bool = Field(
+    deprecated: Annotated[bool | None, AfterValidator(bool)] = Field(
         default=False,
         exclude=True,
         description=(
             "Keeps the resource for customers who still use it, "
-            "but active products and benefits can't reference it."
+            "but active products and benefits can't reference it. "
+            "Leaving it empty is the same as `false`."
         ),
     )
 
@@ -68,9 +94,8 @@ class ConfigDeprecationMixin(BaseModel):
 class ConfigMeter(ConfigDeprecationMixin, MeterCreateBase):
     model_config = ConfigDict(extra="forbid")
 
-    external_id: str = Field(
+    external_id: ExternalID = Field(
         ...,
-        min_length=1,
         description=(
             "Your identifier for the meter. "
             "Used to match the config entry with an existing meter."
@@ -94,6 +119,11 @@ ProductReference = Annotated[
     ),
 ]
 
+CustomFieldReference = Annotated[
+    Slug,
+    Field(description="The `slug` of a custom field declared in the same config."),
+]
+
 BenefitReference = Annotated[
     str,
     Field(
@@ -106,9 +136,8 @@ BenefitReference = Annotated[
 class ConfigBenefitBase(ConfigDeprecationMixin, MetadataInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
-    external_id: str = Field(
+    external_id: ExternalID = Field(
         ...,
-        min_length=1,
         description="Your identifier for the benefit, used to match it.",
     )
     description: str = Field(
@@ -148,11 +177,36 @@ class ConfigBenefitMeterCredit(ConfigBenefitBase):
     properties: ConfigBenefitMeterCreditProperties
 
 
+class ConfigBenefitSlackSharedChannelProperties(
+    BenefitSlackSharedChannelCreateProperties
+):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ConfigBenefitSlackSharedChannel(ConfigBenefitBase):
+    type: Literal[BenefitType.slack_shared_channel]
+    visibility: Literal[Visibility.public] = Field(
+        default=Visibility.public,
+        description=(
+            "Always `public`: customers set up their channel in the customer portal."
+        ),
+    )
+    properties: ConfigBenefitSlackSharedChannelProperties
+
+
 ConfigBenefit = Annotated[
-    ConfigBenefitFeatureFlag | ConfigBenefitMeterCredit,
+    ConfigBenefitFeatureFlag
+    | ConfigBenefitMeterCredit
+    | ConfigBenefitSlackSharedChannel,
     Discriminator("type"),
     SetSchemaReference("ConfigBenefit"),
 ]
+
+CONFIG_BENEFIT_TYPES = (
+    BenefitType.feature_flag,
+    BenefitType.meter_credit,
+    BenefitType.slack_shared_channel,
+)
 
 
 class ConfigProductPriceSeatBased(ProductPriceSeatBasedCreate):
@@ -237,14 +291,23 @@ ConfigProductPrice = Annotated[
 ]
 
 
+class ConfigProductCustomField(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    field: CustomFieldReference
+    required: bool = Field(
+        default=False,
+        description="Whether customers must fill in the field at checkout.",
+    )
+
+
 class ConfigProduct(
     ConfigDeprecationMixin, MetadataInputMixin, TrialConfigurationInputMixin, Schema
 ):
     model_config = ConfigDict(extra="forbid")
 
-    external_id: str = Field(
+    external_id: ExternalID = Field(
         ...,
-        min_length=1,
         description="Your identifier for the product, used to match it.",
     )
     name: ProductName
@@ -265,6 +328,33 @@ class ConfigProduct(
         le=999,
         description="Billing cycle length in intervals. Defaults to 1.",
     )
+    meter_interval: MeterInterval | None = Field(
+        default=None,
+        description=(
+            "Optional meter cycle, independent of the billing interval. "
+            "Overage settlement, meter resets and meter-credit grants run on it. "
+            "It must evenly divide the billing interval. "
+            "Leave it empty to follow the billing interval. "
+            "Can't be updated once the product is applied. "
+            "Leaving it empty on an existing product keeps its current cycle."
+        ),
+    )
+    meter_interval_count: int | None = Field(
+        default=None,
+        ge=1,
+        le=999,
+        description="Meter cycle length in intervals. Defaults to 1.",
+    )
+    # Export sends null for the default.
+    trial_payment_setup_required: Annotated[
+        bool, BeforeValidator(lambda v: True if v is None else v)
+    ] = Field(
+        default=True,
+        description=(
+            "Whether customers need a payment method to start the trial. "
+            "Defaults to `true`."
+        ),
+    )
     prices: list[ConfigProductPrice] = Field(
         min_length=1, description="The prices of the product."
     )
@@ -272,9 +362,20 @@ class ConfigProduct(
         default_factory=list,
         description="The benefits granted by the product.",
     )
+    custom_fields: list[ConfigProductCustomField] = Field(
+        default_factory=list,
+        description=(
+            "Custom fields asked at checkout, in this order. "
+            "Leaving it empty removes them from the product. "
+            "Ignored when the config omits `custom_fields`: the product keeps "
+            "its custom fields."
+        ),
+    )
 
     @model_validator(mode="after")
     def validate_recurring(self) -> Self:
+        if not self.trial_payment_setup_required and self.trial_interval is None:
+            raise ValueError("Only products with a trial can skip the payment method.")
         if self.recurring_interval is None:
             if self.recurring_interval_count is not None:
                 raise ValueError(
@@ -283,6 +384,10 @@ class ConfigProduct(
             if self.trial_interval is not None or self.trial_interval_count is not None:
                 raise ValueError(
                     "Trial configuration is only supported on recurring products."
+                )
+            if self.meter_interval is not None or self.meter_interval_count is not None:
+                raise ValueError(
+                    "A meter cycle is only supported on recurring products."
                 )
             if any(
                 isinstance(
@@ -294,25 +399,83 @@ class ConfigProduct(
                 raise ValueError(
                     "Metered pricing is not supported on one-time products."
                 )
-        elif self.recurring_interval_count is None:
-            self.recurring_interval_count = 1
+        else:
+            if self.recurring_interval_count is None:
+                self.recurring_interval_count = 1
+            self._validate_meter_cycle(
+                self.recurring_interval, self.recurring_interval_count
+            )
         return self
 
+    def _validate_meter_cycle(
+        self,
+        recurring_interval: SubscriptionRecurringInterval,
+        recurring_interval_count: int,
+    ) -> None:
+        if self.meter_interval is None:
+            if self.meter_interval_count is not None:
+                raise ValueError("A meter interval count requires a meter interval.")
+            return
+        if self.meter_interval_count is None:
+            self.meter_interval_count = 1
+        if not meter_interval_divides_billing_interval(
+            self.meter_interval,
+            self.meter_interval_count,
+            recurring_interval,
+            recurring_interval_count,
+        ):
+            raise ValueError(
+                "The meter cycle must evenly divide the billing cycle, "
+                "so it re-aligns with the billing cycle at every renewal."
+            )
 
-class ConfigWebhookEndpoint(Schema):
+
+class ConfigCustomFieldBase(MetadataInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
-    external_id: str = Field(
-        ...,
-        min_length=1,
-        description="Your identifier for the webhook endpoint, used to match it.",
-    )
-    url: EndpointURL
-    format: EndpointFormat
-    events: EndpointEvents = Field(min_length=1)
-    api_version: AvailableAPIVersion = Field(
-        description="The API version that'll be used in event payloads."
-    )
+    slug: Slug
+    name: Name
+
+    # Custom fields are matched by slug, other resources by external_id.
+    @property
+    def external_id(self) -> str:
+        return self.slug
+
+
+class ConfigCustomFieldText(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.text]
+    properties: TextPropertiesInput
+
+
+class ConfigCustomFieldNumber(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.number]
+    properties: NumberPropertiesInput
+
+
+class ConfigCustomFieldDate(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.date]
+    properties: DatePropertiesInput
+
+
+class ConfigCustomFieldCheckbox(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.checkbox]
+    properties: CheckboxPropertiesInput
+
+
+class ConfigCustomFieldSelect(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.select]
+    properties: SelectPropertiesInput
+
+
+ConfigCustomField = Annotated[
+    ConfigCustomFieldText
+    | ConfigCustomFieldNumber
+    | ConfigCustomFieldDate
+    | ConfigCustomFieldCheckbox
+    | ConfigCustomFieldSelect,
+    Discriminator("type"),
+    SetSchemaReference("ConfigCustomField"),
+]
 
 
 class ConfigSettingsPayments(Schema):
@@ -335,12 +498,50 @@ class ConfigSettingsPayments(Schema):
     )
 
 
+class ConfigSettingsSubscriptions(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    allow_multiple_subscriptions: bool | None = Field(
+        default=None,
+        description=(
+            "Whether a customer can have several active subscriptions at "
+            "once. Left untouched when omitted."
+        ),
+    )
+    proration_behavior: ProrationBehaviorSetting | None = Field(
+        default=None,
+        description=(
+            "How customers are billed when their subscription changes. "
+            "Left untouched when omitted."
+        ),
+    )
+    benefit_revocation_grace_period: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Days to wait before revoking benefits while a failed payment "
+            "is retried. Left untouched when omitted."
+        ),
+    )
+    prevent_trial_abuse: bool | None = Field(
+        default=None,
+        description=(
+            "Whether a customer who already had a trial is refused another "
+            "one. Left untouched when omitted."
+        ),
+    )
+
+
 class ConfigSettings(Schema):
     model_config = ConfigDict(extra="forbid")
 
     payments: ConfigSettingsPayments | None = Field(
         default=None,
         description="Payment settings. Left untouched when omitted.",
+    )
+    subscriptions: ConfigSettingsSubscriptions | None = Field(
+        default=None,
+        description="Subscription settings. Left untouched when omitted.",
     )
 
 
@@ -357,7 +558,10 @@ class Config(Schema):
         max_length=256,
         description=(
             "Name of the catalog version this apply publishes, if it publishes one. "
-            "It doesn't change the version hash."
+            "Defaults to `v{n}`, n being the version's position in the "
+            "organization's catalog history. Numbers never go backwards: "
+            "applying an older config again publishes a new version with the "
+            "next number."
         ),
     )
 
@@ -385,15 +589,29 @@ class Config(Schema):
         max_length=MAXIMUM_PRODUCTS,
         description=(
             "Products to create or update, matched by `external_id`. "
-            "Existing products that aren't listed are left untouched."
+            "Deprecated products are never created or updated. They, and live "
+            "products that aren't listed, are left out of the next catalog. "
+            "A product that isn't listed but still has a billable subscription, "
+            "or a scheduled subscription change to it, is an error: mark it "
+            "`deprecated` instead. Products that pulling the "
+            "config doesn't export, and all products when `products` is "
+            "omitted, are left untouched."
         ),
     )
-    webhooks: list[ConfigWebhookEndpoint] = Field(
+    custom_fields: list[ConfigCustomField] = Field(
         default_factory=list,
-        max_length=MAXIMUM_WEBHOOK_ENDPOINTS,
+        max_length=MAXIMUM_CUSTOM_FIELDS,
         description=(
-            "Webhook endpoints to create or update, matched by `external_id`. "
-            "Existing endpoints that aren't listed are left untouched."
+            "Custom fields to create or update, matched by `slug`. "
+            "A change creates a new version of the field, and of every product "
+            "in `products` asking for it. Earlier versions keep the field as it "
+            "was. "
+            "Omitted `metadata` is left untouched. "
+            "Changing a slug creates a new field. "
+            "Existing custom fields that aren't listed leave the catalog, and "
+            "their answers are kept. Custom fields that pulling the config "
+            "doesn't export are left untouched. "
+            "All custom fields are left untouched when `custom_fields` is omitted."
         ),
     )
     organization_id: OrganizationID | None = Field(
@@ -414,10 +632,15 @@ class ConfigIssueType(StrEnum):
     currency_changed = "currency_changed"
     deprecated_reference = "deprecated_reference"
     duplicate_external_id = "duplicate_external_id"
+    duplicate_slug = "duplicate_slug"
     interval_changed = "interval_changed"
+    invalid_prices = "invalid_prices"
+    limit_exceeded = "limit_exceeded"
+    meter_cycle_unused = "meter_cycle_unused"
     meter_locked = "meter_locked"
     missing_currency = "missing_currency"
     not_supported = "not_supported"
+    removed_in_use = "removed_in_use"
     type_changed = "type_changed"
     unknown_event = "unknown_event"
     unknown_reference = "unknown_reference"
@@ -442,15 +665,17 @@ class ConfigAction(StrEnum):
 
 
 class ConfigResource(StrEnum):
+    custom_field = "custom_field"
     meter = "meter"
     benefit = "benefit"
     product = "product"
-    webhook = "webhook"
 
 
 class ConfigResult(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
-    external_id: str = Field(description="The resource's `external_id`.")
+    external_id: str = Field(
+        description="The resource's `external_id`, or `slug` for a custom field."
+    )
     action: ConfigAction = Field(description="What applying the config does.")
 
 
@@ -458,15 +683,57 @@ class ConfigSettingsResult(Schema):
     action: ConfigAction = Field(description="What applying the config does.")
 
 
+class ConfigCatalog(IDSchema):
+    name: str | None = Field(description="Name of the catalog.")
+
+
 class ConfigCatalogChange(Schema):
-    before: str | None = Field(
-        description="Version hash of the live catalog before applying."
+    before: ConfigCatalog | None = Field(
+        description="The live catalog before applying. `None` if no catalog exists to replace."
     )
-    after: str = Field(description="Version hash of the live catalog after applying.")
+    after: ConfigCatalog = Field(
+        description="The catalog applying published, or the draft it saved."
+    )
+
+
+class ConfigCatalogPlan(Schema):
+    before: ConfigCatalog | None = Field(
+        description=(
+            "The live catalog that applying replaces. "
+            "`None` if the organization has no catalog yet."
+        )
+    )
+    name: str = Field(
+        description=(
+            "Name of the catalog applying publishes. A default `v{n}` name moves "
+            "to the next number if another apply publishes first."
+        )
+    )
+
+
+class ConfigRemovalReason(StrEnum):
+    missing = "missing"
+    deprecated = "deprecated"
+
+
+class ConfigRemoval(Schema):
+    resource: ConfigResource = Field(description="The type of resource.")
+    external_id: str = Field(
+        description="The resource's `external_id`, or `slug` for a custom field."
+    )
+    reason: ConfigRemovalReason = Field(
+        description=(
+            "`missing` when the config doesn't list the resource, "
+            "`deprecated` when it's marked deprecated."
+        )
+    )
 
 
 class ConfigApplyResult(Schema):
     changes: list[ConfigResult]
+    removed: list[ConfigRemoval] = Field(
+        description="Resources left out of the published catalog."
+    )
     catalog: ConfigCatalogChange | None = Field(
         description="The published catalog, if applying published a new one."
     )
@@ -498,7 +765,10 @@ class ConfigSettingsChange(ConfigSettingsResult):
 
 class ConfigPlan(Schema):
     changes: list[ConfigChange]
-    catalog: ConfigCatalogChange | None = Field(
+    removed: list[ConfigRemoval] = Field(
+        description="Resources that applying leaves out of the next catalog."
+    )
+    catalog: ConfigCatalogPlan | None = Field(
         description="The catalog that applying publishes, if any."
     )
     settings: ConfigSettingsChange | None = Field(
@@ -507,13 +777,26 @@ class ConfigPlan(Schema):
     issues: list[ConfigIssue]
 
 
+class ConfigPruneReference(Schema):
+    resource: ConfigResource = Field(
+        description="The type of the referencing resource."
+    )
+    external_id: str = Field(description="The referencing resource's `external_id`.")
+
+
 class ConfigPruneEntry(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
     external_id: str = Field(description="The resource's `external_id`.")
-    in_use: bool = Field(description="Whether a customer still uses the resource.")
-    referenced_by: list[str] = Field(
+    customers_count: int = Field(
         description=(
-            "External IDs of the products and benefits staying in the config "
+            "Number of customers still using the resource: subscribers for a product, "
+            "customers granted a benefit, from a subscription or an order, and "
+            "subscribers or credit holders for a meter."
+        )
+    )
+    referenced_by: list[ConfigPruneReference] = Field(
+        description=(
+            "The products and benefits staying in the config "
             "that reference the resource."
         )
     )
@@ -567,8 +850,28 @@ class ConfigBenefitMeterCreditRead(_ConfigRead):
     properties: ConfigBenefitMeterCreditPropertiesRead
 
 
+class ConfigBenefitSlackSharedChannelPropertiesRead(_ConfigRead):
+    slack_integration_id: UUID4
+    channel_name_template: str
+    private: bool
+    welcome_message: str | None
+    archive_on_revoke: bool
+    team_invitees: list[str]
+
+
+class ConfigBenefitSlackSharedChannelRead(_ConfigRead):
+    type: Literal[BenefitType.slack_shared_channel]
+    external_id: str
+    description: str
+    visibility: BenefitVisibility
+    metadata: MetadataOutputType
+    properties: ConfigBenefitSlackSharedChannelPropertiesRead
+
+
 ConfigBenefitRead = Annotated[
-    ConfigBenefitFeatureFlagRead | ConfigBenefitMeterCreditRead,
+    ConfigBenefitFeatureFlagRead
+    | ConfigBenefitMeterCreditRead
+    | ConfigBenefitSlackSharedChannelRead,
     Discriminator("type"),
     SetSchemaReference("ConfigBenefitRead"),
 ]
@@ -637,6 +940,53 @@ ConfigProductPriceRead = Annotated[
 ]
 
 
+class _ConfigCustomFieldReadBase(_ConfigRead):
+    slug: str
+    name: str
+    metadata: MetadataOutputType
+
+
+class ConfigCustomFieldTextRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.text]
+    properties: CustomFieldTextProperties
+
+
+class ConfigCustomFieldNumberRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.number]
+    properties: CustomFieldNumberProperties
+
+
+class ConfigCustomFieldDateRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.date]
+    properties: CustomFieldDateProperties
+
+
+class ConfigCustomFieldCheckboxRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.checkbox]
+    properties: CustomFieldCheckboxProperties
+
+
+class ConfigCustomFieldSelectRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.select]
+    properties: CustomFieldSelectProperties
+
+
+ConfigCustomFieldRead = Annotated[
+    ConfigCustomFieldTextRead
+    | ConfigCustomFieldNumberRead
+    | ConfigCustomFieldDateRead
+    | ConfigCustomFieldCheckboxRead
+    | ConfigCustomFieldSelectRead,
+    Discriminator("type"),
+    SetSchemaReference("ConfigCustomFieldRead"),
+]
+
+
+class ConfigProductCustomFieldRead(_ConfigRead):
+    field: str
+    required: bool
+
+
 class ConfigProductRead(_ConfigRead):
     external_id: str
     name: str
@@ -646,9 +996,27 @@ class ConfigProductRead(_ConfigRead):
     recurring_interval_count: int | None
     trial_interval: TrialInterval | None
     trial_interval_count: int | None
+    trial_payment_setup_required: Literal[False] | None = Field(
+        description=(
+            "`false` when customers can start the trial without a payment method."
+        ),
+    )
+    meter_interval: MeterInterval | None
+    meter_interval_count: int | None
     prices: list[ConfigProductPriceRead]
     benefits: list[str]
+    custom_fields: list[ConfigProductCustomFieldRead] | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Omitted when the token can't read custom fields.",
+    )
     metadata: MetadataOutputType
+    deprecated: Literal[True] | None = Field(
+        description=(
+            "`true` for products that are no longer in the catalog but still "
+            "have customers."
+        ),
+    )
 
 
 class ConfigSettingsPaymentsRead(_ConfigRead):
@@ -656,13 +1024,26 @@ class ConfigSettingsPaymentsRead(_ConfigRead):
     tax: TaxBehaviorOption
 
 
+class ConfigSettingsSubscriptionsRead(_ConfigRead):
+    allow_multiple_subscriptions: bool
+    proration_behavior: ProrationBehaviorSetting
+    benefit_revocation_grace_period: int
+    prevent_trial_abuse: bool
+
+
 class ConfigSettingsRead(_ConfigRead):
     payments: ConfigSettingsPaymentsRead
+    subscriptions: ConfigSettingsSubscriptionsRead
 
 
 class ConfigExportDocument(_ConfigRead):
     settings: ConfigSettingsRead
     meters: list[ConfigMeterRead]
+    custom_fields: list[ConfigCustomFieldRead] | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Omitted when the token can't read custom fields.",
+    )
     benefits: list[ConfigBenefitRead]
     products: list[ConfigProductRead]
 
@@ -681,9 +1062,30 @@ class ConfigSkippedResource(Schema):
     reason: ConfigSkippedReason = Field(
         description="Why the resource isn't in the exported config."
     )
+    recurring_interval: SubscriptionRecurringInterval | None = Field(
+        description="The billing interval of a skipped product. None for one-time products and other resources.",
+    )
+    recurring_interval_count: int | None = Field(
+        description="The number of intervals between charges of a skipped product.",
+    )
+
+
+class ConfigExportCatalog(ConfigCatalog):
+    status: CatalogStatus = Field(
+        description=(
+            "`live` for the catalog new checkouts use, `draft` for unpublished "
+            "changes, `archived` otherwise."
+        )
+    )
 
 
 class ConfigExport(Schema):
+    enabled: bool = Field(
+        description=(
+            "Whether config as code is enabled for the organization. "
+            "Until it is, plan and apply are refused."
+        )
+    )
     config: ConfigExportDocument = Field(
         description=(
             "The current config, in the shape plan and apply accept, "
@@ -695,4 +1097,57 @@ class ConfigExport(Schema):
             "Resources left out of the exported config. "
             "At most the section's config limit is listed."
         )
+    )
+    catalog: ConfigExportCatalog | None = Field(
+        description=(
+            "The catalog version the products come from. None before the first publish."
+        )
+    )
+
+
+class DeclarativeConfigExportParams(QuerySchema):
+    organization_id: OrganizationID | None = Field(
+        None,
+        description=(
+            "The ID of the organization to export. "
+            "**Required unless you use an organization token.**"
+        ),
+    )
+
+
+class ConfigExternalIDAssignment(Schema):
+    resource: Literal[
+        ConfigResource.meter, ConfigResource.benefit, ConfigResource.product
+    ] = Field(description="The type of resource.")
+    id: UUID4 = Field(description="The ID of a resource without an `external_id`.")
+    external_id: ExternalID = Field(
+        description="The `external_id` to give the resource."
+    )
+
+
+class ConfigDisable(Schema):
+    organization_id: OrganizationID | None = Field(
+        default=None,
+        description=(
+            "The ID of the organization to opt out. "
+            "**Required unless you use an organization token.**"
+        ),
+    )
+
+
+class ConfigInit(Schema):
+    organization_id: OrganizationID | None = Field(
+        default=None,
+        description=(
+            "The ID of the organization to opt in. "
+            "**Required unless you use an organization token.**"
+        ),
+    )
+    external_ids: list[ConfigExternalIDAssignment] = Field(
+        default_factory=list,
+        max_length=MAXIMUM_METERS + MAXIMUM_BENEFITS + MAXIMUM_PRODUCTS,
+        description=(
+            "External IDs to give existing resources that don't have one yet, "
+            "so the config can manage them."
+        ),
     )

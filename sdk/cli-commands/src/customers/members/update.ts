@@ -9,6 +9,7 @@ import {
   data,
   mergeInput,
   nullableStringFlag,
+  org,
 } from '../../inputs'
 
 type Body = NonNullable<Parameters<Polar['customers']['members']['update']>[2]>
@@ -18,6 +19,7 @@ export const command = Command.make(
   {
     confirm,
     fields,
+    org,
     path: {
       id: Argument.String('id'),
       member_id: Argument.String('member_id'),
@@ -51,6 +53,7 @@ export const command = Command.make(
         method: 'PATCH',
         requiresConfirmation: true,
         confirm: config.confirm,
+        organizationId: config.org,
         fields: config.fields,
         preview: {
           fields: [

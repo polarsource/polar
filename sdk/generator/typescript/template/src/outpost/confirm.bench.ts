@@ -3,9 +3,7 @@ import { once } from "node:events";
 import { afterAll, beforeAll, bench, describe } from "vitest";
 
 import {
-  CHANNEL,
   COLD_UNTIL,
-  EPOCH,
   PENDING_COUNTS,
   encodePending,
   encodeState,
@@ -55,14 +53,17 @@ describe("CONFIRM", () => {
           .hset(pendingKey, ...entries)
           .evalsha(
             confirmSha,
-            2,
+            4,
+            "outpost:v1:outbox",
+            "outpost:v1:outbox",
             stateKey,
             pendingKey,
-            identityOf(pending),
-            CHANNEL,
-            EPOCH,
-            COLD_UNTIL,
             "",
+            "",
+            0,
+            0,
+            COLD_UNTIL,
+            ids.length,
             ...ids,
           )
           .exec();

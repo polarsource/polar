@@ -10,12 +10,16 @@ from polar.worker._asyncio import _EventLoopWatchdog
 
 
 @pytest.fixture
-def event_loop_thread() -> Iterator[tuple[asyncio.AbstractEventLoop, threading.Thread]]:
+def event_loop_thread() -> Iterator[
+    tuple[asyncio.AbstractEventLoop, threading.Thread, threading.Event]
+]:
     """An event loop running in a background thread."""
     loop = asyncio.new_event_loop()
+    release = threading.Event()
     thread = threading.Thread(target=loop.run_forever, daemon=True)
     thread.start()
-    yield loop, thread
+    yield loop, thread, release
+    release.set()
     loop.call_soon_threadsafe(loop.stop)
     thread.join(timeout=2)
     if not thread.is_alive():
@@ -23,56 +27,75 @@ def event_loop_thread() -> Iterator[tuple[asyncio.AbstractEventLoop, threading.T
 
 
 def _block(
-    loop: asyncio.AbstractEventLoop, seconds: float, name: str = "block"
+    loop: asyncio.AbstractEventLoop,
+    release: threading.Event,
+    name: str = "block",
 ) -> None:
-    """Block the loop from another thread, and wait until it is really blocked."""
+    """Block the loop from another thread until *release* is set."""
     started = threading.Event()
 
     def obviously_blocking_function() -> None:
         started.set()
-        time.sleep(seconds)
+        release.wait(timeout=5)
 
     obviously_blocking_function.__name__ = name
     loop.call_soon_threadsafe(obviously_blocking_function)
     started.wait(timeout=1)
 
 
+def _wait_for(predicate: object, *, timeout: float = 2.0) -> None:
+    assert callable(predicate)
+    deadline = time.monotonic() + timeout
+    while not predicate():
+        if time.monotonic() >= deadline:
+            break
+        time.sleep(0.005)
+
+
 class TestEventLoopWatchdog:
     def test_healthy_loop_no_dump(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self,
+        event_loop_thread: tuple[
+            asyncio.AbstractEventLoop, threading.Thread, threading.Event
+        ],
     ) -> None:
-        loop, thread = event_loop_thread
+        loop, thread, _ = event_loop_thread
         with patch.object(_EventLoopWatchdog, "_dump_stacks") as mock_dump:
             watchdog = _EventLoopWatchdog(
                 loop,
                 thread.ident,
-                heartbeat_interval=0.05,
-                heartbeat_timeout=0.5,
+                heartbeat_interval=0.01,
+                heartbeat_timeout=1.0,
                 max_misses=0,
             )
             watchdog.start()
-            time.sleep(0.3)
-            watchdog.stop()
-            watchdog.join(timeout=2)
+            try:
+                assert watchdog._heartbeat_event.wait(timeout=2)
+            finally:
+                watchdog.stop()
+                watchdog.join(timeout=2)
 
             mock_dump.assert_not_called()
 
     def test_frozen_loop_triggers_dump(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self,
+        event_loop_thread: tuple[
+            asyncio.AbstractEventLoop, threading.Thread, threading.Event
+        ],
     ) -> None:
-        loop, thread = event_loop_thread
-        _block(loop, 2)
+        loop, thread, release = event_loop_thread
+        _block(loop, release)
 
         with patch.object(_EventLoopWatchdog, "_dump_stacks") as mock_dump:
             watchdog = _EventLoopWatchdog(
                 loop,
                 thread.ident,
-                heartbeat_interval=0.05,
-                heartbeat_timeout=0.3,
+                heartbeat_interval=0.01,
+                heartbeat_timeout=0.05,
                 max_misses=0,
             )
             watchdog.start()
-            time.sleep(0.6)
+            _wait_for(lambda: mock_dump.called)
             watchdog.stop()
             watchdog.join(timeout=2)
 
@@ -86,12 +109,12 @@ class TestEventLoopWatchdog:
         watchdog = _EventLoopWatchdog(
             loop,
             thread.ident,
-            heartbeat_interval=0.05,
-            heartbeat_timeout=0.5,
+            heartbeat_interval=0.01,
+            heartbeat_timeout=0.1,
             max_misses=0,
         )
         watchdog.start()
-        time.sleep(0.1)
+        time.sleep(0.03)
 
         loop.call_soon_threadsafe(loop.stop)
         thread.join(timeout=2)
@@ -101,22 +124,25 @@ class TestEventLoopWatchdog:
         assert not watchdog.is_alive()
 
     def test_dump_contains_blocking_function_name(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self,
+        event_loop_thread: tuple[
+            asyncio.AbstractEventLoop, threading.Thread, threading.Event
+        ],
     ) -> None:
-        loop, thread = event_loop_thread
-        _block(loop, 2)
+        loop, thread, release = event_loop_thread
+        _block(loop, release)
 
         watchdog = _EventLoopWatchdog(
             loop,
             thread.ident,
-            heartbeat_interval=0.05,
-            heartbeat_timeout=0.3,
+            heartbeat_interval=0.01,
+            heartbeat_timeout=0.05,
             max_misses=0,
         )
 
         with patch("polar.worker._asyncio.log") as mock_log:
             watchdog.start()
-            time.sleep(0.6)
+            _wait_for(lambda: mock_log.error.called)
             watchdog.stop()
             watchdog.join(timeout=2)
 
@@ -130,24 +156,27 @@ class TestEventLoopWatchdog:
             assert call_kwargs["consecutive_misses"] >= 1
 
     def test_event_loop_stack_resolves_without_thread_name(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self,
+        event_loop_thread: tuple[
+            asyncio.AbstractEventLoop, threading.Thread, threading.Event
+        ],
     ) -> None:
         """dramatiq never names its loop thread, so the id is the only way in."""
-        loop, thread = event_loop_thread
+        loop, thread, release = event_loop_thread
         assert thread.name != "dramatiq-asyncio"
-        _block(loop, 2)
+        _block(loop, release)
 
         watchdog = _EventLoopWatchdog(
             loop,
             thread.ident,
-            heartbeat_interval=0.05,
-            heartbeat_timeout=0.3,
+            heartbeat_interval=0.01,
+            heartbeat_timeout=0.05,
             max_misses=0,
         )
 
         with patch("polar.worker._asyncio.log") as mock_log:
             watchdog.start()
-            time.sleep(0.6)
+            _wait_for(lambda: mock_log.error.called)
             watchdog.stop()
             watchdog.join(timeout=2)
 
@@ -156,51 +185,69 @@ class TestEventLoopWatchdog:
             assert "obviously_blocking_function" in event_loop_stack
 
     def test_dump_does_not_call_faulthandler(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self,
+        event_loop_thread: tuple[
+            asyncio.AbstractEventLoop, threading.Thread, threading.Event
+        ],
     ) -> None:
         """faulthandler.dump_traceback(all_threads=True) can freeze the process.
 
         It hangs when a thread sits in a blocking C call, which is exactly when
         the watchdog runs, so this must stay pure Python.
         """
-        loop, thread = event_loop_thread
-        _block(loop, 2)
+        loop, thread, release = event_loop_thread
+        _block(loop, release)
 
         watchdog = _EventLoopWatchdog(
             loop,
             thread.ident,
-            heartbeat_interval=0.05,
-            heartbeat_timeout=0.3,
+            heartbeat_interval=0.01,
+            heartbeat_timeout=0.05,
             max_misses=0,
         )
 
-        with patch("faulthandler.dump_traceback") as mock_faulthandler:
+        with (
+            patch("polar.worker._asyncio.log") as mock_log,
+            patch("faulthandler.dump_traceback") as mock_faulthandler,
+        ):
             watchdog.start()
-            time.sleep(0.6)
+            _wait_for(lambda: mock_log.error.called)
             watchdog.stop()
             watchdog.join(timeout=2)
 
             mock_faulthandler.assert_not_called()
 
     def test_consecutive_misses_tracked(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self,
+        event_loop_thread: tuple[
+            asyncio.AbstractEventLoop, threading.Thread, threading.Event
+        ],
     ) -> None:
-        loop, thread = event_loop_thread
-        _block(loop, 3)
+        loop, thread, release = event_loop_thread
+        _block(loop, release)
 
         watchdog = _EventLoopWatchdog(
             loop,
             thread.ident,
-            heartbeat_interval=0.05,
-            heartbeat_timeout=0.3,
+            heartbeat_interval=0.01,
+            heartbeat_timeout=0.05,
             max_misses=0,
         )
 
         with patch("polar.worker._asyncio.log") as mock_log:
             watchdog.start()
-            time.sleep(1.0)
+            _wait_for(
+                lambda: (
+                    sum(
+                        1
+                        for c in mock_log.error.call_args_list
+                        if c[0][0] == "event_loop_unresponsive"
+                    )
+                    >= 2
+                )
+            )
             watchdog.stop()
-            watchdog.join(timeout=5)
+            watchdog.join(timeout=2)
 
             error_calls = [
                 c
@@ -212,43 +259,49 @@ class TestEventLoopWatchdog:
             assert error_calls[1][1]["consecutive_misses"] == 2
 
     def test_exits_process_after_max_misses(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self,
+        event_loop_thread: tuple[
+            asyncio.AbstractEventLoop, threading.Thread, threading.Event
+        ],
     ) -> None:
-        loop, thread = event_loop_thread
-        _block(loop, 3)
+        loop, thread, release = event_loop_thread
+        _block(loop, release)
 
         watchdog = _EventLoopWatchdog(
             loop,
             thread.ident,
-            heartbeat_interval=0.05,
-            heartbeat_timeout=0.3,
+            heartbeat_interval=0.01,
+            heartbeat_timeout=0.05,
             max_misses=2,
         )
 
         with patch("polar.worker._asyncio.os._exit") as mock_exit:
             watchdog.start()
-            time.sleep(1.0)
+            _wait_for(lambda: mock_exit.called)
             watchdog.stop()
-            watchdog.join(timeout=5)
+            watchdog.join(timeout=2)
 
             mock_exit.assert_called_with(1)
 
     def test_exits_even_when_the_dump_fails(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self,
+        event_loop_thread: tuple[
+            asyncio.AbstractEventLoop, threading.Thread, threading.Event
+        ],
     ) -> None:
         """A broken stderr must not stop the restart.
 
         _dump_stacks used to run unguarded, so a write error killed the
         watchdog thread and left the stuck worker alive.
         """
-        loop, thread = event_loop_thread
-        _block(loop, 3)
+        loop, thread, release = event_loop_thread
+        _block(loop, release)
 
         watchdog = _EventLoopWatchdog(
             loop,
             thread.ident,
-            heartbeat_interval=0.05,
-            heartbeat_timeout=0.3,
+            heartbeat_interval=0.01,
+            heartbeat_timeout=0.05,
             max_misses=2,
         )
 
@@ -259,29 +312,32 @@ class TestEventLoopWatchdog:
             patch("polar.worker._asyncio.os._exit") as mock_exit,
         ):
             watchdog.start()
-            time.sleep(1.0)
+            _wait_for(lambda: mock_exit.called)
             watchdog.stop()
-            watchdog.join(timeout=5)
+            watchdog.join(timeout=2)
 
             mock_exit.assert_called_with(1)
 
     def test_exits_when_the_dump_hangs(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self,
+        event_loop_thread: tuple[
+            asyncio.AbstractEventLoop, threading.Thread, threading.Event
+        ],
     ) -> None:
         """A thread stuck holding the logging lock hangs the dump's log call.
 
         The first miss must then exit on its own, since the miss count can
         never reach max_misses.
         """
-        loop, thread = event_loop_thread
-        _block(loop, 3)
+        loop, thread, release_loop = event_loop_thread
+        _block(loop, release_loop)
         release = threading.Event()
 
         watchdog = _EventLoopWatchdog(
             loop,
             thread.ident,
-            heartbeat_interval=0.05,
-            heartbeat_timeout=0.3,
+            heartbeat_interval=0.01,
+            heartbeat_timeout=0.05,
             max_misses=3,
         )
 
@@ -291,36 +347,42 @@ class TestEventLoopWatchdog:
                 "_dump_stacks",
                 side_effect=lambda: release.wait(timeout=5),
             ),
-            patch("polar.worker._asyncio.DUMP_TIMEOUT_SECONDS", 0.2),
+            patch("polar.worker._asyncio.DUMP_TIMEOUT_SECONDS", 0.05),
             patch("polar.worker._asyncio.os._exit") as mock_exit,
         ):
             watchdog.start()
-            time.sleep(1.0)
+            _wait_for(lambda: mock_exit.called)
             mock_exit.assert_called_with(1)
             assert watchdog._consecutive_misses == 1
 
             release.set()
             watchdog.stop()
-            watchdog.join(timeout=5)
+            watchdog.join(timeout=2)
 
     def test_does_not_exit_when_disabled(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self,
+        event_loop_thread: tuple[
+            asyncio.AbstractEventLoop, threading.Thread, threading.Event
+        ],
     ) -> None:
-        loop, thread = event_loop_thread
-        _block(loop, 3)
+        loop, thread, release = event_loop_thread
+        _block(loop, release)
 
         watchdog = _EventLoopWatchdog(
             loop,
             thread.ident,
-            heartbeat_interval=0.05,
-            heartbeat_timeout=0.3,
+            heartbeat_interval=0.01,
+            heartbeat_timeout=0.05,
             max_misses=0,
         )
 
-        with patch("polar.worker._asyncio.os._exit") as mock_exit:
+        with (
+            patch("polar.worker._asyncio.log") as mock_log,
+            patch("polar.worker._asyncio.os._exit") as mock_exit,
+        ):
             watchdog.start()
-            time.sleep(1.0)
+            _wait_for(lambda: len(mock_log.error.call_args_list) >= 2)
             watchdog.stop()
-            watchdog.join(timeout=5)
+            watchdog.join(timeout=2)
 
             mock_exit.assert_not_called()

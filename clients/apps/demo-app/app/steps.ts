@@ -24,14 +24,16 @@ export const STEPS: StepDefinition[] = [
       {
         name: 'polar.config.ts',
         code: `export default defineConfig({
-  events: {
-    tool_call: z.object({
-      tool: z.string(),
-      server: z.enum(['builtin', 'custom']),
-      success: z.boolean(),
-      duration_ms: z.int(),
-    }),
-  },
+  events: ({ event }) => ({
+    tool_call: event(
+      z.object({
+        tool: z.string(),
+        server: z.enum(['builtin', 'custom']),
+        success: z.boolean(),
+        duration_ms: z.int(),
+      }),
+    ),
+  }),
   meters: ({ meter, events }) => ({
     tool_call: meter('Tool calls').on(events.tool_call).count(),
   }),

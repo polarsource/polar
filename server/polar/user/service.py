@@ -59,6 +59,11 @@ class IdentityVerificationForUnknownUser(UserError):
         super().__init__(message)
 
 
+class UserCannotAuthenticate(UserError):
+    def __init__(self) -> None:
+        super().__init__("This account cannot sign in.", 403)
+
+
 class InvalidAccount(UserError):
     def __init__(self, account_id: UUID) -> None:
         self.account_id = account_id
@@ -87,9 +92,13 @@ class UserService:
                     session, email, signup_attribution=signup_attribution
                 )
         except IntegrityError:
-            user = await repository.get_by_email(email)
+            user = await repository.get_by_email(
+                email, include_deleted=True, included_blocked=True
+            )
             if user is None:
                 raise
+            if not user.can_authenticate:
+                raise UserCannotAuthenticate()
             log.info("user.get_by_email_or_create.concurrent_creation", user_id=user.id)
             return (user, False)
 

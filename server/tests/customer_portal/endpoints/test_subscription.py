@@ -2,9 +2,9 @@ import uuid
 from datetime import timedelta
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
@@ -14,6 +14,7 @@ from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_meter import SubscriptionMeter
 from polar.postgres import AsyncSession
+from polar.version import V2026_10, V2027_01
 from tests.fixtures.auth import (
     CUSTOMER_AUTH_SUBJECT,
     MEMBER_AUTH_SUBJECT,
@@ -29,6 +30,7 @@ from tests.fixtures.random_objects import (
     create_order,
     create_payment_method,
     create_product,
+    create_subscription,
     create_subscription_with_seats,
     set_product_benefits,
 )
@@ -175,6 +177,88 @@ class TestGetCancelPreview:
         json = response.json()
         assert json["stops_collection"] is True
         assert json["outstanding_amount"] == 1000
+
+
+@pytest.mark.anyio
+class TestCustomerSubscriptionReactivate:
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.api_version(V2026_10)
+    async def test_not_available_before_2027_01(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trial_ended,
+        )
+
+        response = await client.patch(
+            f"/v1/customer-portal/subscriptions/{subscription.id}",
+            json={"reactivate": True},
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.api_version(V2027_01)
+    async def test_missing_billing_details(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trial_ended,
+            ends_at=utc_now() + timedelta(days=7),
+        )
+
+        response = await client.patch(
+            f"/v1/customer-portal/subscriptions/{subscription.id}",
+            json={"reactivate": True},
+        )
+
+        assert response.status_code == 409
+        assert response.json()["error"] == "MissingBillingDetails"
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.api_version(V2027_01)
+    async def test_renewals_disabled(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        organization.capabilities = {
+            **organization.capabilities,
+            "subscription_renewals": False,
+        }
+        await save_fixture(organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trial_ended,
+            ends_at=utc_now() + timedelta(days=7),
+        )
+
+        response = await client.patch(
+            f"/v1/customer-portal/subscriptions/{subscription.id}",
+            json={"reactivate": True},
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "PaymentNotReady"
 
 
 @pytest.mark.anyio
@@ -987,6 +1071,47 @@ class TestPreviewChange:
 
         assert response.status_code == 200
         assert len(response.json()["prorations"]) == 2
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.parametrize(
+        ("api_version", "expected_proration_behavior"),
+        [("2026-10", None), ("2027-01", "invoice")],
+    )
+    async def test_interval_change_proration_behavior(
+        self,
+        api_version: str,
+        expected_proration_behavior: str | None,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "proration_behavior": SubscriptionProrationBehavior.prorate,
+        }
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            prices=[(50000, "usd")],
+        )
+
+        response = await client.post(
+            f"/v1/customer-portal/subscriptions/{subscription.id}/change-preview",
+            headers={"Polar-Version": api_version},
+            json={"product_id": str(new_product.id)},
+        )
+
+        assert response.status_code == 200
+        assert response.json().get("proration_behavior") == (
+            expected_proration_behavior
+        )
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_product_change_rejects_proration_behavior(

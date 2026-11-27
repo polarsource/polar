@@ -1,27 +1,29 @@
 import { useOrder } from '@/hooks/queries/orders'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Status, type StatusColor } from '@polar-sh/orbit'
 import Link from 'next/link'
-import { useContext, useMemo } from 'react'
+import { useMemo } from 'react'
 import { EventCardBase } from './EventCardBase'
 
-const BillingReasonDisplayName: Record<schemas['OrderBillingReason'], string> =
-  {
-    purchase: 'Purchase',
-    subscription_create: 'Subscription Creation',
-    subscription_cycle: 'Subscription Cycle',
-    subscription_update: 'Subscription Update',
-    subscription_meter_cycle: 'Meter Cycle',
-  }
+export const BillingReasonDisplayName: Record<
+  schemas['OrderBillingReason'],
+  string
+> = {
+  purchase: 'Purchase',
+  subscription_create: 'Subscription Creation',
+  subscription_cycle: 'Subscription Cycle',
+  subscription_update: 'Subscription Update',
+  subscription_meter_cycle: 'Meter Cycle',
+}
 
 export interface OrderEventCardProps {
   event: schemas['OrderPaidEvent'] | schemas['OrderRefundedEvent']
 }
 
 export const OrderEventCard = ({ event }: OrderEventCardProps) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const { data: order, isLoading: isLoadingOrder } = useOrder(
     event.metadata.order_id,
   )

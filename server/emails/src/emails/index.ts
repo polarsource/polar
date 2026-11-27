@@ -2,6 +2,7 @@ import { ChargebackPreventionRefund } from './chargeback_prevention_refund'
 import { CustomerEmailChangedNotification } from './customer_email_changed_notification'
 import { CustomerEmailUpdateVerification } from './customer_email_update_verification'
 import { CustomerSessionCode } from './customer_session_code'
+import { DomainVerificationLost } from './domain_verification_lost'
 import { EmailUpdate } from './email_update'
 import { LoginCode } from './login_code'
 import { NotificationCreditsGranted } from './notification_credits_granted'
@@ -15,6 +16,7 @@ import { OAuth2LeakedClient } from './oauth2_leaked_client'
 import { OAuth2LeakedToken } from './oauth2_leaked_token'
 import { OrderConfirmation } from './order_confirmation'
 import { OrganizationAccessTokenLeaked } from './organization_access_token_leaked'
+import { OrganizationEmailVerification } from './organization_email_verification'
 import { OrganizationInvite } from './organization_invite'
 import { OrganizationOffboarded } from './organization_offboarded'
 import { PaymentMethodExpirationReminder } from './payment_method_expiration_reminder'
@@ -37,6 +39,7 @@ import { SubscriptionRenewalReminder } from './subscription_renewal_reminder'
 import { SubscriptionResumed } from './subscription_resumed'
 import { SubscriptionRevoked } from './subscription_revoked'
 import { SubscriptionTrialConversionReminder } from './subscription_trial_conversion_reminder'
+import { SubscriptionTrialPaymentMethodRequired } from './subscription_trial_payment_method_required'
 import { SubscriptionUncanceled } from './subscription_uncanceled'
 import { SubscriptionUpdated } from './subscription_updated'
 import { SubscriptionUsageInvoice } from './subscription_usage_invoice'
@@ -69,6 +72,8 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   subscription_renewal_reminder: SubscriptionRenewalReminder,
   subscription_revoked: SubscriptionRevoked,
   subscription_trial_conversion_reminder: SubscriptionTrialConversionReminder,
+  subscription_trial_payment_method_required:
+    SubscriptionTrialPaymentMethodRequired,
   subscription_uncanceled: SubscriptionUncanceled,
   subscription_updated: SubscriptionUpdated,
   subscription_usage_invoice: SubscriptionUsageInvoice,
@@ -81,6 +86,8 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   notification_subscription_cancellation: NotificationSubscriptionCancellation,
   notification_credits_granted: NotificationCreditsGranted,
   notification_file_flagged_malicious: NotificationFileFlaggedMalicious,
+  domain_verification_lost: DomainVerificationLost,
+  organization_email_verification: OrganizationEmailVerification,
   chargeback_prevention_refund: ChargebackPreventionRefund,
   polar_self_subscription_cancellation: PolarSelfSubscriptionCancellation,
   polar_self_subscription_confirmation: PolarSelfSubscriptionConfirmation,

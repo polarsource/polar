@@ -9,7 +9,7 @@ When writing effect code look for best practices and established patterns in:
 
 ```
 src/
-├── commands/   one file per command (or group); nothing else lives here
+├── commands/   one file per command (or group), or a directory whose index.ts defines it (with its own modules next to it); nothing else lives here
 ├── services/   talk to the API or the system; return data and typed errors, never print
 ├── schemas/    Effect schemas, result types and error classes shared by every layer
 └── utils/      rendering and helpers; may use types from services, never call them
@@ -17,6 +17,16 @@ src/
 
 The `polar-cli/*` rules in `lint/rules/` enforce these boundaries. Run
 `pnpm lint` after adding a file; the message tells you where it belongs.
+
+## Running it locally
+
+Run the local CLI from source as `dev polar <command>` (the `dev` CLI runs
+`src/` in your current directory, so `dev polar config validate` from
+`clients/apps/demo-app` picks up its `polar.config.ts`). Never test against a
+compiled `polar` binary with saved sessions: macOS treats the fresh binary as
+untrusted and prompts for the keychain password on every read. When a compiled
+artifact must be tested, limit it to `--version` and `--help`, or set
+`POLAR_ACCESS_TOKEN` to bypass the keyring.
 
 ## Adding a command
 

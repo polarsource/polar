@@ -1,8 +1,9 @@
 from typing import Annotated, Self
 
-from pydantic import Discriminator, Field, model_validator
+from pydantic import MISSING, Discriminator, Field, model_validator
 
 from polar.kit.currency import PresentmentCurrency
+from polar.kit.versioning import Omissible
 
 from . import schemas
 from .schemas import Amount, Amounts, Currency, DiscountPercentageCreate
@@ -29,18 +30,18 @@ class DiscountFixedCreate(schemas.DiscountFixedCreate):
 
 
 class DiscountUpdate(schemas.DiscountUpdate):
-    amount: Amount | None = Field(
-        default=None,
+    amount: Omissible[Amount] = Field(
+        default=MISSING,
         deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
     )
-    currency: Currency | None = Field(
-        default=None,
+    currency: Omissible[Currency] = Field(
+        default=MISSING,
         deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
     )
 
     @model_validator(mode="after")
     def validate_either_amount_or_amounts(self) -> Self:
-        if self.amount is not None and self.amounts is not None:
+        if self.amount is not MISSING and self.amounts is not MISSING:
             raise ValueError("Cannot specify both `amount` and `amounts`.")
         return self
 

@@ -112,6 +112,9 @@ class TestRequiresPaymentMethod:
             (SubscriptionStatus.canceled, False, False),
             (SubscriptionStatus.unpaid, False, False),
             (SubscriptionStatus.paused, False, False),
+            # Waits for a payment method to resume billing after its trial.
+            (SubscriptionStatus.trial_ended, False, True),
+            (SubscriptionStatus.trial_ended, True, True),
         ],
     )
     async def test_status_and_scheduled_cancellation(
@@ -195,3 +198,20 @@ class TestRequiresPaymentMethod:
 
         assert subscription.requires_payment_method is False
         assert await _matches_expression(session, subscription) is False
+
+
+class TestCanCancel:
+    @pytest.mark.parametrize(
+        ("status", "immediately", "expected"),
+        [
+            (SubscriptionStatus.trial_ended, True, True),
+            (SubscriptionStatus.trial_ended, False, False),
+            (SubscriptionStatus.canceled, True, False),
+        ],
+    )
+    def test_status(
+        self, status: SubscriptionStatus, immediately: bool, expected: bool
+    ) -> None:
+        subscription = Subscription(status=status, ended_at=None)
+
+        assert subscription.can_cancel(immediately) is expected

@@ -6,7 +6,7 @@ from uuid import UUID
 
 import sqlalchemy as sa
 from sqlalchemy import ColumnElement, Select, and_, case, func, or_, select
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import contains_eager, undefer, with_polymorphic
 from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.orm.strategy_options import joinedload, raiseload, selectinload
 
@@ -39,18 +39,22 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.models import (
+    Benefit,
     BenefitGrant,
     Customer,
     CustomerSeat,
     Discount,
     Product,
     ProductPrice,
+    ProductPriceMeteredTiers,
+    ProductPriceMeteredUnit,
     Subscription,
     SubscriptionBulkUpdate,
     SubscriptionMeter,
     SubscriptionProductPrice,
     SubscriptionUpdate,
 )
+from polar.models.benefit import BenefitType
 from polar.models.customer_seat import SeatStatus
 from polar.models.email_log import EmailLog
 from polar.models.subscription import SubscriptionStatus
@@ -92,7 +96,7 @@ class SubscriptionRepository(
         *,
         exclude_product_id: UUID,
         after_id: UUID | None = None,
-    ) -> Select[tuple[Subscription]]:
+    ) -> Select[Subscription]:
         """Active subscriptions of any version of a product that a bulk update can
         move: not canceling, and without a pending change."""
         statement = (
@@ -151,6 +155,103 @@ class SubscriptionRepository(
         )
         return await self.get_all(statement)
 
+    async def list_cancelable_by_customer(
+        self, customer_id: UUID, *, options: Options = ()
+    ) -> Sequence[Subscription]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Subscription.customer_id == customer_id,
+                Subscription.status.in_(SubscriptionStatus.cancelable_statuses()),
+                Subscription.ended_at.is_(None),
+            )
+            .options(*options)
+        )
+        return await self.get_all(statement)
+
+    async def is_meter_owned_by_other_subscription(
+        self,
+        subscription: Subscription,
+        customer_id: UUID,
+        meter_id: UUID,
+        *,
+        bills_meter: bool,
+    ) -> bool:
+        """Whether another billable subscription owns the customer's meter: the
+        earliest that bills it, or the earliest that credits it when none bills
+        it. A paused subscription doesn't renew, so it can't reset the meter."""
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
+        other_bills_meter = (
+            select(SubscriptionProductPrice.id)
+            .join(
+                price,
+                price.id == SubscriptionProductPrice.product_price_id,
+            )
+            .where(
+                SubscriptionProductPrice.subscription_id == Subscription.id,
+                ~SubscriptionProductPrice.is_deleted,
+                Subscription.customer_id == customer_id,
+                price.is_metered,
+                price.ProductPriceMeteredUnit.meter_id == meter_id,
+            )
+            .exists()
+        )
+        other_credits_meter = (
+            select(BenefitGrant.id)
+            .join(Benefit, Benefit.id == BenefitGrant.benefit_id)
+            .where(
+                BenefitGrant.subscription_id == Subscription.id,
+                BenefitGrant.customer_id == customer_id,
+                BenefitGrant.is_granted,
+                ~BenefitGrant.is_deleted,
+                Benefit.type == BenefitType.meter_credit,
+                Benefit.properties["meter_id"].as_string() == str(meter_id),
+            )
+            .exists()
+        )
+        started_earlier = or_(
+            Subscription.started_at < subscription.started_at,
+            and_(
+                Subscription.started_at == subscription.started_at,
+                Subscription.id < subscription.id,
+            ),
+        )
+        owns_meter = (
+            and_(other_bills_meter, started_earlier)
+            if bills_meter
+            else or_(other_bills_meter, and_(other_credits_meter, started_earlier))
+        )
+        statement = select(
+            self.get_base_statement()
+            .where(
+                Subscription.id != subscription.id,
+                Subscription.billable,
+                Subscription.ended_at.is_(None),
+                owns_meter,
+            )
+            .exists()
+        )
+        return bool(await self.session.scalar(statement))
+
+    async def get_metered_ids_by_customer(self, customer_id: UUID) -> Sequence[UUID]:
+        """Ids of the customer's subscriptions that haven't ended and have meters."""
+        statement = (
+            self.get_base_statement()
+            .with_only_columns(Subscription.id)
+            .join(
+                SubscriptionMeter, SubscriptionMeter.subscription_id == Subscription.id
+            )
+            .where(
+                Subscription.customer_id == customer_id,
+                Subscription.ended_at.is_(None),
+            )
+            .distinct()
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
+
     async def list_payable_by_customer(
         self, customer_id: UUID, *, options: Options = ()
     ) -> Sequence[Subscription]:
@@ -194,14 +295,14 @@ class SubscriptionRepository(
         result = await self.session.execute(statement)
         return result.scalars().all()
 
-    def get_billable_by_organization_statement(
+    def get_cancelable_by_organization_statement(
         self, organization_id: UUID, *, options: Options = ()
-    ) -> Select[tuple[Subscription]]:
+    ) -> Select[Subscription]:
         return (
             self.get_base_statement()
             .where(
                 Subscription.organization_id == organization_id,
-                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                Subscription.status.in_(SubscriptionStatus.cancelable_statuses()),
                 Subscription.ended_at.is_(None),
             )
             .options(*options)
@@ -332,34 +433,51 @@ class SubscriptionRepository(
         result = await self.session.execute(statement)
         return result.scalars().all()
 
-    async def exists_billable_by_product(self, product_id: UUID) -> bool:
-        statement = (
-            select(Subscription.id)
-            .where(
-                Subscription.product_id == product_id,
-                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
-                ~Subscription.is_deleted,
+    async def count_customers_by_meters(
+        self, organization_id: UUID, meter_ids: Sequence[UUID]
+    ) -> dict[UUID, int]:
+        if not meter_ids:
+            return {}
+        subscribed = (
+            select(
+                SubscriptionMeter.meter_id.label("meter_id"),
+                Subscription.customer_id.label("customer_id"),
             )
-            .limit(1)
-        )
-        result = await self.session.execute(statement)
-        return result.first() is not None
-
-    async def exists_billable_by_meter(self, meter_id: UUID) -> bool:
-        statement = (
-            select(Subscription.id)
             .join(
                 SubscriptionMeter, SubscriptionMeter.subscription_id == Subscription.id
             )
             .where(
-                SubscriptionMeter.meter_id == meter_id,
+                Subscription.organization_id == organization_id,
+                SubscriptionMeter.meter_id.in_(meter_ids),
                 Subscription.status.in_(SubscriptionStatus.billable_statuses()),
                 ~Subscription.is_deleted,
             )
-            .limit(1)
+        )
+        granted = (
+            select(
+                sa.cast(Benefit.properties["meter_id"].as_string(), sa.Uuid).label(
+                    "meter_id"
+                ),
+                BenefitGrant.customer_id.label("customer_id"),
+            )
+            .join(Benefit, BenefitGrant.benefit_id == Benefit.id)
+            .where(
+                Benefit.organization_id == organization_id,
+                Benefit.type == BenefitType.meter_credit,
+                Benefit.properties["meter_id"]
+                .as_string()
+                .in_([str(meter_id) for meter_id in meter_ids]),
+                BenefitGrant.is_granted,
+                ~BenefitGrant.is_deleted,
+            )
+        )
+        # The union keeps each (meter, customer) pair once, so a customer with both counts once
+        customers = sa.union(subscribed, granted).subquery()
+        statement = select(customers.c.meter_id, func.count()).group_by(
+            customers.c.meter_id
         )
         result = await self.session.execute(statement)
-        return result.first() is not None
+        return {meter_id: count for meter_id, count in result.tuples()}
 
     async def get_by_id_and_organization(
         self,
@@ -395,12 +513,15 @@ class SubscriptionRepository(
         id: UUID,
         *,
         options: Options = (),
+        for_update: bool = False,
     ) -> Subscription | None:
         statement = (
             self.get_readable_statement(auth_subject)
             .where(Subscription.id == id)
             .options(*options)
         )
+        if for_update:
+            statement = statement.with_for_update(of=Subscription)
         return await self.get_one_or_none(statement)
 
     async def get_readable_by_checkout_id(
@@ -426,6 +547,7 @@ class SubscriptionRepository(
             joinedload(Subscription.customer).joinedload(Customer.organization),
             joinedload(Subscription.organization),
             product_load.options(
+                undefer(Product.is_deletable),
                 joinedload(Product.organization),
                 selectinload(Product.product_medias),
                 selectinload(Product.attached_custom_fields),
@@ -436,7 +558,7 @@ class SubscriptionRepository(
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization | Customer | Member]
-    ) -> Select[tuple[Subscription]]:
+    ) -> Select[Subscription]:
         statement = self.get_base_statement()
 
         if is_user(auth_subject):
@@ -468,7 +590,7 @@ class SubscriptionRepository(
 
     def get_claimed_subscriptions_statement(
         self, auth_subject: AuthSubject[AuthCustomer | Member]
-    ) -> Select[tuple[Subscription]]:
+    ) -> Select[Subscription]:
         """Get subscriptions where the customer has a claimed seat."""
         statement = self.get_base_statement().join(
             CustomerSeat, CustomerSeat.subscription_id == Subscription.id
@@ -567,11 +689,17 @@ class SubscriptionRepository(
         one_day_from_now = now + timedelta(days=1)
         three_days_from_now = now + timedelta(days=3)
 
-        # Dedup: NOT EXISTS in email_logs for this subscription + template
+        # Dedup: NOT EXISTS in email_logs for this subscription + trial end. The
+        # payment-method-required email shares this key, so either one counts.
         dedup_subquery = (
             select(EmailLog.id)
             .where(
-                EmailLog.email_template == "subscription_trial_conversion_reminder",
+                EmailLog.email_template.in_(
+                    (
+                        "subscription_trial_conversion_reminder",
+                        "subscription_trial_payment_method_required",
+                    )
+                ),
                 EmailLog.deduplication_key
                 == subscription_trial_conversion_reminder_key_sql(
                     Subscription.id, Subscription.trial_end
@@ -676,8 +804,9 @@ class SubscriptionRepository(
                     ),
                     (Subscription.status == SubscriptionStatus.paused, 6),
                     (Subscription.status == SubscriptionStatus.past_due, 7),
-                    (Subscription.status == SubscriptionStatus.canceled, 8),
-                    (Subscription.status == SubscriptionStatus.unpaid, 9),
+                    (Subscription.status == SubscriptionStatus.trial_ended, 8),
+                    (Subscription.status == SubscriptionStatus.canceled, 9),
+                    (Subscription.status == SubscriptionStatus.unpaid, 10),
                 )
             case SubscriptionSortProperty.started_at:
                 return Subscription.started_at
@@ -714,6 +843,16 @@ class SubscriptionRepository(
                 return Product.name
             case SubscriptionSortProperty.discount:
                 return Discount.name
+
+    async def get_started_at_by_ids(
+        self, subscription_ids: Sequence[UUID]
+    ) -> dict[UUID, datetime | None]:
+        """`started_at` of the subscriptions, including soft-deleted ones."""
+        statement = select(Subscription.id, Subscription.started_at).where(
+            Subscription.id.in_(subscription_ids)
+        )
+        result = await self.session.execute(statement)
+        return {subscription_id: started_at for subscription_id, started_at in result}
 
 
 class SubscriptionProductPriceRepository(
@@ -772,23 +911,25 @@ class SubscriptionProductPriceRepository(
     async def _get_direct_subscription_prices(
         self, customer_ids: Sequence[UUID], meter_id: UUID
     ) -> dict[UUID, CustomerSubscriptionProductPrice]:
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         customer_ids_parameter = sa.bindparam(
             "customer_ids", customer_ids, type_=sa.ARRAY(sa.Uuid())
         )
         statement = (
             self.get_base_statement()
             .join(
-                ProductPrice,
-                SubscriptionProductPrice.product_price_id == ProductPrice.id,
+                price,
+                SubscriptionProductPrice.product_price_id == price.id,
             )
             .join(
                 Subscription,
                 Subscription.id == SubscriptionProductPrice.subscription_id,
             )
             .where(
-                ProductPrice.is_metered,
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id == meter_id,
+                price.is_metered,
+                price.ProductPriceMeteredUnit.meter_id == meter_id,
                 Subscription.billable,
                 Subscription.customer_id == sa.any_(customer_ids_parameter),
             )
@@ -957,7 +1098,7 @@ class SubscriptionBulkUpdateRepository(
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[SubscriptionBulkUpdate]]:
+    ) -> Select[SubscriptionBulkUpdate]:
         statement = self.get_base_statement()
         if is_user(auth_subject):
             statement = statement.where(

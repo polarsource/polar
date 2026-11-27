@@ -18,6 +18,7 @@ const _getOrderById = async (
     }),
     {
       404: notFound,
+      422: notFound,
     },
   )
 }

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 
-from polar.base import PolarClientError
+from polar.base import _Discriminator, PolarClientError
 {% if imports %}
 from polar.{{ version }}.outputs import (
 {% for type in imports %}

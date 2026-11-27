@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import Depends, HTTPException, Query, Request
-from pydantic import UUID4
+from pydantic import UUID4, Field, ValidationError
 from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from tagflow import tag, text
@@ -10,7 +10,7 @@ from polar.backoffice.routing import BackofficeRouter
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, Product, ProductBenefit
 from polar.models.product_price import ProductPrice
-from polar.postgres import AsyncSession, get_db_read_session
+from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.product import sorting
 from polar.product.guard import (
     is_custom_price,
@@ -22,13 +22,19 @@ from polar.product.guard import (
 )
 from polar.product.repository import ProductRepository
 from polar.product.sorting import ProductSortProperty
+from polar.tax.calculation import TaxCode
 
-from .. import formatters
-from ..components import button, datatable, description_list, input
+from .. import formatters, forms
+from ..components import button, datatable, description_list, input, modal
 from ..layout import layout
+from ..responses import HXRedirectResponse
 from ..search import organization_ilike
 
 router = BackofficeRouter()
+
+
+class UpdateProductForm(forms.BaseForm):
+    tax_code: TaxCode = Field(title="Tax Code")
 
 
 def _format_price_display(price: ProductPrice) -> str:
@@ -203,8 +209,15 @@ async def get(
                 # Product Details
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Product Details")
+                        with tag.div(classes="flex justify-between items-center"):
+                            with tag.h2(classes="card-title"):
+                                text("Product Details")
+                            with button(
+                                size="sm",
+                                hx_get=str(request.url_for("products:edit", id=id)),
+                                hx_target="#modal",
+                            ):
+                                text("Edit")
                         with description_list.DescriptionList[Product](
                             description_list.DescriptionListAttrItem(
                                 "id", "ID", clipboard=True
@@ -221,6 +234,9 @@ async def get(
                             ),
                             description_list.DescriptionListAttrItem(
                                 "recurring_interval", "Recurring Interval"
+                            ),
+                            description_list.DescriptionListAttrItem(
+                                "tax_code", "Tax Code"
                             ),
                             description_list.DescriptionListDateTimeItem(
                                 "created_at", "Created At"
@@ -328,3 +344,45 @@ async def get(
                                             text(benefit.type.get_display_name())
                                         with tag.td():
                                             text(benefit.description)
+
+
+@router.api_route(
+    "/{id}/edit",
+    name="products:edit",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def edit(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    repository = ProductRepository.from_session(session)
+    product = await repository.get_by_id(id)
+    if product is None:
+        raise HTTPException(status_code=404)
+
+    validation_error = None
+    if request.method == "POST":
+        try:
+            form = UpdateProductForm.model_validate_form(await request.form())
+        except ValidationError as e:
+            validation_error = e
+        else:
+            await repository.update(product, update_dict=form.model_dump())
+            return HXRedirectResponse(
+                request, request.url_for("products:get", id=id), 303
+            )
+
+    with modal("Edit Product", open=True):
+        with UpdateProductForm.render(
+            data=product,
+            validation_error=validation_error,
+            hx_post=str(request.url_for("products:edit", id=id)),
+            hx_target="#modal",
+        ):
+            with tag.div(classes="modal-action"):
+                with button(type="submit", variant="primary"):
+                    text("Save Changes")
+
+    return None

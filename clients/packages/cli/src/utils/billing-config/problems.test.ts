@@ -48,6 +48,28 @@ describe('formatProblems for a generated config', () => {
     )
   })
 
+  test('asks whether a close name was meant', () => {
+    const output = stripAnsi(
+      formatProblems(generated, [
+        { ...warning, got: '"tool_cal"', suggestion: 'tool_call' },
+        {
+          severity: 'error',
+          code: 'unknown_reference',
+          path: 'benefits.included.meter_id',
+          message: 'No meter in this config has this external_id.',
+          got: '"tool-call"',
+          suggestion: 'tool-calls',
+        },
+      ]),
+    )
+
+    expect(output).toContain(
+      'help: Did you mean "tool_call"? The meter stays at zero until your app sends an event with this exact name.',
+    )
+    expect(output).toContain('Error: Unknown meter "tool-call"')
+    expect(output).toContain('help: Did you mean "tool-calls"?')
+  })
+
   test('shows the offending value when there is no frame to point at', () => {
     const output = stripAnsi(formatProblems(generated, [invalid]))
     expect(output).toContain(
@@ -55,6 +77,15 @@ describe('formatProblems for a generated config', () => {
     )
     expect(output).toContain('at polar.config.ts › meters.tool_calls.name')
     expect(output).toContain('help: Got 1.')
+  })
+
+  test('treats a code named like a built-in object property as unknown', () => {
+    const output = stripAnsi(
+      formatProblems(generated, [{ ...invalid, code: 'constructor' }]),
+    )
+    expect(output).toContain(
+      'Invalid value for "name" at meters.tool_calls.name',
+    )
   })
 
   test('shows the missing currency message', () => {

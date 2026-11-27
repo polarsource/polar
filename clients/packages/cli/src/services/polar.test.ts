@@ -241,6 +241,18 @@ test.each([
       'The request is invalid:\n    benefits.0: Input should be a valid UUID, invalid character: found `[` at 1. Repeat --benefits once per ID instead of passing a list, e.g. --benefits <id> --benefits <id>\n    percentage.custom_products.0: Input should be a valid UUID, invalid character: found `[` at 1. Repeat --custom-products once per ID instead of passing a list, e.g. --custom-products <id> --custom-products <id>\n    products.0: Input should be a valid UUID, invalid length',
   },
   {
+    name: 'an invoice that was never generated',
+    rejection: {
+      statusCode: 404,
+      error: {
+        error: 'InvoiceDoesNotExist',
+        detail: 'No invoice exists for order order-1.',
+      },
+    },
+    message:
+      'No invoice exists for order order-1. Run polar orders generate_invoice <id> to create it, then run polar orders invoice <id> again after a few seconds.',
+  },
+  {
     name: 'a body without detail',
     rejection: { statusCode: 422, error: 'Unprocessable Entity' },
     message: 'The Polar API rejected the request (422).',

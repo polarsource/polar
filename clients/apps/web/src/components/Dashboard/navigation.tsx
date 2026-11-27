@@ -8,7 +8,6 @@ import {
   DiamondOutlined,
   DiscountOutlined,
   DonutLargeOutlined,
-  ExploreOutlined,
   GavelOutlined,
   HiveOutlined,
   LinkOutlined,
@@ -16,6 +15,7 @@ import {
   ShoppingBagOutlined,
   ShoppingCart,
   SpaceDashboardOutlined,
+  TextCursorInput,
   TrendingUpFilled as TrendingUp,
   TuneOutlined,
 } from '@polar-sh/orbit/icons'
@@ -166,7 +166,7 @@ export const useAccountRoutes = (): RouteWithActive[] => {
 const generalRoutesList = (org?: schemas['Organization']): Route[] => [
   {
     id: 'home',
-    title: 'Home',
+    title: 'Overview',
     icon: <SpaceDashboardOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}`,
     checkIsActive: (currentRoute: string) =>
@@ -174,18 +174,8 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     if: true,
   },
   {
-    id: 'compass',
-    title: 'Compass',
-    icon: <ExploreOutlined fontSize="inherit" />,
-    link: `/dashboard/${org?.slug}/compass`,
-    checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/dashboard/${org?.slug}/compass`)
-    },
-    if: !!org?.feature_settings?.compass_enabled,
-  },
-  {
     id: 'new-products',
-    title: 'Products',
+    title: 'Catalog',
     icon: <HiveOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/products`,
     checkIsActive: (currentRoute: string): boolean => {
@@ -197,7 +187,7 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     ) : undefined,
     subs: [
       {
-        title: 'Catalogue',
+        title: 'Products',
         link: `/dashboard/${org?.slug}/products`,
         icon: <HiveOutlined fontSize="inherit" />,
       },
@@ -220,6 +210,11 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
         title: 'Meters',
         link: `/dashboard/${org?.slug}/products/meters`,
         icon: <DonutLargeOutlined fontSize="inherit" />,
+      },
+      {
+        title: 'Custom Fields',
+        link: `/dashboard/${org?.slug}/products/custom-fields`,
+        icon: <TextCursorInput size="1em" />,
       },
     ],
   },
@@ -308,7 +303,7 @@ const accountRoutesList = (): Route[] => [
   },
   {
     id: 'developer',
-    title: 'Developer',
+    title: 'OAuth Apps',
     link: `/dashboard/account/developer`,
     icon: <CodeOutlined fontSize="inherit" />,
     if: true,
@@ -353,37 +348,5 @@ const organizationRoutesList = (
     link: `/dashboard/${org?.slug}/settings`,
     icon: <TuneOutlined fontSize="inherit" />,
     if: true,
-    subs: [
-      {
-        title: 'Preferences',
-        link: `/dashboard/${org?.slug}/settings`,
-      },
-      {
-        title: 'Billing',
-        link: `/dashboard/${org?.slug}/settings/billing`,
-      },
-      {
-        title: 'Members',
-        link: `/dashboard/${org?.slug}/settings/members`,
-      },
-      {
-        title: 'Webhooks',
-        link: `/dashboard/${org?.slug}/settings/webhooks`,
-      },
-      {
-        title: 'Custom Fields',
-        link: `/dashboard/${org?.slug}/settings/custom-fields`,
-      },
-      {
-        title: 'Single Sign-On',
-        link: `/dashboard/${org?.slug}/settings/sso`,
-        if: !!org?.feature_settings?.sso_enabled,
-      },
-      {
-        title: 'Migrations',
-        link: `/dashboard/${org?.slug}/settings/migrations`,
-        if: !!org?.feature_settings?.merchant_migration_enabled,
-      },
-    ],
   },
 ]

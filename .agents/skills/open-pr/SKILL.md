@@ -23,7 +23,7 @@ Fix, commit, push, rerun that step. Dispute only when the comment is factually w
 - Lint, type-check, and tests pass:
   - Backend: `cd server && uv run task lint && uv run task lint_types && uv run task test_fast`
   - Frontend: `clients/AGENTS.md` (`pnpm lint`, `pnpm typecheck`, scoped tests)
-- PR body: no PII, stats, or org information. PRs are public.
+- PR body: no PII, stats, or org information. Never include numbers from production (e.g. how many customers are affected). PRs are public.
 - Title from the user or the diff. Body:
 
 ```

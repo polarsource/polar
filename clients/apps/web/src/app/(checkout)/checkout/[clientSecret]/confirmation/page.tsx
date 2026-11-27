@@ -1,6 +1,7 @@
 import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation'
 import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
 import { getServerURL } from '@/utils/api'
+import { getLocaleDirection } from '@polar-sh/i18n'
 import { getSSRHeaders } from '@/utils/client'
 import { resolveLocale } from '@/utils/i18n'
 import {
@@ -54,10 +55,32 @@ export default async function Page(props: {
     redirect(checkout.url)
   }
 
+  if (checkout.status === 'succeeded' && customer_session_token) {
+    const { response } = await createClient(
+      getServerURL(),
+      customer_session_token,
+      getSSRHeaders(),
+    ).GET('/v1/customer-portal/customers/me')
+    if (response.status === 401) {
+      const portalSearchParams = new URLSearchParams()
+      if (checkout.customer_email) {
+        portalSearchParams.set('email', checkout.customer_email)
+      }
+      redirect(
+        `/${checkout.organization.slug}/portal/request?${portalSearchParams}`,
+      )
+    }
+  }
+
   const locale = await resolveLocale(_locale, checkout.locale)
 
   return (
-    <CheckoutLayout checkout={checkout} embed={embed === 'true'} theme={theme}>
+    <CheckoutLayout
+      checkout={checkout}
+      embed={embed === 'true'}
+      theme={theme}
+      dir={getLocaleDirection(locale)}
+    >
       <CheckoutConfirmation
         checkout={checkout}
         embed={embed === 'true'}

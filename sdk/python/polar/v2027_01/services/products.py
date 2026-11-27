@@ -24,6 +24,7 @@ from polar.v2027_01.inputs import (
     ProductUpdate,
 )
 from polar.v2027_01.literals import (
+    CatalogStatus,
     ProductSortProperty,
     ProductVisibility,
 )
@@ -40,6 +41,8 @@ class ProductsSync(SyncServiceBase):
         id: str | builtins.list[str] | None = None,
         external_id: str | builtins.list[str] | None = None,
         organization_id: str | builtins.list[str] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         is_recurring: bool | None = None,
@@ -61,6 +64,8 @@ class ProductsSync(SyncServiceBase):
             id: Filter by product ID.
             external_id: Filter by product external ID.
             organization_id: Filter by organization ID.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             query: Filter by product name.
             is_archived: Filter on archived products.
             is_recurring: Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned.
@@ -70,7 +75,7 @@ class ProductsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -88,6 +93,8 @@ class ProductsSync(SyncServiceBase):
                 "id": id,
                 "external_id": external_id,
                 "organization_id": organization_id,
+                "catalog_id": catalog_id,
+                "catalog_status": catalog_status,
                 "query": query,
                 "is_archived": is_archived,
                 "is_recurring": is_recurring,
@@ -113,6 +120,8 @@ class ProductsSync(SyncServiceBase):
         id: str | builtins.list[str] | None = None,
         external_id: str | builtins.list[str] | None = None,
         organization_id: str | builtins.list[str] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         is_recurring: bool | None = None,
@@ -134,6 +143,8 @@ class ProductsSync(SyncServiceBase):
             id: Filter by product ID.
             external_id: Filter by product external ID.
             organization_id: Filter by organization ID.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             query: Filter by product name.
             is_archived: Filter on archived products.
             is_recurring: Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned.
@@ -143,7 +154,7 @@ class ProductsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -161,6 +172,8 @@ class ProductsSync(SyncServiceBase):
                 id=id,
                 external_id=external_id,
                 organization_id=organization_id,
+                catalog_id=catalog_id,
+                catalog_status=catalog_status,
                 query=query,
                 is_archived=is_archived,
                 is_recurring=is_recurring,
@@ -209,12 +222,13 @@ class ProductsSync(SyncServiceBase):
         **Scopes**: `products:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
 
         Raises:
+            NotPermitted: Organization product limit reached.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -231,6 +245,7 @@ class ProductsSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
+            403: NotPermitted,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Product, method_errors)
@@ -249,7 +264,7 @@ class ProductsSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -294,7 +309,7 @@ class ProductsSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -341,7 +356,7 @@ class ProductsSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -388,7 +403,7 @@ class ProductsSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -428,6 +443,8 @@ class ProductsAsync(AsyncServiceBase):
         id: str | builtins.list[str] | None = None,
         external_id: str | builtins.list[str] | None = None,
         organization_id: str | builtins.list[str] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         is_recurring: bool | None = None,
@@ -449,6 +466,8 @@ class ProductsAsync(AsyncServiceBase):
             id: Filter by product ID.
             external_id: Filter by product external ID.
             organization_id: Filter by organization ID.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             query: Filter by product name.
             is_archived: Filter on archived products.
             is_recurring: Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned.
@@ -458,7 +477,7 @@ class ProductsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -476,6 +495,8 @@ class ProductsAsync(AsyncServiceBase):
                 "id": id,
                 "external_id": external_id,
                 "organization_id": organization_id,
+                "catalog_id": catalog_id,
+                "catalog_status": catalog_status,
                 "query": query,
                 "is_archived": is_archived,
                 "is_recurring": is_recurring,
@@ -501,6 +522,8 @@ class ProductsAsync(AsyncServiceBase):
         id: str | builtins.list[str] | None = None,
         external_id: str | builtins.list[str] | None = None,
         organization_id: str | builtins.list[str] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         is_recurring: bool | None = None,
@@ -522,6 +545,8 @@ class ProductsAsync(AsyncServiceBase):
             id: Filter by product ID.
             external_id: Filter by product external ID.
             organization_id: Filter by organization ID.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             query: Filter by product name.
             is_archived: Filter on archived products.
             is_recurring: Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned.
@@ -531,7 +556,7 @@ class ProductsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -549,6 +574,8 @@ class ProductsAsync(AsyncServiceBase):
                 id=id,
                 external_id=external_id,
                 organization_id=organization_id,
+                catalog_id=catalog_id,
+                catalog_status=catalog_status,
                 query=query,
                 is_archived=is_archived,
                 is_recurring=is_recurring,
@@ -598,12 +625,13 @@ class ProductsAsync(AsyncServiceBase):
         **Scopes**: `products:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
 
         Raises:
+            NotPermitted: Organization product limit reached.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -620,6 +648,7 @@ class ProductsAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
+            403: NotPermitted,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Product, method_errors)
@@ -638,7 +667,7 @@ class ProductsAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -683,7 +712,7 @@ class ProductsAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -730,7 +759,7 @@ class ProductsAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -777,7 +806,7 @@ class ProductsAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters

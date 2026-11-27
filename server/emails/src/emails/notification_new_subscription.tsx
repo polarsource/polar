@@ -1,4 +1,5 @@
 import { Footer, Intro, Text, WrapperPolar } from '../components/foundation'
+import CustomerIdentity from '../components/CustomerIdentity'
 import type { schemas } from '../types'
 
 export function NotificationNewSubscription({
@@ -7,17 +8,8 @@ export function NotificationNewSubscription({
   formatted_price_with_interval,
   tier_name,
 }: schemas['MaintainerNewPaidSubscriptionNotificationPayload']) {
-  const formattedName = subscriber_email ? (
-    <>
-      <Text as="span" weight="bold">
-        {subscriber_name}
-      </Text>{' '}
-      ({subscriber_email})
-    </>
-  ) : (
-    <Text as="span" weight="bold">
-      {subscriber_name}
-    </Text>
+  const formattedName = (
+    <CustomerIdentity name={subscriber_name} email={subscriber_email} />
   )
 
   const priceDisplay = formatted_price_with_interval

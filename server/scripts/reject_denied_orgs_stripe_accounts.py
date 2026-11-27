@@ -34,7 +34,7 @@ import structlog
 import typer
 from rich.console import Console
 from rich.table import Table
-from sqlalchemy import select
+from sqlalchemy import NotNullable, select
 from sqlalchemy.orm import contains_eager
 
 from polar.enums import PayoutAccountType
@@ -88,7 +88,7 @@ async def _orgs_by_stripe_id(
     if not stripe_ids:
         return {}
     result = await session.execute(
-        select(PayoutAccount.stripe_id, Organization)
+        select(NotNullable(PayoutAccount.stripe_id), Organization)
         .join(Organization, Organization.payout_account_id == PayoutAccount.id)
         .where(
             Organization.deleted_at.is_(None),

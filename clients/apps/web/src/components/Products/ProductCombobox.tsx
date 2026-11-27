@@ -3,7 +3,6 @@
 import { useProduct, useProducts } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import { Text } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit/ui/button'
 import {
   Command,
@@ -23,7 +22,7 @@ import {
   ChevronsUpDown,
   LoaderCircle as Loader2,
 } from '@polar-sh/orbit/icons'
-import { useMemo, useState } from 'react'
+import { type ReactNode, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ProductPriceLabel from './ProductPriceLabel'
 
@@ -76,13 +75,57 @@ const ProductComboboxOption = ({
   )
 }
 
+const STAY_ON_CURRENT_PRODUCT = 'Stay on current'
+
+const StayOnCurrentOption = ({
+  name,
+  price,
+  layout,
+}: {
+  name: string
+  price: ReactNode
+  layout: 'menu' | 'trigger'
+}) =>
+  layout === 'trigger' ? (
+    <Box
+      as="span"
+      display="inline-flex"
+      alignItems="center"
+      columnGap="s"
+      minWidth={0}
+      flexGrow={1}
+      overflow="hidden"
+      width="100%"
+    >
+      <span className="min-w-0 flex-1 truncate">{STAY_ON_CURRENT_PRODUCT}</span>
+      <span className="shrink-0 truncate opacity-70 [&_*]:!text-current">
+        {name} · {price}
+      </span>
+    </Box>
+  ) : (
+    <Box
+      flexDirection="column"
+      rowGap="none"
+      minWidth={0}
+      flexGrow={1}
+      overflow="hidden"
+      paddingRight="s"
+    >
+      <span className="truncate leading-snug">{STAY_ON_CURRENT_PRODUCT}</span>
+      <span className="truncate text-xs leading-snug opacity-70 [&_*]:!text-current">
+        {name} · {price}
+      </span>
+    </Box>
+  )
+
 const hasNewPricing = (
   product: schemas['Product'],
   currentPriceIds: string[],
 ) => {
   const productPriceIds = product.prices.map(({ id }) => id)
   if (productPriceIds.length !== currentPriceIds.length) return true
-  return !productPriceIds.every((id) => currentPriceIds.includes(id))
+  const currentPriceIdSet = new Set(currentPriceIds)
+  return !productPriceIds.every((id) => currentPriceIdSet.has(id))
 }
 
 export const ProductCombobox = ({
@@ -92,13 +135,15 @@ export const ProductCombobox = ({
   currency,
   currentProductId,
   currentPriceIds,
+  currentPlan,
 }: {
   organizationId: string
   value: string | undefined
-  onChange: (productId: string) => void
+  onChange: (productId: string | null) => void
   currency: string
   currentProductId: string
   currentPriceIds: string[]
+  currentPlan: { name: string; price: ReactNode }
 }) => {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -181,9 +226,7 @@ export const ProductCombobox = ({
                 layout="trigger"
               />
             ) : (
-              <Text as="span" color="muted">
-                Select a new product
-              </Text>
+              <StayOnCurrentOption {...currentPlan} layout="trigger" />
             )}
           </Box>
           <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
@@ -204,6 +247,26 @@ export const ProductCombobox = ({
             onValueChange={setQuery}
           />
           <CommandList className="dark:[scrollbar-color:var(--color-polar-500)_transparent]">
+            {!normalizedQuery && (
+              <CommandGroup>
+                <CommandItem
+                  value="stay-on-current-product"
+                  onSelect={() => {
+                    onChange(null)
+                    setOpen(false)
+                  }}
+                  className="data-[selected=true]:text-accent-foreground items-center rounded-md text-gray-950 dark:text-white"
+                >
+                  <StayOnCurrentOption {...currentPlan} layout="menu" />
+                  <Check
+                    className={twMerge(
+                      'ml-auto size-4 shrink-0',
+                      value ? 'opacity-0' : 'opacity-100',
+                    )}
+                  />
+                </CommandItem>
+              </CommandGroup>
+            )}
             {isFetching ? (
               <Box
                 alignItems="center"

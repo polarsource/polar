@@ -1,0 +1,66 @@
+---
+title: "How Polar works"
+sidebarTitle: "Overview"
+description: "Start here: the objects Polar is built from, and how products, checkout, orders, benefits and usage connect."
+---
+
+Polar is the seller of record for your software. You define what you sell, Polar runs checkout, billing and tax compliance, and your application reads back what each customer has access to.
+
+Everything in Polar is built from a small set of objects. Understanding how they relate makes every other part of the docs easier to follow.
+
+```mermaid actions={true}
+flowchart TD
+  PR[Prices] --> P[Product]
+  B[Benefits] --> P
+  P --> CO[Checkout]
+  CO -->|one-time| O[Order]
+  CO -->|recurring| S[Subscription]
+  S -->|renews| O
+  O -->|grants| G[Benefit grants]
+  Y[You] -->|grant directly| G
+  G -.->|of| B
+  G --> C[Customer]
+  C -->|uses your product| E[Events]
+  E --> M[Meters]
+  M -->|billed on| O
+```
+
+## Usage
+
+To track [usage](/concepts/usage), send **events** from your application. **Meters** aggregate those events into usage per customer. Use them to see what customers do and what they cost you, and optionally to charge with a metered price or draw down prepaid credits.
+
+## Benefits
+
+[Benefits](/concepts/benefits) are what a customer receives from you: usage credits, a feature flag, a shared Slack channel, a license key, and more. Polar grants them automatically when a purchase succeeds and revokes them when access ends. Benefits aren't tied to orders, though: you can also grant one to any customer directly, for a trial, a goodwill gesture or a deal agreed outside checkout.
+
+## Products
+
+A [product](/concepts/products) is anything you sell: a one-time purchase or a recurring plan. Each product has **prices**, which define how much the customer pays, and **benefits**, which define what they get.
+
+## Customers
+
+A [customer](/concepts/customers) is the person or team that buys from you. You link each customer to the user in your own application with an **external ID**, and read everything they have access to from a single **customer state** object.
+
+## Checkout
+
+[Checkout](/concepts/checkout) is how a customer buys a product. Share a no-code Checkout Link, or create a Checkout Session from your backend. A completed checkout creates the customer, the order, and the subscription if the product is recurring.
+
+## Orders & subscriptions
+
+Every charge is an [order](/concepts/orders-and-subscriptions). A **subscription** is the recurring relationship behind a recurring product: it renews on each billing cycle and creates a new order every time.
+
+## Money flow
+
+Polar is the [Merchant of Record](/merchant-of-record/introduction). Customers pay Polar, Polar remits sales tax and VAT, and the rest goes to your balance, ready to be paid out. See [Money flow](/concepts/money-flow).
+
+## Putting it together
+
+The [quickstart](/quickstart/overview) builds a complete integration in this order: track usage, set up your catalog, integrate checkout and customers, then sync customer state.
+
+## Organizations and environments
+
+All of these objects belong to an **organization**, the account you sell under. Your team works with it from the dashboard, the [CLI](/integrate/cli/introduction) or an agent connected to the [MCP server](/integrate/mcp). Your backend uses an [organization access token](/integrate/oat).
+
+In the dashboard, products, Checkout Links, discounts, benefits and meters are under **Catalog**. Orders, subscriptions and checkouts are under **Sales**. **Customers**, **Analytics** and **Finance** have their own sections.
+
+Polar has two separate environments. **Production** handles real money. The [sandbox](/integrate/sandbox) is a full copy of Polar for testing, with its own organizations, tokens and data.

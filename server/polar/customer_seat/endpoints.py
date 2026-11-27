@@ -4,7 +4,8 @@ from fastapi import Depends, Query, Request
 from pydantic import UUID4
 from sse_starlette import EventSourceResponse
 
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_resource_permission, get_accessible_org_ids
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import BadRequest, ResourceNotFound
@@ -23,6 +24,7 @@ from .repository import CustomerSeatRepository
 from .schemas import CustomerSeat as CustomerSeatSchema
 from .schemas import (
     CustomerSeatClaimResponse,
+    CustomerSeatListParams,
     SeatAssign,
     SeatClaim,
     SeatClaimInfo,
@@ -90,6 +92,10 @@ async def assign_seat(
     container = subscription or order
     assert container is not None  # Already validated above
 
+    await assert_resource_permission(
+        session, auth_subject, container, OrganizationPermission.customers_manage
+    )
+
     seat = await seat_service.assign_seat(
         session,
         container,
@@ -117,23 +123,22 @@ async def assign_seat(
     },
 )
 async def list_seats(
+    filters: Annotated[CustomerSeatListParams, Query()],
     auth_subject: SeatRead,
     session: AsyncSession = Depends(get_db_session),
-    subscription_id: Annotated[UUID4 | None, Query()] = None,
-    order_id: Annotated[UUID4 | None, Query()] = None,
 ) -> SeatsList:
     """List seats for a subscription or order."""
     subscription: Subscription | None = None
     order: Order | None = None
     total_seats = 0
 
-    if subscription_id:
+    if filters.subscription_id:
         subscription_repository = SubscriptionRepository.from_session(session)
 
         statement = (
             subscription_repository.get_readable_statement(auth_subject)
             .options(*subscription_repository.get_eager_options())
-            .where(Subscription.id == subscription_id)
+            .where(Subscription.id == filters.subscription_id)
         )
         subscription = await subscription_repository.get_one_or_none(statement)
 
@@ -142,13 +147,13 @@ async def list_seats(
 
         total_seats = subscription.seats or 0
 
-    elif order_id:
+    elif filters.order_id:
         order_repository = OrderRepository.from_session(session)
 
         order_statement = (
             order_repository.get_readable_statement(auth_subject)
             .options(*order_repository.get_eager_options())
-            .where(Order.id == order_id)
+            .where(Order.id == filters.order_id)
         )
         order = await order_repository.get_one_or_none(order_statement)
 
@@ -191,7 +196,9 @@ async def revoke_seat(
 ) -> CustomerSeat:
     """Revoke a customer seat."""
     seat_repository = CustomerSeatRepository.from_session(session)
-    org_ids = await get_accessible_org_ids(session, auth_subject)
+    org_ids = await get_accessible_org_ids(
+        session, auth_subject, permission=OrganizationPermission.customers_manage
+    )
 
     seat = await seat_repository.get_by_id_and_org_ids(
         org_ids,
@@ -225,7 +232,9 @@ async def resend_invitation(
 ) -> CustomerSeat:
     """Resend an invitation for a pending customer seat."""
     seat_repository = CustomerSeatRepository.from_session(session)
-    org_ids = await get_accessible_org_ids(session, auth_subject)
+    org_ids = await get_accessible_org_ids(
+        session, auth_subject, permission=OrganizationPermission.customers_manage
+    )
 
     seat = await seat_repository.get_by_id_and_org_ids(
         org_ids,

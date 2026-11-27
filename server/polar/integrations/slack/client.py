@@ -1,7 +1,7 @@
 import typing
 from typing import Any
 
-import httpx
+import httpx2
 import structlog
 
 from polar.exceptions import PolarError
@@ -26,7 +26,7 @@ class SlackClientResponseError(SlackClientError):
 
 class SlackClient:
     def __init__(self) -> None:
-        self.client = httpx.AsyncClient(base_url=BASE_URL)
+        self.client = httpx2.AsyncClient(base_url=BASE_URL)
 
     async def oauth_v2_access(
         self,

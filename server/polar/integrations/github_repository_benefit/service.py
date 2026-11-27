@@ -41,7 +41,7 @@ class GitHubRepositoryBenefitAccountNotConnected(GitHubError):
     def __init__(self, user: User) -> None:
         self.user = user
         message = "You don't have a GitHubRepositoryBenefit account connected."
-        super().__init__(message)
+        super().__init__(message, 401)
 
 
 class GitHubRepositoryBenefitExpiredAccessToken(GitHubError):

@@ -74,14 +74,14 @@ def source_cell(migration: MerchantMigration) -> None:
         if not migration.source_connected:
             with tag.div(classes="badge badge-sm badge-warning whitespace-nowrap"):
                 text("Not connected")
-        elif not migration.source_credentials.get("livemode"):
+        elif migration.source_credentials.get("livemode") is False:
             with tag.div(classes="badge badge-sm badge-outline whitespace-nowrap"):
                 text("Test mode")
 
 
 def step_cell(migration: MerchantMigration) -> None:
     step = visible_step(migration.step)
-    position, total = step_position(migration.step)
+    position, total = step_position(migration)
     with tag.div(classes="flex flex-col"):
         text(STEP_LABELS[step])
         with tag.div(classes="text-xs text-base-content/60"):

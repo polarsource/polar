@@ -1,8 +1,9 @@
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import UUID4, Field
 
 from polar.customer_seat.schemas import SeatAssign
+from polar.kit.versioning import QuerySchema
 
 
 class CustomerSeatAssign(SeatAssign):
@@ -21,3 +22,8 @@ class CustomerSeatAssign(SeatAssign):
         return (
             "Exactly one of subscription_id, order_id, or checkout_id must be provided"
         )
+
+
+class CustomerPortalSeatListParams(QuerySchema):
+    subscription_id: UUID4 | None = Field(None, description="Subscription ID")
+    order_id: UUID4 | None = Field(None, description="Order ID")

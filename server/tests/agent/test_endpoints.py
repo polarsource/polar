@@ -4,7 +4,7 @@ from uuid import UUID
 
 import pytest
 from authlib.oauth2.rfc7523.jwt_bearer import JWT_BEARER_GRANT_TYPE
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
@@ -17,7 +17,7 @@ from polar.agent.service import CLAIM_TOKEN_TTL, CLAIM_TTL
 from polar.agent.words import WORDS
 from polar.auth.models import AuthSubject
 from polar.auth.scope import CLAIMED_AGENT_SCOPES, UNCLAIMED_AGENT_SCOPES
-from polar.config import settings
+from polar.config import Environment, settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.email import mask_email
 from polar.kit.utils import utc_now
@@ -40,11 +40,6 @@ CODE = "amber-river-lemon"
 
 
 @pytest.fixture
-def agent_sign_up_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(settings, "AGENT_SIGN_UP_ENABLED", True)
-
-
-@pytest.fixture
 async def claim_agent(
     save_fixture: SaveFixture, organization: Organization, user: User
 ) -> Agent:
@@ -63,12 +58,6 @@ async def claim_agent(
 
 @pytest.mark.anyio
 class TestCreateIdentity:
-    async def test_disabled(self, client: AsyncClient) -> None:
-        response = await client.post("/v1/agent/identity", json={"type": "anonymous"})
-
-        assert response.status_code == 404
-
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
     async def test_anonymous(self, client: AsyncClient, session: AsyncSession) -> None:
         response = await client.post(
             "/v1/agent/identity", json={"type": "anonymous", "name": "Claude"}
@@ -116,7 +105,6 @@ class TestCreateIdentity:
 
 
 @pytest.mark.anyio
-@pytest.mark.usefixtures("agent_sign_up_enabled")
 class TestStartClaim:
     @pytest.mark.parametrize(
         "agent_fields",
@@ -231,7 +219,6 @@ class TestStartClaim:
 
 
 @pytest.mark.anyio
-@pytest.mark.usefixtures("agent_sign_up_enabled")
 class TestPreviewClaim:
     async def test_anonymous(
         self, client: AsyncClient, claim_agent: Agent, organization: Organization
@@ -264,7 +251,6 @@ class TestPreviewClaim:
 
 
 @pytest.mark.anyio
-@pytest.mark.usefixtures("agent_sign_up_enabled")
 class TestGetClaim:
     @pytest.mark.auth
     async def test_valid(
@@ -294,7 +280,6 @@ class TestGetClaim:
 
 
 @pytest.mark.anyio
-@pytest.mark.usefixtures("agent_sign_up_enabled")
 class TestConfirmClaim:
     @pytest.mark.auth
     async def test_valid(
@@ -459,13 +444,7 @@ class TestConfirmClaim:
 
 @pytest.mark.anyio
 class TestAuthMd:
-    async def test_disabled(self, client: AsyncClient) -> None:
-        response = await client.get("/auth.md")
-
-        assert response.status_code == 404
-
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
-    async def test_enabled(self, client: AsyncClient) -> None:
+    async def test_valid(self, client: AsyncClient) -> None:
         response = await client.get("/auth.md")
 
         assert response.status_code == 200
@@ -473,3 +452,33 @@ class TestAuthMd:
         assert "POST http://test/v1/agent/identity\n" in response.text
         assert "POST http://test/v1/agent/identity/claim\n" in response.text
         assert "POST http://test/v1/oauth2/token\n" in response.text
+        assert (
+            f"{settings.FRONTEND_BASE_URL}/dashboard/<organization slug>/cli/token?"
+            in response.text
+        )
+
+    @pytest.mark.parametrize(
+        ("environment", "expected", "unexpected"),
+        [
+            (Environment.sandbox, "This is Polar's sandbox", "account review"),
+            (
+                Environment.production,
+                "/dashboard/<organization slug>/finance/account",
+                "sandbox",
+            ),
+        ],
+    )
+    async def test_payments_per_environment(
+        self,
+        environment: Environment,
+        expected: str,
+        unexpected: str,
+        client: AsyncClient,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch.object(settings, "ENV", environment)
+
+        response = await client.get("/auth.md")
+
+        assert expected in response.text
+        assert unexpected not in response.text

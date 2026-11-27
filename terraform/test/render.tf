@@ -26,24 +26,6 @@ locals {
 }
 
 # =============================================================================
-# Redis
-# =============================================================================
-
-resource "render_redis" "redis" {
-  count             = local.test_enabled ? 1 : 0
-  environment_id    = local.environment_id
-  name              = "redis-test"
-  plan              = "standard"
-  region            = "ohio"
-  max_memory_policy = "noeviction"
-
-  # Empty IP allow list means only private network connections
-  ip_allow_list = []
-
-  depends_on = [render_registry_credential.ghcr]
-}
-
-# =============================================================================
 # Cloudflare IP Ranges
 # =============================================================================
 
@@ -62,6 +44,9 @@ locals {
   # Forwarded allow IPs: Cloudflare ranges + Render proxy
   render_proxy_cidr   = "10.0.0.0/8"
   forwarded_allow_ips = "${module.cloudflare_ips.all_ranges},${local.render_proxy_cidr}"
+
+  api_allowed_hosts = jsonencode(["test.polar.sh", local.private_backoffice_hostname])
+  api_cors_origins  = "[\"https://test.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
 }
 
 module "test" {
@@ -91,17 +76,17 @@ module "test" {
   }
 
   api_service_config = {
-    allowed_hosts          = jsonencode(["test.polar.sh", local.private_backoffice_hostname])
-    cors_origins           = "[\"https://test.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
+    allowed_hosts          = local.api_allowed_hosts
+    cors_origins           = local.api_cors_origins
     custom_domains         = [{ name = "test-api.polar.sh" }]
-    web_concurrency        = "2"
+    web_concurrency        = "6"
     forwarded_allow_ips    = local.forwarded_allow_ips
-    database_pool_size     = "10"
+    database_pool_size     = "20"
     postgres_database      = module.planetscale.database_name
     postgres_read_database = module.planetscale.database_name
-    pre_deploy_command     = "env POLAR_POSTGRES_PORT=5432 uv run task pre_deploy"
+    pre_deploy_command     = "env POLAR_POSTGRES_USER=${module.planetscale.app_role_username} POLAR_POSTGRES_PORT=5432 uv run task pre_deploy"
     redis_db               = "1"
-    plan                   = "pro"
+    plan                   = "pro_plus"
   }
 
   workers = {
@@ -110,12 +95,16 @@ module "test" {
       custom_domains     = [{ name = "worker-test.polar.sh" }]
       dramatiq_prom_port = "10000"
     }
+    worker-test-event-mover = {
+      start_command      = "uv run python -m polar.event.mover"
+      dramatiq_prom_port = "10001"
+    }
   }
 
   environment_groups = module.backend_environment[0].environment_groups
   email_from_domain  = local.backend_config.email_from_domain
 
-  depends_on = [render_registry_credential.ghcr, render_redis.redis]
+  depends_on = [render_registry_credential.ghcr]
 }
 
 # =============================================================================
@@ -128,6 +117,26 @@ resource "cloudflare_dns_record" "test_api" {
   name    = "test-api.polar.sh"
   type    = "CNAME"
   content = replace(module.test[0].api_service_url, "https://", "")
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "test_api_events" {
+  count   = local.test_enabled ? 1 : 0
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = local.events_api_hostname
+  type    = "CNAME"
+  content = aws_lb.events_api[0].dns_name
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "test_events" {
+  count   = local.test_enabled ? 1 : 0
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = local.events_hostname
+  type    = "CNAME"
+  content = aws_lb.events_api[0].dns_name
   proxied = true
   ttl     = 1
 }
@@ -152,6 +161,10 @@ resource "cloudflare_dns_record" "private_backoffice" {
   content = var.private_backoffice_tailscale_ip
   proxied = false
   ttl     = 300
+}
+
+output "additional_api_service_ids" {
+  value = one(module.test[*].additional_api_service_ids)
 }
 
 output "private_backoffice_service_id" {

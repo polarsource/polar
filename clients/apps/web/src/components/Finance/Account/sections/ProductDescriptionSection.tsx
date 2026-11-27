@@ -18,7 +18,7 @@ import { TextArea } from '@polar-sh/orbit'
 import { Form, FormField, FormMessage } from '@polar-sh/ui/components/ui/form'
 import { LoaderCircle as Loader2 } from '@polar-sh/orbit/icons'
 import { useEffect, useMemo, useState } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm, useWatch, useFormState } from 'react-hook-form'
 import { SectionLayout } from './SectionLayout'
 
 const MIN_LENGTH = 30
@@ -50,7 +50,8 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
       pricing_models: [],
     },
   })
-  const { control, handleSubmit, setError, formState, reset, setValue } = form
+  const { control, handleSubmit, setError, reset, setValue } = form
+  const formState = useFormState({ control })
   const productDescription = useWatch({ control, name: 'product_description' })
   const sellingCategories = useWatch({ control, name: 'selling_categories' })
   const pricingModels = useWatch({ control, name: 'pricing_models' })

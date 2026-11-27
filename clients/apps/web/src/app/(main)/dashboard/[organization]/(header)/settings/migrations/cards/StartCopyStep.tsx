@@ -29,9 +29,7 @@ export function StartCopyStep({
 
   return (
     <Box flexDirection="column" rowGap="l" maxWidth={720}>
-      <Text variant="caption" color="muted">
-        {copy.description}
-      </Text>
+      <Text color="muted">{copy.description}</Text>
 
       <Box
         as="ol"
@@ -113,7 +111,7 @@ export function StartCopyStep({
   )
 }
 
-function TaskRow({
+export function TaskRow({
   title,
   description,
   children,

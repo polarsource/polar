@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal
@@ -12,6 +13,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Uuid,
+    case,
     event,
 )
 from sqlalchemy.dialects import postgresql
@@ -66,6 +68,11 @@ class ProductPriceAmountType(StrEnum):
 class ProductPriceSource(StrEnum):
     catalog = "catalog"
     ad_hoc = "ad_hoc"
+
+
+PRICES_ORDER_BY = (
+    "(ProductPrice.amount_type_rank, ProductPrice.created_at, ProductPrice.id)"
+)
 
 
 class ProductPrice(RecordModel):
@@ -153,6 +160,37 @@ class ProductPrice(RecordModel):
             )
         )
 
+    @hybrid_property
+    def amount_type_rank(self) -> int:
+        """Sort rank: fixed and custom first, then seat- and unit-based, then metered."""
+        if self.amount_type in {
+            ProductPriceAmountType.fixed,
+            ProductPriceAmountType.custom,
+        }:
+            return 0
+        if self.is_static:
+            return 1
+        return 2
+
+    @amount_type_rank.inplace.expression
+    @classmethod
+    def _amount_type_rank_expression(cls) -> ColumnElement[int]:
+        return case(
+            (
+                cls.amount_type.in_(
+                    (ProductPriceAmountType.fixed, ProductPriceAmountType.custom)
+                ),
+                0,
+            ),
+            (cls.is_static, 1),
+            else_=2,
+        )
+
+    @property
+    def sort_key(self) -> tuple[int, datetime, UUID]:
+        """In-memory equivalent of `PRICES_ORDER_BY`."""
+        return (self.amount_type_rank, self.created_at, self.id)
+
     @property
     def legacy_type(self) -> ProductPriceType | None:
         if self.product.is_recurring:
@@ -239,7 +277,7 @@ class MeteredPrice:
         return False
 
     @staticmethod
-    def _format_units(units: float, credited_units: int) -> str:
+    def _format_units(units: float, credited_units: int | Decimal) -> str:
         label = f"{format_decimal(max(0, units), locale='en_US')} consumed units"
         if credited_units > 0:
             label += (
@@ -271,7 +309,7 @@ class ProductPriceMeteredUnit(MeteredPrice, ProductPrice):
     )
 
     def get_amount_and_label(
-        self, units: float, credited_units: int = 0
+        self, units: float, credited_units: int | Decimal = 0
     ) -> tuple[int, str]:
         billable_units = max(Decimal(0), Decimal(str(units)) - credited_units)
         label = (
@@ -345,7 +383,7 @@ class ProductPriceMeteredTiers(TieredPrice, MeteredPrice, ProductPrice):
     )
 
     def get_amount_and_label(
-        self, units: float, credited_units: int = 0
+        self, units: float, credited_units: int | Decimal = 0
     ) -> tuple[int, str]:
         billable_units = max(Decimal(0), Decimal(str(units)) - credited_units)
         label = (

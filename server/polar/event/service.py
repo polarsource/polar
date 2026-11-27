@@ -1,7 +1,8 @@
+import math
 import uuid
 from collections import defaultdict
 from collections.abc import Callable, Mapping, Sequence
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -11,7 +12,6 @@ import structlog
 from opentelemetry import trace
 from sqlalchemy import or_, select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_agent, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
@@ -22,6 +22,8 @@ from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.event.tinybird_repository import TinybirdEventRepository
 from polar.event_type.repository import EventTypeRepository
+from polar.event_type.schemas import EventTypeWithStats
+from polar.event_type.service import event_type_service
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.integrations.tinybird.service import (
     TinybirdTimeseriesStats,
@@ -32,7 +34,7 @@ from polar.kit.metadata import MetadataQuery
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.time_queries import TimeInterval
-from polar.kit.utils import generate_uuid, utc_now
+from polar.kit.utils import generate_uuid
 from polar.logging import Logger
 from polar.meter.aggregation import PropertyAggregation
 from polar.meter.filter import Filter
@@ -40,7 +42,6 @@ from polar.meter.repository import MeterRepository
 from polar.models import (
     Agent,
     Customer,
-    CustomerMeter,
     Event,
     Member,
     Meter,
@@ -58,7 +59,10 @@ from polar.worker import enqueue_events, enqueue_job
 from .repository import EventRepository
 from .schemas import (
     CustomerStat,
+    EventCreate,
     EventCreateCustomer,
+    EventHistogram,
+    EventHistogramBucket,
     EventName,
     EventsIngest,
     EventsIngestResponse,
@@ -76,6 +80,27 @@ from .system import SYSTEM_EVENT_LABELS, SystemEvent
 
 log: Logger = structlog.get_logger()
 
+HISTOGRAM_MAX_BUCKETS = 150
+HISTOGRAM_STEPS_SECONDS = (
+    60,
+    2 * 60,
+    5 * 60,
+    10 * 60,
+    15 * 60,
+    30 * 60,
+    3600,
+    2 * 3600,
+    3 * 3600,
+    6 * 3600,
+    12 * 3600,
+    86400,
+    2 * 86400,
+    7 * 86400,
+    14 * 86400,
+    30 * 86400,
+    90 * 86400,
+)
+
 
 class EventError(PolarError): ...
 
@@ -87,6 +112,9 @@ class EventIngestValidationError(EventError):
 
 
 class EventService:
+    def __init__(self) -> None:
+        self._event_type_ids: dict[tuple[uuid.UUID, str], uuid.UUID] = {}
+
     async def list(
         self,
         session: AsyncReadSession,
@@ -121,8 +149,6 @@ class EventService:
 
         (
             query_filters,
-            matching_cust_ids,
-            matching_ext_ids,
             numeric_metadata_property,
         ) = await self._resolve_tinybird_filters(
             session,
@@ -130,7 +156,6 @@ class EventService:
             organization_ids,
             filter=filter,
             meter_id=meter_id,
-            query=query,
         )
 
         customer_repository = CustomerRepository.from_session(session)
@@ -168,8 +193,6 @@ class EventService:
             filters=query_filters,
             metadata=metadata,
             query=query,
-            matching_customer_ids=matching_cust_ids,
-            matching_external_customer_ids=matching_ext_ids,
             numeric_metadata_property=numeric_metadata_property,
             depth=depth,
             parent_id=parent_id,
@@ -328,8 +351,6 @@ class EventService:
 
         (
             query_filters,
-            matching_cust_ids,
-            matching_ext_ids,
             numeric_metadata_property,
         ) = await self._resolve_tinybird_filters(
             session,
@@ -337,7 +358,6 @@ class EventService:
             organization_ids,
             filter=filter,
             meter_id=meter_id,
-            query=query,
         )
 
         customer_repository = CustomerRepository.from_session(session)
@@ -369,8 +389,6 @@ class EventService:
             "filters": query_filters,
             "metadata": metadata,
             "query": query,
-            "matching_customer_ids": matching_cust_ids,
-            "matching_external_customer_ids": matching_ext_ids,
             "numeric_metadata_property": numeric_metadata_property,
         }
 
@@ -422,7 +440,7 @@ class EventService:
 
         repository = EventRepository.from_session(session)
         timestamps = await repository.get_timestamp_series(
-            start_timestamp, end_timestamp, interval
+            start_timestamp, end_timestamp, interval, timezone
         )
 
         type _EventKey = tuple[str, str]  # (organization_id, name)
@@ -477,6 +495,141 @@ class EventService:
         totals = _sort_stats([_row_to_stats(b) for b in tb_totals])
 
         return ListStatisticsTimeseries(periods=periods, totals=totals)
+
+    async def list_event_type_stats(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        filter: Filter | None = None,
+        start_timestamp: datetime | None = None,
+        end_timestamp: datetime | None = None,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
+        source: Sequence[EventSource] | None = None,
+        metadata: MetadataQuery | None = None,
+        query: str | None = None,
+    ) -> Sequence[EventTypeWithStats]:
+        organization_ids = await self._get_organization_ids_for_subject(
+            session, auth_subject, organization_id
+        )
+        if not organization_ids:
+            return []
+
+        (
+            query_filters,
+            _,
+        ) = await self._resolve_tinybird_filters(
+            session, auth_subject, organization_ids, filter=filter
+        )
+
+        all_customer_ids, all_external_ids = await self._expand_customer_ids(
+            session, organization_ids, customer_id, external_customer_id
+        )
+
+        stats = await TinybirdEventRepository().get_filtered_event_type_stats(
+            organization_id=list(organization_ids),
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            customer_id=all_customer_ids,
+            external_customer_id=all_external_ids,
+            source=source,
+            filters=query_filters,
+            metadata=metadata,
+            query=query,
+        )
+        return await event_type_service.build_with_stats(session, stats)
+
+    async def get_histogram(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+        filter: Filter | None = None,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
+        name: Sequence[str] | None = None,
+        source: Sequence[EventSource] | None = None,
+        metadata: MetadataQuery | None = None,
+        query: str | None = None,
+    ) -> EventHistogram:
+        span = (end_timestamp - start_timestamp).total_seconds()
+        step = next(
+            (
+                step
+                for step in HISTOGRAM_STEPS_SECONDS
+                if math.ceil(span / step) <= HISTOGRAM_MAX_BUCKETS
+            ),
+            HISTOGRAM_STEPS_SECONDS[-1],
+        )
+
+        counts: dict[int, int] = {}
+        organization_ids = await self._get_organization_ids_for_subject(
+            session, auth_subject, organization_id
+        )
+        if organization_ids:
+            (
+                query_filters,
+                _,
+            ) = await self._resolve_tinybird_filters(
+                session, auth_subject, organization_ids, filter=filter
+            )
+            all_customer_ids, all_external_ids = await self._expand_customer_ids(
+                session, organization_ids, customer_id, external_customer_id
+            )
+            counts = await TinybirdEventRepository().get_filtered_bucket_counts(
+                organization_id=list(organization_ids),
+                start_timestamp=start_timestamp,
+                end_timestamp=end_timestamp,
+                step_seconds=step,
+                customer_id=all_customer_ids,
+                external_customer_id=all_external_ids,
+                name=name,
+                source=source,
+                filters=query_filters,
+                metadata=metadata,
+                query=query,
+            )
+
+        buckets: list[EventHistogramBucket] = []
+        for index in range(max(1, math.ceil(span / step))):
+            bucket_start = start_timestamp + timedelta(seconds=index * step)
+            buckets.append(
+                EventHistogramBucket(
+                    start=bucket_start,
+                    end=min(end_timestamp, bucket_start + timedelta(seconds=step)),
+                    count=counts.get(index, 0),
+                )
+            )
+        return EventHistogram(interval_seconds=step, buckets=buckets)
+
+    async def _expand_customer_ids(
+        self,
+        session: AsyncReadSession,
+        organization_ids: set[AccessibleOrganizationID],
+        customer_id: Sequence[uuid.UUID] | None,
+        external_customer_id: Sequence[str] | None,
+    ) -> tuple[Sequence[uuid.UUID], Sequence[str]]:
+        customer_repository = CustomerRepository.from_session(session)
+        customer_ids: list[uuid.UUID] = [*(customer_id or [])]
+        external_ids: list[str] = [*(external_customer_id or [])]
+        if customer_id is not None:
+            external_ids.extend(
+                await customer_repository.get_readable_external_ids_by_ids(
+                    organization_ids, customer_id
+                )
+            )
+        if external_customer_id is not None:
+            customer_ids.extend(
+                await customer_repository.get_readable_ids_by_external_ids(
+                    organization_ids, external_customer_id
+                )
+            )
+        return customer_ids, external_ids
 
     async def list_property_group_stats(
         self,
@@ -846,13 +999,7 @@ class EventService:
         *,
         filter: Filter | None = None,
         meter_id: uuid.UUID | None = None,
-        query: str | None = None,
-    ) -> tuple[
-        Sequence[Filter],
-        Sequence[uuid.UUID] | None,
-        Sequence[str] | None,
-        str | None,
-    ]:
+    ) -> tuple[Sequence[Filter], str | None]:
         query_filters: list[Filter] = []
         if filter is not None:
             query_filters.append(filter)
@@ -880,21 +1027,7 @@ class EventService:
                 if prop not in Event._filterable_fields:
                     numeric_metadata_property = prop
 
-        matching_cust_ids: list[uuid.UUID] | None = None
-        matching_ext_ids: list[str] | None = None
-        if query is not None:
-            customer_repository = CustomerRepository.from_session(session)
-            (
-                matching_cust_ids,
-                matching_ext_ids,
-            ) = await customer_repository.search_by_query(organization_ids, query)
-
-        return (
-            query_filters,
-            matching_cust_ids,
-            matching_ext_ids,
-            numeric_metadata_property,
-        )
+        return query_filters, numeric_metadata_property
 
     async def ingest(
         self,
@@ -922,10 +1055,7 @@ class EventService:
             session, auth_subject, member_ids_in_batch
         )
 
-        event_type_repository = EventTypeRepository.from_session(session)
-        event_types_cache: dict[tuple[str, uuid.UUID], uuid.UUID] = {}
-
-        events: list[dict[str, Any]] = []
+        valid_events: list[tuple[EventCreate, uuid.UUID]] = []
         errors: list[ValidationError] = []
         for index, event_create in enumerate(ingest.events):
             try:
@@ -933,27 +1063,50 @@ class EventService:
                     index, event_create.organization_id
                 )
                 if isinstance(event_create, EventCreateCustomer):
-                    validate_customer_id(index, event_create.customer_id)
-                    if event_create.member_id is not None:
-                        validate_member_id(index, event_create.member_id)
-
-                event_label_cache_key = (event_create.name, organization_id)
-                if event_label_cache_key not in event_types_cache:
-                    event_type = await event_type_repository.get_or_create(
-                        event_create.name, organization_id
+                    validate_customer_id(
+                        index, event_create.customer_id, organization_id
                     )
-                    event_types_cache[event_label_cache_key] = event_type.id
-                event_type_id = event_types_cache[event_label_cache_key]
+                    if event_create.member_id is not None:
+                        validate_member_id(
+                            index, event_create.member_id, organization_id
+                        )
             except EventIngestValidationError as e:
                 errors.extend(e.errors)
                 continue
+            valid_events.append((event_create, organization_id))
 
+        event_type_repository = EventTypeRepository.from_session(session)
+        event_type_keys = {
+            (organization_id, event_create.name)
+            for event_create, organization_id in valid_events
+        }
+        event_type_ids = {
+            key: self._event_type_ids[key]
+            for key in event_type_keys & self._event_type_ids.keys()
+        }
+        uncached_keys = event_type_keys - event_type_ids.keys()
+        event_types = await event_type_repository.get_by_names_and_organization(
+            list({name for _, name in uncached_keys}),
+            list({organization_id for organization_id, _ in uncached_keys}),
+        )
+        for key, event_type in event_types.items():
+            self._event_type_ids[key] = event_type_ids[key] = event_type.id
+        for organization_id, name in event_type_keys - event_type_ids.keys():
+            event_type = await event_type_repository.get_or_create(
+                name, organization_id
+            )
+            event_type_ids[(organization_id, name)] = event_type.id
+
+        events: list[dict[str, Any]] = []
+        for event_create, organization_id in valid_events:
             event_dict = event_create.model_dump(
                 exclude={"organization_id", "parent_id"}, by_alias=True
             )
             event_dict["source"] = EventSource.user
             event_dict["organization_id"] = organization_id
-            event_dict["event_type_id"] = event_type_id
+            event_dict["event_type_id"] = event_type_ids[
+                (organization_id, event_create.name)
+            ]
 
             if event_create.parent_id is not None:
                 event_dict["pending_parent_external_id"] = event_create.parent_id
@@ -964,20 +1117,17 @@ class EventService:
             raise PolarRequestValidationError(errors)
 
         repository = EventRepository.from_session(session)
-        org_ids_with_staged_events_enabled = (
-            await self._get_org_ids_with_staged_events_enabled(
-                session, auth_subject, {event["organization_id"] for event in events}
-            )
+        organization_ids = {event["organization_id"] for event in events}
+        org_ids_with_reducer_billing = await self._get_org_ids_with_feature(
+            session, organization_ids, "reducer_billing_enabled", auth_subject
         )
         staged_events = [
-            e
-            for e in events
-            if e["organization_id"] in org_ids_with_staged_events_enabled
+            e for e in events if e["organization_id"] in org_ids_with_reducer_billing
         ]
         direct_events = [
             e
             for e in events
-            if e["organization_id"] not in org_ids_with_staged_events_enabled
+            if e["organization_id"] not in org_ids_with_reducer_billing
         ]
 
         event_ids: list[uuid.UUID] = []
@@ -997,8 +1147,10 @@ class EventService:
             duplicates_count += direct_duplicates_count
 
             # Temporarily: fetch inserted events and create meter_events
-            with logfire.span("create_meter_events", event_count=len(direct_event_ids)):
-                if direct_event_ids:
+            if direct_event_ids:
+                with logfire.span(
+                    "create_meter_events", event_count=len(direct_event_ids)
+                ):
                     inserted_events = await repository.get_all(
                         repository.get_base_statement().where(
                             Event.id.in_(direct_event_ids)
@@ -1057,7 +1209,18 @@ class EventService:
                 inserted_events = await repository.get_all(
                     repository.get_base_statement().where(Event.id.in_(event_ids))
                 )
-                await self._create_meter_events(session, inserted_events)
+                org_ids_with_reducer_billing = await self._get_org_ids_with_feature(
+                    session,
+                    {event.organization_id for event in inserted_events},
+                    "reducer_billing_enabled",
+                )
+                meter_events = [
+                    event
+                    for event in inserted_events
+                    if event.organization_id not in org_ids_with_reducer_billing
+                ]
+                if meter_events:
+                    await self._create_meter_events(session, meter_events)
 
             # Parent resolution and root_id propagation run out-of-band in the
             # `event.ingested` task.
@@ -1076,7 +1239,26 @@ class EventService:
             event.root_id = event.id
         event = await repository.create(event, flush=True)
         # Temporarily
-        await self._create_meter_events(session, [event])
+        if not await self._get_org_ids_with_feature(
+            session, {event.organization_id}, "reducer_billing_enabled"
+        ):
+            await self._create_meter_events(session, [event])
+        if event.is_meter_credit:
+            await reducer_service.add_credit(session, event)
+        elif (
+            event.source == EventSource.system and event.name == SystemEvent.meter_reset
+        ):
+            assert event.customer_id is not None
+            customer = await CustomerRepository.from_session(session).get_by_id(
+                event.customer_id
+            )
+            if customer is not None:
+                meter_id = uuid.UUID(event.user_metadata["meter_id"])
+                await reducer_service.seal_credits(
+                    session, customer, meter_id, at=event.timestamp
+                )
+                reducer_service.enqueue_seal(customer.id, meter_id, at=event.timestamp)
+                await reducer_service.enqueue_usage_change(session, customer, meter_id)
 
         enqueue_events(event.id)
 
@@ -1116,12 +1298,16 @@ class EventService:
             .where(Event.id.in_(candidate_ids), Event.root_id.is_not(None))
             .options(*repository.get_eager_options())
         )
-        events = await repository.get_all(statement)
+        with logfire.span("load_events", event_count=len(candidate_ids)):
+            events = await repository.get_all(statement)
         if not events:
             return
 
         complete_ids = [event.id for event in events]
-        ancestors_by_event = await self._build_ancestors_batch(session, complete_ids)
+        with logfire.span("build_ancestors"):
+            ancestors_by_event = await self._build_ancestors_batch(
+                session, complete_ids
+            )
 
         customers: set[Customer] = set()
         organization_ids: set[uuid.UUID] = set()
@@ -1130,7 +1316,10 @@ class EventService:
             organization_ids.add(event.organization_id)
             if event.customer and not event.customer.is_deleted:
                 customers.add(event.customer)
-                if event.source == EventSource.user:
+                first_user_event_at = event.customer.first_user_event_at
+                if event.source == EventSource.user and (
+                    first_user_event_at is None or event.timestamp < first_user_event_at
+                ):
                     customers_with_user_events.add(event.customer.id)
 
         span = trace.get_current_span()
@@ -1141,14 +1330,16 @@ class EventService:
         # Temporarily do this sync on ingestion instead
         # await self._create_meter_events(session, events)
 
-        await self._activate_matching_customer_meters(
-            session, repository, complete_ids, customers
-        )
+        with logfire.span("activate_customer_meters", customer_count=len(customers)):
+            await self._activate_matching_customer_meters(
+                session, repository, complete_ids, customers
+            )
 
         for customer in customers:
             enqueue_job("customer_meter.update_customer", customer.id)
 
-        tinybird_events = events_to_tinybird(events, ancestors_by_event)
+        with logfire.span("build_tinybird_events"):
+            tinybird_events = events_to_tinybird(events, ancestors_by_event)
         for chunk in chunk_tinybird_events(tinybird_events):
             enqueue_job("tinybird.ingest", chunk)
 
@@ -1171,9 +1362,8 @@ class EventService:
 
         for org_id, org_events in events_by_org.items():
             meters = await meter_repository.get_all(
-                meter_repository.get_base_statement().where(
-                    Meter.organization_id == org_id,
-                    Meter.archived_at.is_(None),
+                meter_repository.get_active_statement().where(
+                    Meter.organization_id == org_id
                 )
             )
 
@@ -1224,63 +1414,48 @@ class EventService:
             return
 
         customer_meter_repository = CustomerMeterRepository.from_session(session)
-        customer_ids = [c.id for c in customers]
+        customer_ids = {c.id for c in customers}
+        customer_ids_by_external_id = {
+            (c.organization_id, c.external_id): c.id
+            for c in customers
+            if c.external_id is not None
+        }
+        external_ids = {external_id for _, external_id in customer_ids_by_external_id}
 
-        statement = (
-            customer_meter_repository.get_base_statement()
-            .join(CustomerMeter.meter)
-            .join(CustomerMeter.customer)
-            .options(
-                contains_eager(CustomerMeter.meter),
-                contains_eager(CustomerMeter.customer),
-            )
-            .where(
-                CustomerMeter.customer_id.in_(customer_ids),
-                CustomerMeter.activated_at.is_(None),
-            )
+        meters = await customer_meter_repository.get_unactivated_meters(customer_ids)
+        if not meters:
+            return
+
+        matches = await event_repository.get_meters_matching_customers(
+            event_ids, meters, customer_ids, external_ids
         )
-        unactivated_meters = await customer_meter_repository.get_all(statement)
+        for meter in meters:
+            matched_customer_ids, matched_external_ids = matches[meter.id]
+            matched = matched_customer_ids | {
+                customer_ids_by_external_id[(meter.organization_id, external_id)]
+                for external_id in matched_external_ids
+            }
+            if matched:
+                await customer_meter_repository.activate(meter.id, matched)
 
-        for cm in unactivated_meters:
-            customer_clause = or_(
-                Event.customer_id == cm.customer_id,
-                Event.external_customer_id == cm.customer.external_id,
-            )
-
-            matching_statement = (
-                event_repository.get_base_statement()
-                .where(
-                    Event.id.in_(event_ids),
-                    Event.organization_id == cm.meter.organization_id,
-                    customer_clause,
-                    event_repository.get_meter_clause(cm.meter),
-                )
-                .limit(1)
-            )
-            if await event_repository.get_one_or_none(matching_statement) is not None:
-                cm.activated_at = utc_now()
-                session.add(cm)
-        await session.flush()
-
-    async def _get_org_ids_with_staged_events_enabled(
+    async def _get_org_ids_with_feature(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization | Agent],
         organization_ids: set[uuid.UUID],
+        feature: str,
+        auth_subject: AuthSubject[User | Organization | Agent] | None = None,
     ) -> set[uuid.UUID]:
-        if is_organization(auth_subject):
+        if auth_subject is not None and is_organization(auth_subject):
             organization = auth_subject.subject
             return (
                 {organization.id}
-                if organization.is_staged_events_ingest_enabled
+                if organization.feature_settings.get(feature, False)
                 else set()
             )
         if not organization_ids:
             return set()
         repository = OrganizationRepository.from_session(session)
-        return await repository.get_ids_with_feature(
-            organization_ids, "staged_events_ingest_enabled"
-        )
+        return await repository.get_ids_with_feature(organization_ids, feature)
 
     async def _get_organization_validation_function(
         self,
@@ -1354,11 +1529,11 @@ class EventService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         customer_ids: set[uuid.UUID],
-    ) -> Callable[[int, uuid.UUID], uuid.UUID]:
+    ) -> Callable[[int, uuid.UUID, uuid.UUID], uuid.UUID]:
         if not customer_ids:
-            allowed_customers: set[uuid.UUID] = set()
+            allowed_customers: dict[uuid.UUID, uuid.UUID] = {}
         else:
-            statement = select(Customer.id).where(
+            statement = select(Customer.id, Customer.organization_id).where(
                 ~Customer.is_deleted,
                 Customer.id.in_(customer_ids),
             )
@@ -1373,10 +1548,15 @@ class EventService:
                     Customer.organization_id == auth_subject.subject.id
                 )
             result = await session.execute(statement)
-            allowed_customers = set(result.scalars().all())
+            allowed_customers = {
+                customer_id: organization_id
+                for customer_id, organization_id in result.tuples().all()
+            }
 
-        def _validate_customer_id(index: int, customer_id: uuid.UUID) -> uuid.UUID:
-            if customer_id not in allowed_customers:
+        def _validate_customer_id(
+            index: int, customer_id: uuid.UUID, organization_id: uuid.UUID
+        ) -> uuid.UUID:
+            if allowed_customers.get(customer_id) != organization_id:
                 raise EventIngestValidationError(
                     [
                         {
@@ -1397,11 +1577,11 @@ class EventService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         member_ids: set[uuid.UUID],
-    ) -> Callable[[int, uuid.UUID], uuid.UUID]:
+    ) -> Callable[[int, uuid.UUID, uuid.UUID], uuid.UUID]:
         if not member_ids:
-            allowed_members: set[uuid.UUID] = set()
+            allowed_members: dict[uuid.UUID, uuid.UUID] = {}
         else:
-            statement = select(Member.id).where(
+            statement = select(Member.id, Member.organization_id).where(
                 ~Member.is_deleted,
                 Member.id.in_(member_ids),
             )
@@ -1414,10 +1594,15 @@ class EventService:
                     Member.organization_id == auth_subject.subject.id
                 )
             result = await session.execute(statement)
-            allowed_members = set(result.scalars().all())
+            allowed_members = {
+                member_id: organization_id
+                for member_id, organization_id in result.tuples().all()
+            }
 
-        def _validate_member_id(index: int, member_id: uuid.UUID) -> uuid.UUID:
-            if member_id not in allowed_members:
+        def _validate_member_id(
+            index: int, member_id: uuid.UUID, organization_id: uuid.UUID
+        ) -> uuid.UUID:
+            if allowed_members.get(member_id) != organization_id:
                 raise EventIngestValidationError(
                     [
                         {

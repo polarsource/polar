@@ -1,7 +1,6 @@
 'use client'
 
 import LogoType from '@/components/Brand/logos/LogoType'
-import { StaticImage } from '@/components/Image/StaticImage'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useMemo, type ReactNode } from 'react'
@@ -24,7 +23,7 @@ const Stat = ({
     <Text variant="caption" color="muted">
       {label}
     </Text>
-    <Text variant="heading-xs" tabularNums>
+    <Text variant="heading-xs" as="p" tabularNums>
       {value}
       {sub ? (
         <Text as="span" variant="heading-xs" color="muted">
@@ -36,9 +35,32 @@ const Stat = ({
   </Box>
 )
 
+/** A total set right, its label led by the swatch of the line it draws in the chart. */
+const Total = ({
+  label,
+  value,
+  children,
+}: {
+  label: string
+  value: string
+  children: ReactNode
+}) => (
+  <Box flexDirection="column" rowGap="xs" alignItems="end">
+    <Box alignItems="center" columnGap="s">
+      {children}
+      <Text variant="caption" color="muted">
+        {label}
+      </Text>
+    </Box>
+    <Text variant="heading-xs" as="p" tabularNums>
+      {value}
+    </Text>
+  </Box>
+)
+
 /** The chrome of the site's modals: a dark frame with a hairline and a 4px inset. The header sits on the frame. */
 const Panel = ({ children }: { children: ReactNode }) => (
-  <div className="dark:bg-polar-950 dark:border-polar-800 flex h-full w-full flex-col rounded-2xl border border-gray-200 bg-gray-100 p-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.75)]">
+  <div className="dark:bg-polar-950 flex h-full w-full flex-col rounded-2xl bg-gray-100 p-1">
     {children}
   </div>
 )
@@ -92,41 +114,22 @@ export const UsageBillingMock = () => {
                   borderStyle="solid"
                   borderColor="border-primary"
                 >
-                  <Box alignItems="center" columnGap="m">
-                    <StaticImage
-                      src="/assets/acme.jpg"
-                      alt="Acme Inc"
-                      width={32}
-                      height={32}
-                      className="size-8 rounded-full object-cover"
-                    />
-                    <Box flexDirection="column">
-                      <Text variant="body">Acme Inc</Text>
-                      <Text variant="caption" color="muted">
-                        joe@acme.com
-                      </Text>
-                    </Box>
+                  <Box flexDirection="column">
+                    <Text variant="body">Acme Inc</Text>
+                    <Text variant="caption" color="muted">
+                      joe@acme.com
+                    </Text>
                   </Box>
                 </Box>
-                <Grid
-                  templateColumns="repeat(2, 1fr)"
-                  marginHorizontal="xl"
-                  paddingVertical="l"
-                  borderBottomWidth={1}
-                  borderStyle="solid"
-                  borderColor="border-primary"
-                >
-                  <Stat label="Tokens metered" value={compact(tokens)} />
-                  <Box
-                    paddingLeft="xl"
-                    borderLeftWidth={1}
-                    borderStyle="solid"
-                    borderColor="border-primary"
-                  >
-                    <Stat label="Revenue" value={dollars(revenue, 2)} />
+                <Box flexDirection="column" rowGap="l" padding="xl">
+                  <Box justifyContent="between" alignItems="baseline">
+                    <Text variant="caption" color="muted">
+                      Usage
+                    </Text>
+                    <Text variant="caption" color="muted" tabularNums>
+                      {compact(tokens)} tokens
+                    </Text>
                   </Box>
-                </Grid>
-                <Box padding="xl">
                   <EventLog events={events} />
                 </Box>
                 <Box marginTop="auto" flexDirection="column" width="100%">
@@ -141,16 +144,16 @@ export const UsageBillingMock = () => {
                     label="Gross margin"
                     value={totals.revenue > 0 ? percent(marginShown) : '—'}
                   />
-                  <Box flexDirection="column" rowGap="xs" alignItems="end">
-                    <Text variant="caption" color="muted">
-                      Inference cost
-                    </Text>
-                    <Text variant="heading-xs" tabularNums>
-                      {dollars(cost, 2)}
-                    </Text>
+                  <Box columnGap="2xl">
+                    <Total label="Revenue" value={dollars(revenue, 2)}>
+                      <div className="h-0.5 w-3 rounded-full bg-black dark:bg-white" />
+                    </Total>
+                    <Total label="Inference cost" value={dollars(cost, 2)}>
+                      <div className="dark:border-polar-500 w-3 border-t border-dashed border-gray-400" />
+                    </Total>
                   </Box>
                 </Box>
-                <MarginChart series={series} />
+                <MarginChart series={series} legend={false} />
               </Box>
             </Inner>
           </Grid>

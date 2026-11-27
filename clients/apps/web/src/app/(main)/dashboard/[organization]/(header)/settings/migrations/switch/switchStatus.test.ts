@@ -43,9 +43,9 @@ describe('switchStatus', () => {
     })
   })
 
-  it('shows "Left on Stripe" (yellow) when skipped', () => {
+  it('shows "Not switched" (yellow) when skipped', () => {
     expect(switchStatus(row({ cutover_status: 'skipped' }))).toEqual({
-      label: 'Left on Stripe',
+      label: 'Not switched',
       color: 'yellow',
     })
   })
@@ -57,9 +57,29 @@ describe('switchStatus', () => {
     })
   })
 
+  it('names what the card copy left when it is not a usable card', () => {
+    expect(
+      switchStatus(
+        row({ card_status: 'india_card', has_payment_method: false }),
+      ),
+    ).toEqual({ label: 'India card', color: 'yellow' })
+    expect(switchStatus(row({ card_status: 'expired_card' }))).toEqual({
+      label: 'Card expired',
+      color: 'yellow',
+    })
+  })
+
+  it('shows "Ready" for a verified card', () => {
+    expect(switchStatus(row({ card_status: 'ready' }))).toEqual({
+      label: 'Ready',
+      color: 'green',
+    })
+  })
+
   it('shows "Ready" for a pending row with a card', () => {
     expect(switchStatus(row({ has_payment_method: true }))).toEqual({
       label: 'Ready',
+      color: 'green',
     })
   })
 

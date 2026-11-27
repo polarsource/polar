@@ -24,9 +24,15 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       clients: ${{ steps.filter.outputs.clients }}
+      turbo-scope: ${{ steps.scope.outputs.turbo-scope }}
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: dorny/paths-filter@v4.0.3
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
           filters: |
@@ -37,37 +43,49 @@ jobs:
               - 'docs/openapi/**'
               - 'docs/docs.json'
               - '.github/workflows/test_client.yaml'
+              - '.github/actions/setup-clients/**'
               - '.github/workflows/release_cli.yml'
+              - '.nvmrc'
+            unscoped:
+              - 'clients/*'
+              - 'sdk/cli-commands/**'
+              - 'docs/**'
+              - '.github/**'
+              - '.nvmrc'
+      - name: Scope turbo to what the diff can reach
+        id: scope
+        if: github.event_name == 'pull_request' && steps.filter.outputs.unscoped == 'false'
+        run: echo "turbo-scope=--affected" >> "$GITHUB_OUTPUT"
 
-  build:
-    name: "Client: Tests 🎨"
+  checks:
+    name: "Client: Checks 💅"
     needs: changes
     if: needs.changes.outputs.clients == 'true'
     timeout-minutes: 15
     runs-on: blacksmith-4vcpu-ubuntu-2404
 
+    permissions:
+      contents: read
+      id-token: write
+
     env:
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_SCM_BASE: HEAD^1
+      TURBO_SCOPE: ${{ needs.changes.outputs.turbo-scope }}
       VERCEL_ENV: "testing"
 
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
       - name: Check out code
-        uses: actions/checkout@v7.0.1
-
-      - uses: pnpm/action-setup@v6.1.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          package_json_file: clients/package.json
+          fetch-depth: 2
 
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v7.1.0
-        with:
-          node-version-file: .nvmrc
-          cache: "pnpm"
-          cache-dependency-path: "clients/pnpm-lock.yaml"
-
-      - name: 📦 Install dependencies
-        run: pnpm install
+      - uses: ./.github/actions/setup-clients
 
       - name: 💅 Format check
         run: pnpm run format:check
@@ -79,38 +97,218 @@ jobs:
         run: pnpm --filter @polar-sh/i18n validate
 
       - name: 👀 Typecheck
-        run: pnpm run typecheck
+        run: pnpm turbo run typecheck $TURBO_SCOPE
 
-      - name: "🧪 Test: App"
-        run: pnpm --filter @polar-sh/app test
+  test-web:
+    name: "Client: Test Web 🧪"
+    needs: changes
+    if: needs.changes.outputs.clients == 'true'
+    timeout-minutes: 15
+    runs-on: blacksmith-8vcpu-ubuntu-2404
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_SCM_BASE: HEAD^1
+      TURBO_SCOPE: ${{ needs.changes.outputs.turbo-scope }}
+      VERCEL_ENV: "testing"
+
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+
+      - uses: ./.github/actions/setup-clients
 
       - name: "🧪 Test: Web"
-        run: pnpm --filter web test
+        run: pnpm turbo run test --filter=web $TURBO_SCOPE
 
-      - name: "🧪 Test: @polar-sh/currency"
-        run: pnpm --filter @polar-sh/currency test
+  test-checkout:
+    name: "Client: Test Checkout 🧪"
+    needs: changes
+    if: needs.changes.outputs.clients == 'true'
+    timeout-minutes: 15
+    runs-on: blacksmith-8vcpu-ubuntu-2404
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_SCM_BASE: HEAD^1
+      TURBO_SCOPE: ${{ needs.changes.outputs.turbo-scope }}
+      VERCEL_ENV: "testing"
+
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+
+      - uses: ./.github/actions/setup-clients
 
       - name: "🧪 Test: @polar-sh/checkout"
-        run: pnpm --filter @polar-sh/checkout test
+        run: pnpm turbo run test --filter=@polar-sh/checkout $TURBO_SCOPE
 
-      - name: "🧪 Test: @polar-sh/orbit"
-        run: pnpm --filter @polar-sh/orbit test
+  test-packages:
+    name: "Client: Test Packages 🧪"
+    needs: changes
+    if: needs.changes.outputs.clients == 'true'
+    timeout-minutes: 15
+    runs-on: blacksmith-8vcpu-ubuntu-2404
 
-      - name: "🧪 Test: MCP"
-        run: pnpm --filter mcp test
+    permissions:
+      contents: read
+      id-token: write
 
-      - name: "🧪 Test: Adapters"
-        run: pnpm turbo run test --filter='./adapters/*'
+    env:
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_SCM_BASE: HEAD^1
+      TURBO_SCOPE: ${{ needs.changes.outputs.turbo-scope }}
+      VERCEL_ENV: "testing"
 
-      - uses: oven-sh/setup-bun@v2
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+
+      - uses: ./.github/actions/setup-clients
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: clients/packages/cli/package.json
 
-      - name: "🧪 Test: CLI"
-        run: pnpm --filter @polar-sh/cli test
+      - name: "🧪 Test: Packages"
+        run: pnpm turbo run test --filter='!web' --filter='!@polar-sh/checkout' $TURBO_SCOPE
 
       - name: "📚 CLI docs are up to date"
         run: pnpm --filter @polar-sh/cli docs:check
 
+  build:
+    name: "Client: Build 🛠️"
+    needs: changes
+    if: needs.changes.outputs.clients == 'true'
+    timeout-minutes: 15
+    runs-on: blacksmith-8vcpu-ubuntu-2404
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_SCM_BASE: HEAD^1
+      TURBO_SCOPE: ${{ needs.changes.outputs.turbo-scope }}
+      VERCEL_ENV: "testing"
+
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+
+      - uses: ./.github/actions/setup-clients
+
       - name: 🛠️ Build
-        run: pnpm build
+        run: pnpm turbo run build $TURBO_SCOPE
+
+  cli-binary:
+    name: "Client: CLI Binary 📦"
+    needs: changes
+    if: needs.changes.outputs.clients == 'true'
+    timeout-minutes: 15
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    defaults:
+      run:
+        working-directory: clients/packages/cli
+
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: clients/package.json
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: clients/pnpm-lock.yaml
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: clients/packages/cli/package.json
+
+      - name: 📦 Install the CLI dependency graph
+        run: pnpm --dir ../.. install --filter @polar-sh/cli... --frozen-lockfile --ignore-scripts
+
+      - name: 🛠️ Build @polar-sh/config
+        run: pnpm --dir ../.. --filter @polar-sh/config build
+
+      - name: 📦 Build binary
+        run: bun build ./src/cli.ts --compile --no-compile-autoload-dotenv --no-compile-autoload-bunfig --define POLAR_CLI_BUILD='"release"' --target=bun-linux-x64 --outfile polar
+
+      - name: 💨 Smoke test binary
+        env:
+          POLAR_CLI_TELEMETRY_OPTOUT: "1"
+        run: ./polar --version
+
+  status:
+    name: "Client: Tests 🎨"
+    needs: [changes, checks, test-web, test-checkout, test-packages, build, cli-binary]
+    if: always()
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - name: Check job results
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          if [ "$CHANGES_RESULT" != "success" ]; then
+            exit 1
+          fi
+          for result in $RESULTS; do
+            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
+              exit 1
+            fi
+          done

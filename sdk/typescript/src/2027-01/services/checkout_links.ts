@@ -1,7 +1,7 @@
 import type { ClientBase, RequestOptions } from "../../base";
 import type {
   CheckoutLink,
-  CheckoutLinkCreate,
+  CheckoutLinkCreateProducts,
   CheckoutLinkSortProperty,
   CheckoutLinkUpdate,
   ListResourceCheckoutLink,
@@ -110,7 +110,7 @@ export const createCheckoutLinks = (client: ClientBase) => {
    * @throws {HTTPValidationError} Validation Error
    */
   return async (
-    body: CheckoutLinkCreate,
+    body: CheckoutLinkCreateProducts,
     requestOptions?: RequestOptions,
   ): Promise<CheckoutLink> => {
     const pathParams = {};

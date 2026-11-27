@@ -5,15 +5,22 @@ import { METRIC_GROUPS, metricGroupSlug } from '@/utils/metrics'
 import { type schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { parseAsString, useQueryState } from 'nuqs'
-import { ReactNode, useEffect, useMemo } from 'react'
+import { ReactNode, Ref, useMemo } from 'react'
 import { CancellationsContent } from './CancellationsContent'
 import { CustomDashboardActions } from './DashboardViewHeader'
 import { MetricGroup } from './MetricGroup'
 import { SeatsContent } from './SeatsContent'
+import { useDeepLinkedSection } from './useDeepLinkedSection'
+import { useHasBeenSeen } from './useHasBeenSeen'
 import { useMetricsFilters } from './useMetricsFilters'
 
 type MetricKey = keyof schemas['Metrics']
+
+interface MetricGroupDefinition {
+  slug: string
+  title: string
+  metrics: MetricKey[]
+}
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -22,17 +29,19 @@ interface ClientPageProps {
 }
 
 const DashboardSection = ({
+  ref,
   id,
   title,
   actions,
   children,
 }: {
+  ref: Ref<HTMLElement>
   id: string
   title: string
   actions?: ReactNode
   children: ReactNode
 }) => (
-  <Box as="section" id={id} flexDirection="column" rowGap="l">
+  <Box as="section" ref={ref} id={id} flexDirection="column" rowGap="l">
     <Box alignItems="center" justifyContent="between" columnGap="m">
       <Text as="h2" variant="heading-xs">
         {title}
@@ -47,8 +56,9 @@ const useFilteredMetrics = (
   organizationId: string,
   earliestDateISOString: string,
   metrics: MetricKey[],
+  enabled: boolean,
 ) => {
-  const { interval, startDate, endDate, productId } = useMetricsFilters(
+  const { interval, startDate, endDate, productFilter } = useMetricsFilters(
     earliestDateISOString,
   )
   const { data } = useMetrics(
@@ -57,12 +67,60 @@ const useFilteredMetrics = (
       endDate,
       interval,
       organization_id: organizationId,
-      ...(productId && productId.length > 0 ? { product_id: productId } : {}),
+      ...productFilter,
       metrics,
     },
-    metrics.length > 0,
+    enabled && metrics.length > 0,
   )
-  return { data, interval, startDate, endDate, productId }
+  return { data, interval, startDate, endDate, productFilter }
+}
+
+// Each built-in group queries its own metrics once it nears the viewport, so
+// the page only requests the sections the user actually scrolls to.
+const BuiltInGroupSection = ({
+  organizationId,
+  group,
+  earliestDateISOString,
+  deepLinked,
+}: {
+  organizationId: string
+  group: MetricGroupDefinition
+  earliestDateISOString: string
+  deepLinked: boolean
+}) => {
+  const { ref, seen } = useHasBeenSeen<HTMLElement>()
+  const { data, interval, startDate, endDate, productFilter } =
+    useFilteredMetrics(
+      organizationId,
+      earliestDateISOString,
+      group.metrics,
+      seen || deepLinked,
+    )
+
+  return (
+    <DashboardSection ref={ref} id={group.slug} title={group.title}>
+      {!data ? (
+        <MetricGroup metricKeys={group.metrics} interval={interval} loading />
+      ) : group.slug === 'cancellations' ? (
+        <CancellationsContent
+          data={data}
+          interval={interval}
+          organizationId={organizationId}
+          startDate={startDate}
+          endDate={endDate}
+          productFilter={productFilter}
+        />
+      ) : group.slug === 'seats' ? (
+        <SeatsContent data={data} interval={interval} />
+      ) : (
+        <MetricGroup
+          metricKeys={group.metrics}
+          data={data}
+          interval={interval}
+        />
+      )}
+    </DashboardSection>
+  )
 }
 
 // Each custom dashboard queries its own metrics, so a dashboard holding a slug
@@ -71,20 +129,25 @@ const CustomDashboardSection = ({
   organization,
   dashboard,
   earliestDateISOString,
+  deepLinked,
 }: {
   organization: schemas['Organization']
   dashboard: schemas['MetricDashboardSchema']
   earliestDateISOString: string
+  deepLinked: boolean
 }) => {
   const metricKeys = dashboard.metrics as MetricKey[]
+  const { ref, seen } = useHasBeenSeen<HTMLElement>()
   const { data, interval } = useFilteredMetrics(
     organization.id,
     earliestDateISOString,
     metricKeys,
+    seen || deepLinked,
   )
 
   return (
     <DashboardSection
+      ref={ref}
       id={dashboard.id}
       title={dashboard.name}
       actions={
@@ -110,7 +173,12 @@ const CustomDashboardSection = ({
           <Text color="muted">Edit this dashboard to add metrics.</Text>
         </Box>
       ) : (
-        <MetricGroup metricKeys={metricKeys} data={data} interval={interval} />
+        <MetricGroup
+          metricKeys={metricKeys}
+          data={data}
+          interval={interval}
+          loading={!data}
+        />
       )}
     </DashboardSection>
   )
@@ -122,18 +190,16 @@ export default function ClientPage({
   earliestDateISOString,
 }: ClientPageProps) {
   const organizationId = organization.id
-  const [section, setSection] = useQueryState('section', parseAsString)
   const { data: customDashboards } = useMetricDashboards(organizationId)
 
-  const groups = useMemo(
-    () =>
-      METRIC_GROUPS.map((g) => ({
-        slug: metricGroupSlug(g.category),
-        title: g.category,
-        metrics: g.metrics.map((m) => m.slug),
-      })).filter(({ slug }) => groupSlugs.includes(slug)),
-    [groupSlugs],
-  )
+  const groups = useMemo<MetricGroupDefinition[]>(() => {
+    const enabledSlugs = new Set(groupSlugs)
+    return METRIC_GROUPS.map((g) => ({
+      slug: metricGroupSlug(g.category),
+      title: g.category,
+      metrics: g.metrics.map((m) => m.slug),
+    })).filter(({ slug }) => enabledSlugs.has(slug))
+  }, [groupSlugs])
 
   const dashboards = useMemo(
     () =>
@@ -144,49 +210,18 @@ export default function ClientPage({
     [customDashboards],
   )
 
-  const metrics = useMemo(() => groups.flatMap((g) => g.metrics), [groups])
-
-  const { data, interval, startDate, endDate, productId } = useFilteredMetrics(
-    organizationId,
-    earliestDateISOString,
-    metrics,
-  )
-
-  useEffect(() => {
-    if (!section || !data) return
-    const target = document.getElementById(section)
-    if (!target) return
-    target.scrollIntoView({ block: 'start' })
-    setSection(null)
-  }, [section, data, dashboards, setSection])
-
-  if (!data) {
-    return null
-  }
+  const section = useDeepLinkedSection(dashboards.map(({ id }) => id))
 
   return (
     <Box flexDirection="column" rowGap="4xl">
       {groups.map((group) => (
-        <DashboardSection key={group.slug} id={group.slug} title={group.title}>
-          {group.slug === 'cancellations' ? (
-            <CancellationsContent
-              data={data}
-              interval={interval}
-              organizationId={organizationId}
-              startDate={startDate}
-              endDate={endDate}
-              productId={productId ?? undefined}
-            />
-          ) : group.slug === 'seats' ? (
-            <SeatsContent data={data} interval={interval} />
-          ) : (
-            <MetricGroup
-              metricKeys={group.metrics}
-              data={data}
-              interval={interval}
-            />
-          )}
-        </DashboardSection>
+        <BuiltInGroupSection
+          key={group.slug}
+          organizationId={organizationId}
+          group={group}
+          earliestDateISOString={earliestDateISOString}
+          deepLinked={section === group.slug}
+        />
       ))}
       {dashboards.map((dashboard) => (
         <CustomDashboardSection
@@ -194,6 +229,7 @@ export default function ClientPage({
           organization={organization}
           dashboard={dashboard}
           earliestDateISOString={earliestDateISOString}
+          deepLinked={section === dashboard.id}
         />
       ))}
     </Box>

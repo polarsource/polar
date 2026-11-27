@@ -51,7 +51,7 @@ Turn usage into revenue. Polar is the financial layer for a new generation of in
 - **Growth:** 3.60% + 35¢ per transaction
 - **Scale:** 3.40% + 30¢ per transaction
 - Eligible startups can apply to the [Startup Program](https://polar.sh/startup-program) for a year on our most generous plan
-- Additional fees may apply. [Read more](https://polar.sh/docs/documentation/polar-as-merchant-of-record/fees)
+- Additional fees may apply. [Read more](https://polar.sh/docs/merchant-of-record/fees)
 
 ## Roadmap, Issues & Feature Requests
 
@@ -69,6 +69,9 @@ We also maintain SDKs for the following languages:
 - Python: [polarsource/polar-python](https://github.com/polarsource/polar-python)
 
 ## Contributions
+
+> [!IMPORTANT]
+> We're not accepting contributions from outside collaborators at this time. See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for how to report bugs, request features or disclose security issues.
 
 Our [`DEVELOPMENT.md`](./DEVELOPMENT.md) file contains everything you need to know to configure your development environment.
 

@@ -8,6 +8,7 @@ import {
   useSubscription,
   useUpdateSubscription,
 } from '@/hooks/polar/subscriptions'
+import { capture } from '@/utils/posthog'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
@@ -92,6 +93,10 @@ export default function Index() {
           return
         }
 
+        capture('app:subscriptions:subscription:cancel', {
+          action: cancellation.cancellation_action,
+          reason: cancellation.customer_cancellation_reason ?? null,
+        })
         router.back()
       })
     },

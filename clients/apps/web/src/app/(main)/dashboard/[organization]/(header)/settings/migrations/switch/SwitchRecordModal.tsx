@@ -5,6 +5,7 @@ import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { assessmentFacts } from '../review/assessmentFacts'
 import { RecordCard, TaxAfterSwitchField } from '../review/ReviewRecordFields'
+import { paymentMethodDetail } from './cardStatus'
 import { SwitchStatusIndicator } from './SwitchStatusIndicator'
 import { periodEndMoveNotice } from './switchCopy'
 import { needsAttention, SwitchRow } from './switchRows'
@@ -12,10 +13,12 @@ import { needsAttention, SwitchRow } from './switchRows'
 export function SwitchRecordModal({
   row,
   migrationId,
+  readOnly = false,
   onClose,
 }: {
   row: SwitchRow
   migrationId: string
+  readOnly?: boolean
   onClose: () => void
 }) {
   const facts = assessmentFacts(row)
@@ -32,7 +35,7 @@ export function SwitchRecordModal({
   return (
     <Box flexDirection="column" height="100%">
       <InlineModalHeader hide={onClose}>
-        <Text variant="heading-xs" as="h2">
+        <Text variant="title" as="h2">
           {row.customer_email || row.title}
         </Text>
       </InlineModalHeader>
@@ -55,7 +58,7 @@ export function SwitchRecordModal({
           borderColor="border-primary"
         >
           <Box alignItems="center" justifyContent="between" columnGap="m">
-            <Text variant="heading-xs" as="h3">
+            <Text variant="title" as="h3">
               Before switch
             </Text>
             <SwitchStatusIndicator row={row} />
@@ -75,13 +78,17 @@ export function SwitchRecordModal({
                 title={
                   row.cutover_status === 'failed'
                     ? 'This one failed'
-                    : 'Left on Stripe'
+                    : 'Not switched'
                 }
                 description={row.cutover_error}
               />
             </Box>
           ) : null}
-          <TaxAfterSwitchField row={row} migrationId={migrationId} />
+          <TaxAfterSwitchField
+            row={row}
+            migrationId={migrationId}
+            readOnly={readOnly}
+          />
         </Box>
 
         {showCustomer ? (
@@ -94,7 +101,7 @@ export function SwitchRecordModal({
             ) : null}
             {facts.customerId ? (
               <DetailCell
-                label="Stripe customer ID"
+                label="Source customer ID"
                 value={facts.customerId}
                 monospace
               />
@@ -115,7 +122,7 @@ export function SwitchRecordModal({
             ) : null}
             {facts.productId ? (
               <DetailCell
-                label="Stripe product ID"
+                label="Source product ID"
                 value={facts.productId}
                 monospace
               />
@@ -130,26 +137,17 @@ export function SwitchRecordModal({
           {facts.status ? (
             <DetailCell label="Status" value={facts.status} />
           ) : null}
-          <DetailCell
-            label="Payment method"
-            value={
-              row.has_payment_method === false
-                ? 'No payment method'
-                : row.has_payment_method
-                  ? 'Ready to charge'
-                  : null
-            }
-          />
+          <DetailCell label="Payment method" value={paymentMethodDetail(row)} />
           {discount ? <DetailCell label="Discount" value={discount} /> : null}
-          <DetailCell label="Renewal on Stripe" value={facts.renewal} />
+          <DetailCell label="Renewal at source" value={facts.renewal} />
           {facts.automaticTax ? (
             <DetailCell
-              label="Stripe automatic tax"
+              label="Automatic tax at source"
               value={facts.automaticTax}
             />
           ) : null}
           <DetailCell
-            label="Stripe subscription ID"
+            label="Source subscription ID"
             value={facts.sourceId}
             monospace
           />

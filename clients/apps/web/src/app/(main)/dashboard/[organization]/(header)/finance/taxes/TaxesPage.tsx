@@ -6,7 +6,7 @@ import { useTaxJurisdictions, useTaxSummary } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { useDismissed } from '@/hooks/useDismissed'
 import { getAPIParams } from '@/utils/datatable'
-import { fromISODate, toISODate } from '@/utils/metrics'
+import { fromISODate, toISODate, parseAsISODateString } from '@/utils/metrics'
 import { CloseOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -20,7 +20,7 @@ import {
   Button,
 } from '@polar-sh/orbit'
 import { endOfDay, endOfMonth, endOfToday, startOfMonth } from 'date-fns'
-import { parseAsString, useQueryStates } from 'nuqs'
+import { useQueryStates } from 'nuqs'
 import { useMemo } from 'react'
 
 const getDefaultStartDate = () => toISODate(startOfMonth(endOfToday()))
@@ -130,8 +130,8 @@ export default function TaxesPage({
     { startDate: startDateISOString, endDate: endDateISOString },
     setDateRangeParams,
   ] = useQueryStates({
-    startDate: parseAsString.withDefault(getDefaultStartDate()),
-    endDate: parseAsString.withDefault(getDefaultEndDate()),
+    startDate: parseAsISODateString.withDefault(getDefaultStartDate()),
+    endDate: parseAsISODateString.withDefault(getDefaultEndDate()),
   })
 
   const dateRange = useMemo(

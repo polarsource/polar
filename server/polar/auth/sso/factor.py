@@ -114,7 +114,7 @@ class SSOPrivateKeyJWTFactor(SSOFactorMixin, PrivateKeyJWTOIDCFactor):
         self.authorization_parameters = authorization_parameters
 
 
-def build_sso_factor(
+async def build_sso_factor(
     connection: OrganizationSSOConnection,
     *,
     organization_slug: str,
@@ -123,7 +123,7 @@ def build_sso_factor(
     configuration = connection.configuration
     authorization_parameters = configuration["authorization_parameters"]
     if configuration["auth_method"] == OIDCAuthMethod.client_secret:
-        client_secret = configuration.get("client_secret")
+        client_secret = await connection.get_client_secret()
         assert client_secret is not None, (
             "client_secret auth_method requires a client_secret"
         )

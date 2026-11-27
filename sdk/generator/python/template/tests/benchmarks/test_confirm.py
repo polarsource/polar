@@ -6,9 +6,7 @@ from redis import Redis
 
 from polar.outpost.client import CONFIRM_SCRIPT
 from tests.benchmarks import (
-    CHANNEL,
     COLD_UNTIL,
-    EPOCH,
     PENDING_COUNTS,
     encode_pending,
     encode_state,
@@ -52,14 +50,17 @@ def test_confirm_pending_events(
         pipeline.hset(pending_key, items=entries)
         pipeline.evalsha(
             sha,
-            2,
+            4,
+            "outpost:v1:outbox",
+            "outpost:v1:outbox",
             state_key,
             pending_key,
-            identity,
-            CHANNEL,
-            EPOCH,
-            COLD_UNTIL,
             "",
+            "",
+            0,
+            0,
+            COLD_UNTIL,
+            len(ids),
             *ids,
         )
         pipeline.execute()

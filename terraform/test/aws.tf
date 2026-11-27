@@ -44,6 +44,7 @@ module "redis" {
   name       = "polar-test-worker"
   vpc_id     = module.vpc[0].vpc_id
   subnet_ids = module.vpc[0].secondary_private_subnet_ids
+  tags       = local.lambda_worker_tags
 }
 
 resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
@@ -93,6 +94,7 @@ resource "aws_vpc_security_group_ingress_rule" "redis_nlb" {
 locals {
   files_bucket_name        = "polar-test-files"
   files_public_bucket_name = "polar-test-public-files"
+  diagnostics_bucket_name  = "polar-test-diagnostics"
 
   worker_sqs_queue_prefix = "polar-test-tasks"
 
@@ -122,11 +124,11 @@ locals {
   }
 
   lambda_worker_queues = {
-    "high-priority"         = {}
-    "medium-priority"       = { max_parallel_tasks = 8 }
-    "low-priority"          = { max_parallel_tasks = 16, task_time_limit_seconds = 660 }
-    "webhooks"              = { max_parallel_tasks = 16, max_retries = 250 } # Must stay above webhook_event.send's max_retries.
-    "tinybird"              = { max_parallel_tasks = 128 }
+    "high-priority"         = { memory_mb = 1024 }
+    "medium-priority"       = { max_parallel_tasks = 8, memory_mb = 1024 }
+    "low-priority"          = { max_parallel_tasks = 16, task_time_limit_seconds = 660, memory_mb = 1024 }
+    "webhooks"              = { max_parallel_tasks = 16, max_retries = 250, memory_mb = 1024 } # Must stay above webhook_event.send's max_retries.
+    "tinybird"              = { max_parallel_tasks = 128, memory_mb = 1024 }
     "invoices-and-receipts" = { max_parallel_tasks = 3, task_time_limit_seconds = 240 }
   }
 }
@@ -217,6 +219,7 @@ data "aws_iam_policy_document" "s3_access" {
       "s3:GetObjectVersionAttributes",
       "s3:DeleteObject",
       "s3:DeleteObjectVersion",
+      "s3:AbortMultipartUpload",
     ]
     resources = [
       "arn:aws:s3:::${local.files_bucket_name}/*",
@@ -245,6 +248,19 @@ data "aws_iam_policy_document" "s3_access" {
     actions   = ["s3:PutObject"]
     resources = ["arn:aws:s3:::${local.aws_s3_config.logs_bucket_name}/*"]
   }
+
+  statement {
+    sid       = "DiagnosticsWrite"
+    actions   = ["s3:PutObject"]
+    resources = ["arn:aws:s3:::${local.diagnostics_bucket_name}/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "s3_access" {
+  count  = local.test_enabled ? 1 : 0
+  name   = "polar-test-s3-access"
+  role   = module.secrets_kms[0].role_name
+  policy = data.aws_iam_policy_document.s3_access.json
 }
 
 # =============================================================================
@@ -312,6 +328,15 @@ data "aws_iam_policy_document" "lambda_worker_deploy" {
         [for worker in module.lambda_worker_queue : worker.function_name],
       ) :
       "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:${function_name}"
+    ]
+  }
+
+  statement {
+    sid     = "RollEcsServices"
+    actions = ["ecs:UpdateService", "ecs:DescribeServices"]
+    resources = [
+      for service_name in [module.events_api[0].service_name, module.events[0].service_name] :
+      "arn:aws:ecs:us-east-2:${data.aws_caller_identity.current.account_id}:service/${module.ecs_cluster[0].cluster_name}/${service_name}"
     ]
   }
 }

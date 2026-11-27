@@ -5,13 +5,8 @@ import pytest
 
 from polar.sentry import before_breadcrumb, before_send
 
-# before_send does not touch Postgres, MinIO, or the worker.
+# before_send does not touch Postgres or the worker.
 # Override the suite's autouse fixtures so this module can run without them.
-
-
-@pytest.fixture(scope="session", autouse=True)
-def empty_test_bucket(worker_id: str) -> None:
-    return None
 
 
 @pytest.fixture(scope="session", autouse=True)

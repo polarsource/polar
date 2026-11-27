@@ -19,11 +19,6 @@ from polar import tasks  # noqa
 
 from .. import forms
 
-_TASK_DEFINITIONS: dict[str, dramatiq.Actor[Any, Any]] = {
-    name: actor for name, actor in dramatiq.get_broker().actors.items()
-}
-_TaskName = Literal[tuple(_TASK_DEFINITIONS.keys())]  # type: ignore[valid-type]
-
 
 class EnqueueTaskParametersFormBase(forms.BaseForm):
     @model_validator(mode="before")
@@ -70,12 +65,14 @@ class EnqueueTaskFormBase(forms.BaseForm):
 def build_enqueue_task_form_class(
     request: Request, task: str | None
 ) -> type[EnqueueTaskFormBase]:
+    task_definitions = dramatiq.get_broker().actors
+    task_name = Literal[tuple(task_definitions)]  # type: ignore[valid-type]
     field_definitions: dict[str, tuple[type, Any]] = {
         "task": (
             Annotated[
-                _TaskName,  # type: ignore
+                task_name,  # type: ignore
                 forms.SelectField(
-                    [(name, name) for name in sorted(_TASK_DEFINITIONS.keys())],
+                    [(name, name) for name in sorted(task_definitions.keys())],
                     hx_get=str(request.url_for("tasks:enqueue")),
                     hx_trigger="change",
                     hx_target="#modal",
@@ -86,7 +83,7 @@ def build_enqueue_task_form_class(
         ),
     }
     if task is not None:
-        task_function = _TASK_DEFINITIONS[task]
+        task_function = task_definitions[task]
         parameter_definitions: dict[str, tuple[type, Any]] = {}
         for key, type_hint, param_default in _get_function_arguments(task_function.fn):
             if param_default is not inspect.Parameter.empty:

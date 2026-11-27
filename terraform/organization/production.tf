@@ -334,6 +334,76 @@ module "production_github_oidc_backup" {
   permissions_boundary_arn = module.permission_boundary_management.policy_arn
 }
 
+data "aws_iam_policy_document" "github_actions_image_resizer_assume" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type        = "Federated"
+      identifiers = [module.production_github_oidc_backup.oidc_provider_arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:polarsource/polar:ref:refs/heads/main"]
+    }
+  }
+}
+
+resource "aws_iam_role" "github_actions_image_resizer" {
+  name                 = "github-actions-image-resizer"
+  assume_role_policy   = data.aws_iam_policy_document.github_actions_image_resizer_assume.json
+  permissions_boundary = module.permission_boundary_management.policy_arn
+}
+
+data "aws_iam_policy_document" "github_actions_image_resizer" {
+  statement {
+    actions = [
+      "lambda:GetFunction",
+      "lambda:GetFunctionConfiguration",
+      "lambda:PublishVersion",
+      "lambda:UpdateFunctionCode",
+    ]
+    resources = [
+      module.production_image_resizer.function_arn,
+      module.sandbox_image_resizer.function_arn,
+    ]
+  }
+
+  statement {
+    actions = [
+      "lambda:DisableReplication*",
+      "lambda:EnableReplication*",
+      "lambda:GetFunction",
+    ]
+    resources = [
+      "${module.production_image_resizer.function_arn}:*",
+      "${module.sandbox_image_resizer.function_arn}:*",
+    ]
+  }
+
+  statement {
+    actions = [
+      "cloudfront:GetDistributionConfig",
+      "cloudfront:UpdateDistribution",
+    ]
+    resources = [
+      module.production_cloudfront_public_assets.distribution_arn,
+      module.sandbox_cloudfront_assets.distribution_arn,
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "github_actions_image_resizer" {
+  name   = "image-resizer-deploy"
+  role   = aws_iam_role.github_actions_image_resizer.id
+  policy = data.aws_iam_policy_document.github_actions_image_resizer.json
+}
+
 module "production_athena_spans" {
   source = "../modules/athena_spans"
   providers = {

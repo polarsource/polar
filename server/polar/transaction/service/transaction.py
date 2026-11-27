@@ -6,7 +6,8 @@ from typing import Any, cast
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import joinedload, subqueryload
+from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
@@ -56,17 +57,17 @@ class TransactionService(BaseTransactionService):
 
         statement = statement.options(
             # Incurred transactions
-            subqueryload(Transaction.account_incurred_transactions),
+            selectinload(Transaction.account_incurred_transactions),
             # Pledge
-            subqueryload(Transaction.pledge),
+            selectinload(Transaction.pledge),
             # IssueReward
-            subqueryload(Transaction.issue_reward),
+            selectinload(Transaction.issue_reward),
             # Order
-            subqueryload(Transaction.order).options(
+            selectinload(Transaction.order).options(
                 joinedload(Order.product).options(joinedload(Product.organization)),
             ),
             # Payment Transaction
-            subqueryload(Transaction.payment_transaction),
+            selectinload(Transaction.payment_transaction),
         )
 
         if type is not None:
@@ -80,7 +81,7 @@ class TransactionService(BaseTransactionService):
         if exclude_platform_fees:
             statement = statement.where(Transaction.platform_fee_type.is_(None))
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == TransactionSortProperty.created_at:
@@ -100,21 +101,11 @@ class TransactionService(BaseTransactionService):
             select(
                 # Total balance (all transactions)
                 cast(type[int], func.coalesce(func.sum(Transaction.amount), 0)),
-                cast(type[int], func.coalesce(func.sum(Transaction.account_amount), 0)),
                 # Payout balance
                 cast(
                     type[int],
                     func.coalesce(
                         func.sum(Transaction.amount).filter(
-                            Transaction.type == TransactionType.payout
-                        ),
-                        0,
-                    ),
-                ),
-                cast(
-                    type[int],
-                    func.coalesce(
-                        func.sum(Transaction.account_amount).filter(
                             Transaction.type == TransactionType.payout
                         ),
                         0,
@@ -143,28 +134,6 @@ class TransactionService(BaseTransactionService):
                         0,
                     ),
                 ),
-                cast(
-                    type[int],
-                    func.coalesce(
-                        func.sum(Transaction.account_amount).filter(
-                            or_(
-                                Transaction.type.in_(
-                                    (
-                                        TransactionType.payout,
-                                        TransactionType.payout_reversal,
-                                    )
-                                ),
-                                Transaction.platform_fee_type.in_(
-                                    PlatformFeeType.payout_fee_types()
-                                ),
-                                Transaction.created_at
-                                + Account.payout_transaction_delay
-                                <= func.now(),
-                            )
-                        ),
-                        0,
-                    ),
-                ),
             )
             .join(Account, Account.id == Transaction.account_id)
             .where(Transaction.account_id == account.id)
@@ -173,25 +142,13 @@ class TransactionService(BaseTransactionService):
         result = await session.execute(statement)
 
         currency = "usd"  # FIXME: Main Polar currency
-        account_currency = account.currency
-        assert account_currency is not None
 
         try:
-            (
-                amount,
-                account_amount,
-                payout_amount,
-                account_payout_amount,
-                available_amount,
-                available_account_amount,
-            ) = result.one()._tuple()
+            amount, payout_amount, available_amount = result.one()._tuple()
         except NoResultFound:
             amount = 0
-            account_amount = 0
             payout_amount = 0
-            account_payout_amount = 0
             available_amount = 0
-            available_account_amount = 0
 
         released_at = Transaction.created_at + Account.payout_transaction_delay
         release_day = func.date_trunc("day", released_at)
@@ -223,9 +180,6 @@ class TransactionService(BaseTransactionService):
         held_releases = held_result.tuples().all()
 
         held_amount = sum(amount for _, amount, _ in held_releases)
-        held_account_amount = sum(
-            account_amount for _, _, account_amount in held_releases
-        )
         fully_available_at = held_releases[-1][0] if held_releases else None
         next_release_at, next_release_amount, next_release_account_amount = next(
             (release for release in held_releases if release[1] > 0),
@@ -233,34 +187,19 @@ class TransactionService(BaseTransactionService):
         )
 
         return TransactionsSummary(
-            balance=TransactionsBalance(
-                currency=currency,
-                amount=amount,
-                account_currency=account_currency,
-                account_amount=account_amount,
-            ),
+            balance=TransactionsBalance(currency=currency, amount=amount),
             available_balance=TransactionsBalance(
-                currency=currency,
-                amount=available_amount,
-                account_currency=account_currency,
-                account_amount=available_account_amount,
+                currency=currency, amount=available_amount
             ),
             held_balance=TransactionsHeldBalance(
                 currency=currency,
                 amount=held_amount,
-                account_currency=account_currency,
-                account_amount=held_account_amount,
                 next_release_at=next_release_at,
                 next_release_amount=next_release_amount,
                 next_release_account_amount=next_release_account_amount,
                 fully_available_at=fully_available_at,
             ),
-            payout=TransactionsBalance(
-                currency=currency,
-                amount=payout_amount,
-                account_currency=account_currency,
-                account_amount=account_payout_amount,
-            ),
+            payout=TransactionsBalance(currency=currency, amount=payout_amount),
         )
 
     async def get_transactions_sum(
@@ -282,7 +221,7 @@ class TransactionService(BaseTransactionService):
 
     def _get_readable_transactions_statement(
         self, auth_subject: AuthSubject[User]
-    ) -> Select[Any]:
+    ) -> Select[*tuple[Any, ...]]:
         readable_org_ids = select_accessible_org_ids(
             auth_subject, permission=OrganizationPermission.finance_read
         )
@@ -294,13 +233,7 @@ class TransactionService(BaseTransactionService):
                 onclause=Organization.account_id == Account.id,
                 isouter=True,
             )
-            .join(User, onclause=User.account_id == Account.id, isouter=True)
-            .where(
-                or_(
-                    User.id == auth_subject.subject.id,
-                    Organization.id.in_(readable_org_ids),
-                )
-            )
+            .where(Organization.id.in_(readable_org_ids))
         )
 
         return statement

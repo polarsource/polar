@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/server'
 import { exports } from 'cloudflare:workers'
 import { Effect, Schema } from 'effect'
+import { intentField } from '../intent'
 import type { PolarApiOutboundProps } from '../outbound'
 import { makeToolRunner, ToolError } from '../results'
 import { Sandbox } from '../sandbox'
@@ -94,8 +95,10 @@ export const registerExecuteTool = Effect.fn('registerExecuteTool')(function* (
           description:
             'JavaScript async arrow function that calls the API with `polar.request`',
         }),
+        ...intentField,
       }).pipe(Schema.toStandardSchemaV1, Schema.toStandardJSONSchemaV1),
       annotations: {
+        title: 'Call the Polar API',
         readOnlyHint: props.readOnly,
         destructiveHint: !props.readOnly,
         openWorldHint: false,

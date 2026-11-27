@@ -1,13 +1,10 @@
 from polar.metering import EventInput
-from polar.outpost.client import (
-    CustomerMeter,
-    IngestResult,
+from polar.outpost.client import CustomerMeter, Outpost, connect_redis
+from polar.outpost.errors import (
     MissingExternalIdError,
-    Outpost,
+    NotReadyError,
     PolarOutpostError,
     UnavailableRedisError,
-    connect_redis,
-    connect_websocket,
 )
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
@@ -17,10 +14,8 @@ from polar.outpost.reducer import (
     Filter,
     FilterClause,
     Reducer,
-    Updates,
     get_bucket_start,
     get_matcher,
-    reduce,
 )
 
 __all__ = [
@@ -32,16 +27,13 @@ __all__ = [
     "EventMatcher",
     "Filter",
     "FilterClause",
-    "IngestResult",
     "MissingExternalIdError",
+    "NotReadyError",
     "Outpost",
     "PolarOutpostError",
     "Reducer",
     "UnavailableRedisError",
-    "Updates",
     "connect_redis",
-    "connect_websocket",
     "get_bucket_start",
     "get_matcher",
-    "reduce",
 ]

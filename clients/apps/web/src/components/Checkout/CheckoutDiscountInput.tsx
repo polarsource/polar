@@ -1,5 +1,6 @@
 'use client'
 
+import { useWatch } from 'react-hook-form'
 import { useCheckoutForm } from '@polar-sh/checkout/providers'
 import type { schemas } from '@polar-sh/client'
 import {
@@ -16,7 +17,7 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useState } from 'react'
+import { useCallback, useId, useState } from 'react'
 
 const XIcon = ({ className }: { className?: string }) => {
   return (
@@ -55,12 +56,13 @@ export const CheckoutDiscountInput = ({
 }: CheckoutDiscountInputProps) => {
   const t = useTranslations(locale)
   const [expanded, setExpanded] = useState(false)
+  const discountCodeInputId = useId()
   const { form } = useCheckoutForm()
-  const { control, setValue, clearErrors, watch } = form
+  const { control, setValue, clearErrors } = form
 
   const hasDiscount = !!checkout.discount
 
-  const discountCode = watch('discount_code')
+  const discountCode = useWatch({ control, name: 'discount_code' })
 
   const addDiscountCode = useCallback(async () => {
     if (!discountCode) return
@@ -106,7 +108,10 @@ export const CheckoutDiscountInput = ({
     <Form {...form}>
       <div className="flex flex-col gap-1">
         {!collapsible && (
-          <label className="flex flex-row items-center justify-between text-sm">
+          <label
+            htmlFor={discountCodeInputId}
+            className="flex flex-row items-center justify-between text-sm"
+          >
             <span>{t('checkout.form.discountCode')}</span>
             <span className="dark:text-polar-500 text-xs text-gray-500">
               {t('checkout.form.optional')}
@@ -121,6 +126,7 @@ export const CheckoutDiscountInput = ({
               <FormControl>
                 <div className="relative">
                   <Input
+                    id={discountCodeInputId}
                     type="text"
                     autoComplete="off"
                     placeholder={
@@ -135,7 +141,7 @@ export const CheckoutDiscountInput = ({
                       addDiscountCode()
                     }}
                   />
-                  <div className="absolute inset-y-0 right-1 z-10 flex items-center">
+                  <div className="absolute inset-y-0 inset-e-1 z-10 flex items-center">
                     {!hasDiscount && discountCode && (
                       <Button
                         type="button"

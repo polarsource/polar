@@ -2,6 +2,8 @@ import inspect
 from typing import NotRequired, Required, TypedDict, Unpack
 from unittest.mock import MagicMock
 
+import dramatiq
+import pytest
 from starlette.datastructures import FormData
 
 from polar.backoffice.tasks.forms import (
@@ -121,3 +123,14 @@ def test_blank_optional_parameters_fall_back_to_default() -> None:
     assert parameters["member_id"] is None
     assert parameters["subscription_id"] is None
     assert parameters["order_id"] is None
+
+
+def test_task_selector_includes_actors_registered_after_import(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    broker = dramatiq.get_broker()
+    name = "test.late_actor"
+    monkeypatch.setitem(broker.actors, name, broker.get_actor("auth.delete_expired"))
+
+    form_class = build_enqueue_task_form_class(_request(), name)
+    assert form_class.model_validate({"task": name}).task == name

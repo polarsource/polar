@@ -16,7 +16,6 @@ from sqlalchemy import (
     String,
     Uuid,
     func,
-    text,
 )
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
@@ -28,7 +27,6 @@ from sqlalchemy.orm import (
 )
 
 from polar.kit.db.models import RecordModel
-from polar.kit.external_id import ExternalIDMixin
 from polar.kit.math import polar_round
 from polar.kit.metadata import MetadataMixin
 
@@ -53,7 +51,7 @@ class DiscountDuration(StrEnum):
     repeating = "repeating"
 
 
-class Discount(MetadataMixin, ExternalIDMixin, RecordModel):
+class Discount(MetadataMixin, RecordModel):
     __tablename__ = "discounts"
 
     name: Mapped[str] = mapped_column(CITEXT, nullable=False)
@@ -114,6 +112,16 @@ class Discount(MetadataMixin, ExternalIDMixin, RecordModel):
     def is_applicable(self, product: "Product", currency: str) -> bool:
         raise NotImplementedError()
 
+    def applies_to_product(self, product: "Product") -> bool:
+        if len(self.products) == 0 or product in self.products:
+            return True
+        if not self.organization.is_config_as_code_enabled:
+            return False
+        # Restricting a product also covers its other catalog versions
+        return product.external_id is not None and product.external_id in {
+            p.external_id for p in self.products if p.deleted_at is None
+        }
+
     def is_repetition_expired(
         self,
         discount_applied_at: datetime,
@@ -158,13 +166,6 @@ class Discount(MetadataMixin, ExternalIDMixin, RecordModel):
             unique=True,
             postgresql_where="deleted_at IS NULL",
         ),
-        Index(
-            "ix_discounts_organization_id_external_id",
-            "organization_id",
-            "external_id",
-            unique=True,
-            postgresql_where=text("deleted_at IS NULL AND external_id IS NOT NULL"),
-        ),
     )
 
     __mapper_args__ = {
@@ -185,10 +186,7 @@ class DiscountFixed(Discount):
         if currency not in self.amounts:
             return False
 
-        if len(self.products) == 0:
-            return True
-
-        return product in self.products
+        return self.applies_to_product(product)
 
     def get_discount_amount(self, amount: int, currency: str) -> int:
         return min(self.amounts[currency], amount)
@@ -252,9 +250,7 @@ class DiscountPercentage(Discount):
         return [self.get_discount_amount(amount, currency) for amount in amounts]
 
     def is_applicable(self, product: "Product", currency: str) -> bool:
-        if len(self.products) == 0:
-            return True
-        return product in self.products
+        return self.applies_to_product(product)
 
     __mapper_args__ = {
         "polymorphic_identity": DiscountType.percentage,

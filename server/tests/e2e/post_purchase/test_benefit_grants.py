@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
@@ -307,7 +307,6 @@ class TestBenefitGrants:
         product_with_downloadable: Product,
         app: FastAPI,
     ) -> None:
-        # Given a product with a downloadable file benefit (real file in MinIO)
         # When the customer purchases it
         result = await complete_purchase(
             client,

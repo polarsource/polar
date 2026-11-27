@@ -4,7 +4,7 @@ from typing import Annotated
 
 import structlog
 from opentelemetry import trace
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.exceptions import PolarTaskError
 from polar.kit.utils import utc_now
@@ -16,6 +16,7 @@ from polar.subscription.repository import SubscriptionRepository
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
+    RedisMiddleware,
     TaskPriority,
     actor,
     enqueue_job,
@@ -100,7 +101,17 @@ async def subscription_cycle(
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
-                await subscription_service.cycle(session, ctx, subscription)
+                if (
+                    subscription.organization.can_renew_subscriptions
+                    and subscription_service.should_expire_trial(subscription)
+                ):
+                    await subscription_service.expire_trial(session, ctx, subscription)
+                else:
+                    await subscription_service.cycle(session, ctx, subscription)
+
+            # A zero-day reactivation period ends the trial and revokes it right away
+            if subscription_service.is_trial_ended_expired(subscription):
+                await subscription_service.revoke_trial_ended(session, subscription)
         else:
             # cycle_meters raises SubscriptionMeterCycleLag on a multi-period lag; we
             # let it propagate — the subscription stays halted (lock set) for a human.
@@ -114,7 +125,7 @@ async def subscription_cycle(
 async def subscription_cancel_for_organization(
     organization_id: Annotated[uuid.UUID, LoggableField],
 ) -> None:
-    """Cancel all billable subscriptions of a denied/blocked/offboarded org,
+    """Cancel all billable and paused subscriptions of a denied/blocked/offboarded org,
     enqueued per-organization by ``organization.cancel_expired_subscriptions``.
 
     Cancels one batch per run and re-enqueues itself while subscriptions remain,
@@ -182,11 +193,15 @@ async def subscription_update_meters(
             subscription_id,
             options=(
                 selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
+                joinedload(Subscription.customer),
+                joinedload(Subscription.organization),
             ),
         )
         if subscription is None:
             raise SubscriptionDoesNotExist(subscription_id)
-        await subscription_service.update_meters(session, subscription)
+        await subscription_service.update_meters(
+            session, RedisMiddleware.get(), subscription
+        )
 
 
 @actor(
@@ -347,6 +362,37 @@ async def send_trial_conversion_reminder(
         await subscription_service.send_trial_conversion_reminder_email(
             session, subscription
         )
+
+
+@actor(
+    actor_name="subscription.cancel_expired_trial_ended",
+    priority=TaskPriority.LOW,
+)
+async def cancel_expired_trial_ended(
+    subscription_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
+    """Cancel a trial_ended subscription. Enqueued by the trial-ended scheduler
+    once its ``ends_at`` is reached (see ``SubscriptionTrialEndedJobStore``)."""
+    async with AsyncSessionMaker() as session:
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.get_by_id(
+            subscription_id,
+            options=repository.get_eager_options(),
+            for_update=True,
+        )
+        if subscription is None:
+            raise SubscriptionDoesNotExist(subscription_id)
+
+        if not subscription_service.is_trial_ended_expired(subscription):
+            log.info(
+                "Subscription is no longer an expired trial_ended, skipping cancel",
+                subscription_id=subscription_id,
+            )
+            await repository.release_scheduler_lock(subscription)
+            return
+
+        await subscription_service.revoke_trial_ended(session, subscription)
+        await repository.release_scheduler_lock(subscription)
 
 
 @actor(actor_name="subscription.bulk_update", priority=TaskPriority.LOW)

@@ -21,7 +21,7 @@ TRIGGERS = [(JOB_NAME, CronTrigger(minute="*", timezone=UTC))]
 
 
 @pytest.fixture
-def engine(worker_id: str) -> Iterator[Engine]:
+def engine(worker_id: str, initialize_test_database: None) -> Iterator[Engine]:
     engine = create_engine(get_database_url(worker_id, "psycopg"))
     yield engine
     with engine.begin() as connection:

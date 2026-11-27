@@ -60,6 +60,34 @@ Events wait in the buffer until it sends the next batch, so make sure they leave
 
 See [Metering](https://github.com/polarsource/polar/tree/main/sdk/typescript#metering) in the SDK docs for retries, timeouts and delivery errors.
 
+## Declare the events in `polar.config.ts`
+
+If you manage Polar with [`@polar-sh/config`](https://www.npmjs.com/package/@polar-sh/config), declare each event you pass to `ingest()` under the same name. The S3, Stream and Delta Time strategies export a schema of the metadata they send. LLM events need no schema: `withTokens()` declares the token usage in `_llm`. Add `withCosts()` to any event you set `cost()` on.
+
+```typescript
+import { defineConfig } from '@polar-sh/config'
+import { DeltaTimeStrategyContext } from '@polar-sh/ingestion/strategies/DeltaTime'
+import { S3StrategyContext } from '@polar-sh/ingestion/strategies/S3'
+
+export default defineConfig({
+  events: ({ event }) => ({
+    ai_usage: event().withTokens().withCosts(),
+    uploads: event(S3StrategyContext),
+    compute: event(DeltaTimeStrategyContext),
+  }),
+  meters: ({ meter, events }) => ({
+    tokens: meter('Tokens')
+      .on(events.ai_usage)
+      .unit('token')
+      .sum('_llm.total_tokens'),
+    storage: meter('Storage').on(events.uploads).sum('bytes'),
+    compute: meter('Compute').on(events.compute).sum('deltaTime'),
+  }),
+})
+```
+
+If you pass your own metadata to `ingest()`, describe that metadata with your own schema instead.
+
 ## LLM Strategy
 
 The LLM Strategy ingests the tokens used by every model call, so you can charge customers for AI usage and see what each of them costs you in [Cost Insights](https://polar.sh/docs/features/cost-insights/introduction).

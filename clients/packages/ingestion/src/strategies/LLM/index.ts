@@ -1,4 +1,3 @@
-import * as Schema from 'effect/Schema'
 import { type IngestionContext, LLMUsage } from '../../ingestion'
 import {
   IngestionStrategy,
@@ -25,22 +24,8 @@ export type { LLMStrategyAnthropic } from './anthropic'
 export type { LLMStrategyOpenAI } from './openai'
 export type { LLMStrategyTanStackAI } from './tanstack'
 
-export const LLMStrategyContext = Schema.toStandardSchemaV1(
-  Schema.Struct({
-    ...LLMUsage.fields,
-    strategy: Schema.Literal('LLM'),
-    _llm: LLMUsage,
-    _cost: Schema.optionalKey(
-      Schema.Struct({
-        amount: Schema.Union([Schema.Finite, Schema.String]),
-        currency: Schema.String,
-      }),
-    ),
-  }),
-)
-
 export type LLMStrategyContext = IngestionContext<
-  typeof LLMStrategyContext.Type
+  typeof LLMUsage.Type & { strategy: 'LLM'; _llm: typeof LLMUsage.Type }
 >
 
 export type CostResolver = (

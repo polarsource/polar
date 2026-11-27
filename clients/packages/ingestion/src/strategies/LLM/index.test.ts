@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { LLMStrategy, LLMStrategyContext } from '.'
+import { LLMStrategy } from '.'
 
 const mockEventsIngest = vi.fn()
 
@@ -34,20 +34,6 @@ describe('LLMStrategy', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
-  })
-
-  it('should send a context that LLMStrategyContext accepts', async () => {
-    const llm = Ingestion()
-      .strategy(new LLMStrategy(mockLLMClient))
-      .ingest('prompt-tokens')
-    const execute = vi.spyOn(llm, 'execute')
-
-    await llm.client({ customerId }).doGenerate({ prompt: [] })
-
-    const [context] = execute.mock.calls[0]
-    expect(await LLMStrategyContext['~standard'].validate(context)).toEqual({
-      value: context,
-    })
   })
 
   it('should call the meter handler with the correct context', async () => {

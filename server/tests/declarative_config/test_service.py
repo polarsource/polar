@@ -5778,6 +5778,22 @@ class TestExport:
         assert exported.default_settings == exported.config.settings
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_default_settings_ignore_the_organizations_settings(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        organization.default_tax_behavior = TaxBehaviorOption.inclusive
+        await save_fixture(organization)
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+
+        assert exported.config.settings.payments.tax == TaxBehaviorOption.inclusive
+        assert exported.default_settings.payments.tax == TaxBehaviorOption.location
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_round_trips_custom_fields(
         self,
         save_fixture: SaveFixture,

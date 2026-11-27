@@ -32,4 +32,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           jpegQuality: "85"
           minPctChange: "20"
-          ignorePaths: "node_modules/**,server/tests/fixtures/**"
+          ignorePaths: "node_modules/**,server/tests/fixtures/**,clients/apps/web/public/assets/landing/hero/**"

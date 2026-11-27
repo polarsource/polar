@@ -1,0 +1,19 @@
+server/scripts/delete_non_owner_meter_resets.py
+  s_ec7be1e6abd9fa::t_15e11e2b1e84f6 69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "05834a99ec059ae5948924766b4045253800e0e4",
+  "prompts": {},
+  "sessions": {
+    "s_ec7be1e6abd9fa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a7a92383-1b3b-490b-b2db-2a2e8d406e05",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

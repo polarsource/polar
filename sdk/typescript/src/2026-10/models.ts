@@ -942,7 +942,7 @@ export type PaymentTrigger =
   | "retry_admin"
   | "retry_payment_alert";
 /**
- * Permission
+ * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -17460,14 +17460,6 @@ You can store up to **50 key-value pairs**.
    */
   organization_id?: string | null;
   /**
-   * The ID of the customer the order is for. Must belong to the order's organization.
-   */
-  customer_id: string;
-  /**
-   * The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.
-   */
-  product_id: string;
-  /**
    * The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency.
    */
   currency?: string | null;
@@ -17483,6 +17475,14 @@ You can store up to **50 key-value pairs**.
    * A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name.
    */
   description?: string | null;
+  /**
+   * The ID of the customer the order is for. Must belong to the order's organization.
+   */
+  customer_id: string;
+  /**
+   * The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.
+   */
+  product_id: string;
 }
 
 /**

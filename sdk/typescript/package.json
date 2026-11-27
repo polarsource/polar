@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/sdk",
-  "version": "1.3.3",
+  "version": "1.4.0",
   "description": "Polar SDK — A billing platform for the intelligence era",
   "keywords": [
     "api",

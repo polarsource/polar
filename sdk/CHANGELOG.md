@@ -10,6 +10,25 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-27
+
+### Added
+
+- 2027-01: customer state (`customers.getState`, `customers.getStateExternal` and the `customer.state_changed` webhook) includes the external ID next to each Polar ID: `external_product_id` on `active_subscriptions`, `external_benefit_id` on `granted_benefits` and `external_meter_id` on `active_meters`. Each is `null` when the product, benefit or meter has no external ID.
+- 2027-01: `orders.create` references the customer by `customer_id` or `external_customer_id`, and the product by `product_id` or `external_product_id`. It also accepts `currency`, `amount`, `units` and `description`, and throws `OffSessionChargesNotEnabled` (403).
+- 2027-01: `subscriptions.create` accepts `external_customer_id` together with `external_product_id`.
+- 2027-01: `checkouts.update` accepts `external_product_id` to switch the checkout's product by external ID.
+
+### Changed
+
+- 2027-01: `currency` on `subscriptions.create` is no longer nullable. Leave it out instead of sending `null`.
+
+### Removed
+
+- 2027-01: `external_id` on discounts, in the create, update and read schemas and the `discounts.list` filter.
+- 2027-01: `webhooks.getExternalWebhookEndpoint` and its `AmbiguousExternalWebhookEndpointID` error.
+- 2027-01: the `staged_events_ingest_enabled` and `lemon_squeezy_migration_enabled` organization feature settings.
+
 ## [1.3.3] - 2026-11-23
 
 ### Fixed
@@ -83,7 +102,8 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 - Generate next 2027-01 version.
 
-[Unreleased]: https://github.com/polarsource/polar/compare/sdk%2F1.3.3...HEAD
+[Unreleased]: https://github.com/polarsource/polar/compare/sdk%2F1.4.0...HEAD
+[1.4.0]: https://github.com/polarsource/polar/compare/sdk%2F1.3.3...sdk%2F1.4.0
 [1.3.3]: https://github.com/polarsource/polar/compare/sdk%2F1.3.2...sdk%2F1.3.3
 [1.3.2]: https://github.com/polarsource/polar/compare/sdk%2F1.3.1...sdk%2F1.3.2
 [1.3.1]: https://github.com/polarsource/polar/compare/sdk%2F1.3.0...sdk%2F1.3.1

@@ -2491,12 +2491,6 @@ You can store up to **50 key-value pairs**."""
     organization_id: typing.NotRequired[str | None]
     """The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization."""
 
-    customer_id: str
-    """The ID of the customer the order is for. Must belong to the order's organization."""
-
-    product_id: str
-    """The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported."""
-
     currency: typing.NotRequired[str | None]
     """The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency."""
 
@@ -2508,6 +2502,12 @@ You can store up to **50 key-value pairs**."""
 
     description: typing.NotRequired[str | None]
     """A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name."""
+
+    customer_id: str
+    """The ID of the customer the order is for. Must belong to the order's organization."""
+
+    product_id: str
+    """The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported."""
 
 
 class OrderFinalize(typing.TypedDict):

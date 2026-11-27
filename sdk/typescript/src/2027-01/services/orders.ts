@@ -4,6 +4,9 @@ import type {
   MetadataQuery,
   Order,
   OrderCreate,
+  OrderCreateExternal,
+  OrderCreateExternalCustomer,
+  OrderCreateExternalProduct,
   OrderExportColumn,
   OrderFinalize,
   OrderInvoice,
@@ -17,6 +20,7 @@ import type {
 import {
   HTTPValidationError,
   MissingInvoiceBillingDetails,
+  OffSessionChargesNotEnabled,
   OrderNotDraft,
   OrderNotEligibleForInvoice,
   OrdersFinalize402Error,
@@ -146,6 +150,9 @@ export const createOrders = (client: ClientBase) => {
    * method. The order is created with `status=draft` and no invoice number;
    * call `POST /v1/orders/{id}/finalize` to attempt the charge.
    *
+   * Reference the customer by `customer_id` or `external_customer_id`, and the
+   * product by `product_id` or `external_product_id`.
+   *
    * The organization must have the `off_session_charges_enabled` feature flag.
    *
    * **Scopes**: `orders:write`
@@ -156,14 +163,23 @@ export const createOrders = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {OffSessionChargesNotEnabled} Off-session charges are not enabled for this organization.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body: OrderCreate, requestOptions?: RequestOptions): Promise<Order> => {
+  return async (
+    body:
+      | OrderCreate
+      | OrderCreateExternalCustomer
+      | OrderCreateExternalProduct
+      | OrderCreateExternal,
+    requestOptions?: RequestOptions,
+  ): Promise<Order> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest("POST", "/v1/orders/", pathParams, queryParams, body);
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<Order>(response, "json", {
+      403: OffSessionChargesNotEnabled,
       422: HTTPValidationError,
     });
   };

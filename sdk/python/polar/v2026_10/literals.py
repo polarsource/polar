@@ -926,7 +926,6 @@ PaymentTrigger: typing.TypeAlias = typing.Annotated[
 Permission: typing.TypeAlias = typing.Annotated[
     typing.Literal["pull", "triage", "push", "maintain", "admin"], _OPEN_ENUM
 ]
-"""The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role)."""
 PresentmentCurrency: typing.TypeAlias = typing.Annotated[
     typing.Literal[
         "aed",

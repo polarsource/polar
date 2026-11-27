@@ -123,13 +123,6 @@ class AmbiguousExternalMeterID:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
-class AmbiguousExternalWebhookEndpointID:
-    error: typing.Literal["AmbiguousExternalWebhookEndpointID"]
-
-    detail: str
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
 class AttachedCustomField:
     """Schema of a custom field attached to a resource."""
 
@@ -5407,6 +5400,9 @@ class CustomerStateBenefitGrant:
     benefit_id: str
     """The ID of the benefit concerned by this grant."""
 
+    external_benefit_id: str | None
+    """The external ID of the benefit concerned by this grant, if any. It stays the same across benefit versions."""
+
     benefit_type: BenefitType
     """The type of the benefit concerned by this grant."""
 
@@ -5507,6 +5503,9 @@ class CustomerStateMeter:
     meter_id: str
     """The ID of the meter."""
 
+    external_meter_id: str | None
+    """The external ID of the meter, if any. It stays the same across meter versions."""
+
     consumed_units: float
     """The number of consumed units."""
 
@@ -5572,6 +5571,9 @@ class CustomerStateSubscription:
 
     product_id: str
     """The ID of the subscribed product."""
+
+    external_product_id: str | None
+    """The external ID of the subscribed product, if any. It stays the same across product versions."""
 
     discount_id: str | None
     """The ID of the applied discount, if any."""
@@ -6034,9 +6036,6 @@ class DiscountFixedOnceForeverDuration:
     id: str
     """The ID of the object."""
 
-    external_id: str | None
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: MetadataOutputType
 
     name: str
@@ -6083,9 +6082,6 @@ class DiscountFixedOnceForeverDurationBase:
 
     id: str
     """The ID of the object."""
-
-    external_id: str | None
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: MetadataOutputType
 
@@ -6137,9 +6133,6 @@ class DiscountFixedRepeatDuration:
     id: str
     """The ID of the object."""
 
-    external_id: str | None
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: MetadataOutputType
 
     name: str
@@ -6189,9 +6182,6 @@ class DiscountFixedRepeatDurationBase:
     id: str
     """The ID of the object."""
 
-    external_id: str | None
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: MetadataOutputType
 
     name: str
@@ -6239,9 +6229,6 @@ class DiscountPercentageOnceForeverDuration:
     id: str
     """The ID of the object."""
 
-    external_id: str | None
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: MetadataOutputType
 
     name: str
@@ -6288,9 +6275,6 @@ class DiscountPercentageOnceForeverDurationBase:
 
     id: str
     """The ID of the object."""
-
-    external_id: str | None
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: MetadataOutputType
 
@@ -6342,9 +6326,6 @@ class DiscountPercentageRepeatDuration:
     id: str
     """The ID of the object."""
 
-    external_id: str | None
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: MetadataOutputType
 
     name: str
@@ -6393,9 +6374,6 @@ class DiscountPercentageRepeatDurationBase:
 
     id: str
     """The ID of the object."""
-
-    external_id: str | None
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: MetadataOutputType
 
@@ -9124,17 +9102,11 @@ class OrganizationFeatureSettings:
     merchant_migration_enabled: bool = False
     """If this organization can migrate its billing from another provider (e.g. Stripe) to Polar."""
 
-    staged_events_ingest_enabled: bool = False
-    """If this organization's ingested events are queued in `staged_events` and moved to `events` out of band."""
-
     config_as_code_enabled: bool = False
     """If this organization can manage its configuration from a declarative config document."""
 
     reducer_billing_enabled: bool = False
     """If this organization's metered usage is billed from the reducer instead of the legacy billing entries."""
-
-    lemon_squeezy_migration_enabled: bool = False
-    """If this organization can migrate its billing from Lemon Squeezy to Polar."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)

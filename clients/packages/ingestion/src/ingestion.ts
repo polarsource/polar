@@ -102,32 +102,50 @@ const encodeCustomer = Schema.encodeSync(
   ]),
 )
 
-const customerKeys = new Set([
-  'customerId',
-  'externalCustomerId',
-  'customer_id',
-  'external_customer_id',
-])
+const optionalString = Schema.optional(Schema.NullOr(Schema.String))
 
-const snakeCaseKeys: Record<string, string> = {
+const eventFields = {
+  name: Schema.String,
+  timestamp: Schema.optional(Schema.Unknown),
+  organizationId: optionalString,
+  externalId: optionalString,
+  parentId: optionalString,
+  metadata: Schema.optional(Schema.Unknown),
+}
+
+const eventKeys = {
   organizationId: 'organization_id',
   externalId: 'external_id',
   parentId: 'parent_id',
-  memberId: 'member_id',
-  externalMemberId: 'external_member_id',
-}
+} as const
 
-const encodeEvent = (
-  event: IngestionEvent | IngestionCamelCaseEvent,
-): IngestionEvent =>
-  ({
-    ...Object.fromEntries(
-      Object.entries(event)
-        .filter(([key]) => !customerKeys.has(key))
-        .map(([key, value]) => [snakeCaseKeys[key] ?? key, value]),
+const encodeEvent = Schema.encodeUnknownSync(
+  Schema.Union([
+    Schema.Struct({
+      ...eventFields,
+      customerId: Schema.String,
+      memberId: optionalString,
+    }).pipe(
+      Schema.encodeKeys({
+        ...eventKeys,
+        customerId: 'customer_id',
+        memberId: 'member_id',
+      }),
     ),
-    ...encodeCustomer(event),
-  }) as IngestionEvent
+    Schema.Struct({
+      ...eventFields,
+      externalCustomerId: Schema.String,
+      externalMemberId: optionalString,
+    }).pipe(
+      Schema.encodeKeys({
+        ...eventKeys,
+        externalCustomerId: 'external_customer_id',
+        externalMemberId: 'external_member_id',
+      }),
+    ),
+    Schema.Record(Schema.String, Schema.Unknown),
+  ]),
+)
 
 const toEventMetadata = (
   metadata: Record<string, IngestionMetadataValue | models.CostMetadataInput>,
@@ -232,7 +250,7 @@ export function Ingestion(config?: IngestionTokenConfig | Metering) {
     }) satisfies IngestionStrategyAttacher,
     ingest: (events: (IngestionEvent | IngestionCamelCaseEvent)[]) =>
       createTokenClient(config).events.ingest({
-        events: events.map(encodeEvent),
+        events: events.map((event) => encodeEvent(event) as IngestionEvent),
       }),
   }
 }

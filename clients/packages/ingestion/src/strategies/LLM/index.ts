@@ -7,6 +7,11 @@ import {
 } from '../../strategy'
 import type { models } from '@polar-sh/sdk/2027-01'
 import { aiSdkMethods, type LLMStrategyAISDK } from './aiSdk'
+import {
+  anthropicClient,
+  isAnthropic,
+  type LLMStrategyAnthropic,
+} from './anthropic'
 import { isOpenAI, type LLMStrategyOpenAI, openAIClient } from './openai'
 import {
   isTanStackAI,
@@ -16,6 +21,7 @@ import {
 import type { Identity, Usage } from './usage'
 
 export type { LLMStrategyAISDK } from './aiSdk'
+export type { LLMStrategyAnthropic } from './anthropic'
 export type { LLMStrategyOpenAI } from './openai'
 export type { LLMStrategyTanStackAI } from './tanstack'
 
@@ -56,9 +62,14 @@ const context = (identity: Identity, usage: Usage): LLMStrategyContext => {
   return { ...llm, strategy: 'LLM', _llm: llm }
 }
 
+type LLMStrategyModel =
+  | LLMStrategyAISDK
+  | LLMStrategyTanStackAI
+  | LLMStrategyOpenAI
+  | LLMStrategyAnthropic
+
 export class LLMStrategy<
-  TModel extends LLMStrategyAISDK | LLMStrategyTanStackAI | LLMStrategyOpenAI =
-    LLMStrategyAISDK,
+  TModel extends LLMStrategyModel = LLMStrategyAISDK,
 > extends IngestionStrategy<LLMStrategyContext, TModel> {
   private model: TModel
 
@@ -78,11 +89,14 @@ export class LLMStrategy<
       }
     }
 
-    const model: LLMStrategyAISDK | LLMStrategyTanStackAI | LLMStrategyOpenAI =
-      this.model
+    const model: LLMStrategyModel = this.model
 
     if (isOpenAI(model)) {
       return openAIClient(model, ingest) as TModel
+    }
+
+    if (isAnthropic(model)) {
+      return anthropicClient(model, ingest) as TModel
     }
 
     const methods: Record<PropertyKey, unknown> = isTanStackAI(model)

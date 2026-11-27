@@ -1029,10 +1029,7 @@ class CustomerService:
         customer_meter_repository = CustomerMeterRepository.from_session(session)
         customer.active_meters = await customer_meter_repository.get_all_by_customer(
             customer.id,
-            options=(
-                joinedload(CustomerMeter.customer),
-                joinedload(CustomerMeter.meter),
-            ),
+            options=(joinedload(CustomerMeter.meter),),
         )
 
         state = _CustomerStateAdapter.validate_python(customer, from_attributes=True)

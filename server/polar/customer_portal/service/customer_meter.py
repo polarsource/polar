@@ -6,7 +6,7 @@ from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject, Customer, Member
 from polar.customer_meter.service import customer_meter as customer_meter_service
-from polar.kit.db.postgres import AsyncSession
+from polar.kit.db.postgres import AsyncReadSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import CustomerMeter, Meter
@@ -19,7 +19,7 @@ from ..sorting.customer_meter import CustomerCustomerMeterSortProperty
 class CustomerMeterService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         redis: Redis,
         auth_subject: AuthSubject[Customer | Member],
         *,
@@ -56,7 +56,7 @@ class CustomerMeterService:
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         redis: Redis,
         auth_subject: AuthSubject[Customer | Member],
         id: uuid.UUID,

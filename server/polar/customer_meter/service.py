@@ -70,7 +70,7 @@ class CustomerMeterCreditNotReversible(PolarError):
 class CustomerMeterService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         redis: Redis,
         auth_subject: AuthSubject[User | Organization],
         *,
@@ -121,7 +121,7 @@ class CustomerMeterService:
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         redis: Redis,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,

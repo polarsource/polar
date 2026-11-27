@@ -11,7 +11,12 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.versioning import version
 from polar.models import CustomerMeter, Event
 from polar.openapi import APITag, destructive
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 from polar.version import V2027_01
@@ -47,7 +52,7 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     filters: Annotated[CustomerMeterListParams, Query()],
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
     redis: Redis = Depends(get_redis),
 ) -> ListResource[CustomerMeterSchema]:
     """List customer meters."""
@@ -79,7 +84,7 @@ async def list(
 async def get(
     id: CustomerMeterID,
     auth_subject: auth.CustomerMeterRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
     redis: Redis = Depends(get_redis),
 ) -> CustomerMeter:
     """Get a customer meter by ID."""

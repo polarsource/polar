@@ -188,6 +188,8 @@ class CustomerOrderService:
             or order.subscription.status != SubscriptionStatus.trial_ended
         ):
             raise OrderNotEligibleForRetry(order)
+        if order.subscription is not None and order.subscription.ended_at is not None:
+            raise OrderNotEligibleForRetry(order)
 
         try:
             order = await order_service.update(
@@ -336,7 +338,7 @@ class CustomerOrderService:
         payment_processor: PaymentProcessor,
         payment_method_id: uuid.UUID | None = None,
     ) -> CustomerOrderPaymentConfirmation:
-        if order.subscription is None:
+        if order.subscription is None or order.subscription.ended_at is not None:
             raise OrderNotEligibleForRetry(order, status_code=422)
 
         try:

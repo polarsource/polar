@@ -35,7 +35,8 @@ export const canRetryOrderPayment = (
   return (
     order.status === 'pending' &&
     order.next_payment_attempt_at !== null &&
-    order.subscription !== null
+    order.subscription !== null &&
+    order.subscription.ended_at === null
   )
 }
 

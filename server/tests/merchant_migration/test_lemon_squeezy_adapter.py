@@ -924,6 +924,16 @@ class TestListBenefits:
         assert subscription_only.product_source_ids == ["14"]
         assert not subscription_only.for_one_time
 
+    async def test_files_are_listed_in_small_pages(self) -> None:
+        adapter, requests = _adapter(
+            {"/v1/variants": _page([]), "/v1/files": _page([])}, store_id="1"
+        )
+
+        await adapter.list_benefits()
+
+        [files_request] = [r for r in requests if r.url.path == "/v1/files"]
+        assert files_request.url.params["page[size]"] == "10"
+
 
 @pytest.mark.anyio
 class TestListPurchases:

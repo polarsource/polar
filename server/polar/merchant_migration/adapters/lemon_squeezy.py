@@ -53,6 +53,9 @@ from .base import ExtractionPage
 
 API_BASE_URL = "https://api.lemonsqueezy.com/v1"
 PAGE_SIZE = 100
+# Each file is listed with a freshly signed download URL; a full page of
+# them can outlast Lemon Squeezy's own timeout and come back as a 500.
+FILES_PAGE_SIZE = 10
 # The API allows 300 calls a minute; a large store's full read goes over it.
 RATE_LIMIT_RETRY_DELAYS = (2, 5, 15, 30, 60)
 
@@ -135,12 +138,17 @@ class LemonSqueezyAdapter:
         return await self._client.request(method, path, params=params)
 
     async def _list(
-        self, path: str, page: int, params: dict[str, Any] | None = None
+        self,
+        path: str,
+        page: int,
+        params: dict[str, Any] | None = None,
+        *,
+        page_size: int = PAGE_SIZE,
     ) -> tuple[list[dict[str, Any]], bool, list[dict[str, Any]]]:
         response = await self._request(
             "GET",
             path,
-            {**(params or {}), "page[number]": page, "page[size]": PAGE_SIZE},
+            {**(params or {}), "page[number]": page, "page[size]": page_size},
         )
         response.raise_for_status()
         body = response.json()
@@ -732,7 +740,9 @@ class LemonSqueezyAdapter:
         files: dict[str, list[CanonicalBenefitFile]] = {}
         page = 1
         while True:
-            batch, has_more, _ = await self._list("/files", page)
+            batch, has_more, _ = await self._list(
+                "/files", page, page_size=FILES_PAGE_SIZE
+            )
             for file in batch:
                 attributes = file["attributes"]
                 variant_id = str(attributes["variant_id"])

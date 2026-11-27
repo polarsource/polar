@@ -27,6 +27,13 @@ const _getOrderById = async (
 export const getOrderById = cache(_getOrderById)
 
 /**
+ * Draft orders aren't finalized yet, so the customer portal doesn't list them
+ */
+export const isListableCustomerOrder = (
+  order: schemas['CustomerOrder'],
+): boolean => order.status !== 'draft'
+
+/**
  * Determines if an order is eligible for payment retry
  */
 export const canRetryOrderPayment = (

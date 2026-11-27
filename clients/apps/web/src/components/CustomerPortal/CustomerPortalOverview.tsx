@@ -3,6 +3,7 @@
 import { usePortalAuthenticatedUser } from '@/hooks/queries/customerPortal'
 import { createClientSideAPI } from '@/utils/client'
 import { hasBillingPermission } from '@/utils/customerPortal'
+import { isListableCustomerOrder } from '@/utils/order'
 import { schemas } from '@polar-sh/client'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
 import { CustomerPortalOrders } from './CustomerPortalOrders'
@@ -61,7 +62,8 @@ export const CustomerPortalOverview = ({
     (s) => s.status === 'active' || s.status === 'trialing',
   )
 
-  const latestOrder = orders.at(0) ?? null
+  const nonDraftOrders = orders.filter(isListableCustomerOrder)
+  const latestOrder = nonDraftOrders.at(0) ?? null
 
   const hasAnyActiveSubscriptions =
     activeOwnedSubscriptions.length > 0 || activeClaimedSubscriptions.length > 0
@@ -109,7 +111,7 @@ export const CustomerPortalOverview = ({
       )}
 
       {!hasAnyActiveSubscriptions &&
-        !(canManageBilling && orders.length > 0) && (
+        !(canManageBilling && nonDraftOrders.length > 0) && (
           <PortalEmptyState
             title={
               canManageBilling ? 'No active subscriptions' : 'No team access'
@@ -124,14 +126,16 @@ export const CustomerPortalOverview = ({
 
       <CustomerPortalGrants api={api} />
 
-      {hasAnyActiveSubscriptions && canManageBilling && orders.length > 0 && (
-        <CustomerPortalOrders
-          organization={organization}
-          orders={orders}
-          customerSessionToken={customerSessionToken}
-          limit={5}
-        />
-      )}
+      {hasAnyActiveSubscriptions &&
+        canManageBilling &&
+        nonDraftOrders.length > 0 && (
+          <CustomerPortalOrders
+            organization={organization}
+            orders={nonDraftOrders}
+            customerSessionToken={customerSessionToken}
+            limit={5}
+          />
+        )}
 
       {canManageBilling && inactiveOwnedSubscriptions.length > 0 && (
         <InactiveSubscriptionsOverview

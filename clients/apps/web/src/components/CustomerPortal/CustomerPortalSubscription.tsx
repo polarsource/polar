@@ -12,6 +12,7 @@ import {
 import { useRequirePaymentMethod } from '@/hooks/useRequirePaymentMethod'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { hasBillingPermission } from '@/utils/customerPortal'
+import { isListableCustomerOrder } from '@/utils/order'
 import { getUnitLabels, isUnitBasedPrice } from '@/utils/product'
 import { getPauseAction } from '@/utils/subscription'
 import { Client, schemas } from '@polar-sh/client'
@@ -97,7 +98,8 @@ const CustomerPortalSubscription = ({
 
   const pendingUpdate = subscription.pending_update
 
-  const hasInvoices = orders?.items && orders.items.length > 0
+  const invoices = orders?.items.filter(isListableCustomerOrder) ?? []
+  const hasInvoices = invoices.length > 0
 
   const isCancelled = !!(
     subscription.cancel_at_period_end || subscription.ended_at
@@ -271,7 +273,7 @@ const CustomerPortalSubscription = ({
       {hasInvoices && (
         <PortalSection title="Invoices">
           <PortalCardList>
-            {orders.items.map((order) => (
+            {invoices.map((order) => (
               <PortalListItem
                 key={order.id}
                 title={

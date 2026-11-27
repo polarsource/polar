@@ -330,7 +330,6 @@ class _DefaultEventQueue(enum.Enum):
 
 class OutpostOptions(typing.TypedDict):
     redis: "str | Redis"
-    telemetry: typing.NotRequired[bool]
     snapshot_timeout: typing.NotRequired[float]
 
 

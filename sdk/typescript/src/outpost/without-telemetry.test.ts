@@ -33,16 +33,20 @@ afterAll(async () => {
 });
 
 it("runs without OpenTelemetry installed when telemetry is off", async () => {
+  vi.stubEnv("POLAR_OUTPOST_TELEMETRY", "0");
   const { outpost } = await import("./index");
-  const instance = outpost({ redis: redisServer.socket, telemetry: false })(polar.client);
+  const instance = outpost({ redis: redisServer.socket })(polar.client);
   await instance.start();
-  await expect(
-    instance.track({
-      name: "api_request",
-      external_customer_id: "customer_123",
-      external_id: "req_42",
-      timestamp: new Date().toISOString(),
-    }),
-  ).resolves.toBeUndefined();
-  await instance.close();
+  try {
+    await expect(
+      instance.track({
+        name: "api_request",
+        external_customer_id: "customer_123",
+        external_id: "req_42",
+        timestamp: new Date().toISOString(),
+      }),
+    ).resolves.toBeUndefined();
+  } finally {
+    await instance.close();
+  }
 });

@@ -704,13 +704,12 @@ class Outpost:
         redis: str | Redis,
         *,
         client: httpx2.AsyncClient,
-        telemetry: bool = True,
         snapshot_timeout: float = SNAPSHOT_TIMEOUT,
         confirm_timeout: float = CONFIRM_TIMEOUT,
     ) -> None:
         self._redis_source = redis
         self._client = client
-        self._telemetry = is_telemetry_enabled(telemetry)
+        self._telemetry = is_telemetry_enabled()
         self._tracer_provider: TracerProvider | None = None
         self._tracer: trace.Tracer = trace.NoOpTracer()
         self._meter_provider: MeterProvider | None = None
@@ -767,13 +766,11 @@ class Outpost:
         polar: PolarAsyncBase,
         redis: str | Redis,
         *,
-        telemetry: bool = True,
         snapshot_timeout: float = SNAPSHOT_TIMEOUT,
     ) -> typing.Self:
         return cls(
             redis=redis,
             client=polar._client._client,
-            telemetry=telemetry,
             snapshot_timeout=snapshot_timeout,
         )
 

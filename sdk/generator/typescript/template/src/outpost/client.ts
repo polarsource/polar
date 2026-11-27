@@ -272,8 +272,7 @@ const UNCONFIRMED = -1;
 
 export const TELEMETRY_ENV = "POLAR_OUTPOST_TELEMETRY";
 
-const isTelemetryEnabled = (telemetry: boolean): boolean =>
-  telemetry && process.env[TELEMETRY_ENV] !== "0";
+const isTelemetryEnabled = (): boolean => process.env[TELEMETRY_ENV] !== "0";
 
 // Loaded once, by the first instance that sends telemetry: the others in the process share it.
 let telemetryModule: Promise<typeof import("./telemetry")> | undefined;
@@ -313,8 +312,6 @@ const customerArguments = (customer: string): Customer => {
 
 export interface OutpostOptions {
   client: Pick<ClientBase, "buildRequest" | "sendRequest" | "parseResponse">;
-  /** Send Outpost telemetry to Polar. Also disabled by `POLAR_OUTPOST_TELEMETRY=0`. */
-  telemetry?: boolean;
   /** How long a read of a cold customer waits for its first snapshot, in milliseconds. */
   snapshotTimeout?: number;
   /**
@@ -393,9 +390,7 @@ export class Outpost {
   async start(): Promise<this> {
     // Loaded before the guard: from it to this.redis, start runs without yielding, so a start that
     // overlaps this one finds this.redis set.
-    const telemetry = isTelemetryEnabled(this.options.telemetry ?? true)
-      ? (this.telemetry ??= await loadTelemetry())
-      : undefined;
+    const telemetry = isTelemetryEnabled() ? (this.telemetry ??= await loadTelemetry()) : undefined;
     if (this.redis) throw new Error("Outpost is already connected");
     this.failure = undefined;
     this.pullRetryAt = 0;

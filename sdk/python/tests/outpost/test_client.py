@@ -168,6 +168,11 @@ async def _credit(
 
 
 @pytest.fixture
+def without_telemetry(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(TELEMETRY_ENV, "0")
+
+
+@pytest.fixture
 def configuration() -> dict[str, typing.Any]:
     return copy.deepcopy(CONFIGURATION)
 
@@ -726,6 +731,7 @@ async def test_talks_to_redis_over_one_connection(
         assert len(await redis.client_list()) == before + 1
 
 
+@pytest.mark.usefixtures("without_telemetry")
 @pytest.mark.anyio
 async def test_waits_for_a_redis_connection_once_its_pool_is_full(
     redis_connection: tuple[str, Redis],
@@ -743,7 +749,7 @@ async def test_waits_for_a_redis_connection_once_its_pool_is_full(
         return await read_response(connection, **kwargs)
 
     monkeypatch.setattr(FakeAsyncRedisConnection, "read_response", slow)
-    async with Outpost(url, client=polar_client, telemetry=False) as outpost:
+    async with Outpost(url, client=polar_client) as outpost:
         redis = outpost._require_redis()
 
         async def ping() -> None:
@@ -2933,19 +2939,14 @@ async def test_telemetry_spans(
 
 
 @pytest.mark.anyio
-@pytest.mark.parametrize(("telemetry", "environment"), [(False, None), (True, "0")])
+@pytest.mark.usefixtures("without_telemetry")
 async def test_telemetry_opt_out(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,
     exported_spans: list[ReadableSpan],
-    monkeypatch: pytest.MonkeyPatch,
-    telemetry: bool,
-    environment: str | None,
 ) -> None:
-    if environment is not None:
-        monkeypatch.setenv(TELEMETRY_ENV, environment)
     url, _ = redis_connection
-    async with Outpost(url, client=polar_client, telemetry=telemetry) as outpost:
+    async with Outpost(url, client=polar_client) as outpost:
         await outpost.track(
             {"name": "call", "external_customer_id": "alice", "external_id": "event"}
         )
@@ -3999,6 +4000,7 @@ def _snapshot(customer: str, reducer: str, version: int) -> dict[str, typing.Any
     }
 
 
+@pytest.mark.usefixtures("without_telemetry")
 @pytest.mark.anyio
 async def test_reads_a_meter_in_one_command(
     redis_connection: tuple[str, Redis],
@@ -4007,7 +4009,7 @@ async def test_reads_a_meter_in_one_command(
 ) -> None:
     url, redis = redis_connection
     await _seed(redis)
-    async with Outpost(url, client=polar_client, telemetry=False) as outpost:
+    async with Outpost(url, client=polar_client) as outpost:
 
         async def read() -> None:
             await outpost.meter(external_customer_id="alice", meter_id="meter")
@@ -4016,6 +4018,7 @@ async def test_reads_a_meter_in_one_command(
         assert await _cost(redis_commands, read) == {"evalsha": 1}
 
 
+@pytest.mark.usefixtures("without_telemetry")
 @pytest.mark.anyio
 async def test_tracks_an_event_in_one_command(
     redis_connection: tuple[str, Redis],
@@ -4024,7 +4027,7 @@ async def test_tracks_an_event_in_one_command(
 ) -> None:
     url, redis = redis_connection
     await _seed(redis)
-    async with Outpost(url, client=polar_client, telemetry=False) as outpost:
+    async with Outpost(url, client=polar_client) as outpost:
         warm, measured = _event(), _event()
         await outpost.track(warm)
         assert await _cost(redis_commands, lambda: outpost.track(measured)) == {
@@ -4032,6 +4035,7 @@ async def test_tracks_an_event_in_one_command(
         }
 
 
+@pytest.mark.usefixtures("without_telemetry")
 @pytest.mark.anyio
 async def test_warms_a_known_customer_over_eleven_reducers_in_one_command(
     redis_connection: tuple[str, Redis],
@@ -4051,7 +4055,7 @@ async def test_warms_a_known_customer_over_eleven_reducers_in_one_command(
             snapshots[f"external:{customer}:{reducer['id']}"] = _snapshot(
                 customer, reducer["id"], BUCKET + 1
             )
-    async with Outpost(url, client=polar_client, telemetry=False) as outpost:
+    async with Outpost(url, client=polar_client) as outpost:
         await outpost.actor(external_customer_id="bob")
         await outpost.actor(external_customer_id="alice")
         assert await _cost(
@@ -4059,6 +4063,7 @@ async def test_warms_a_known_customer_over_eleven_reducers_in_one_command(
         ) == {"evalsha": 1}
 
 
+@pytest.mark.usefixtures("without_telemetry")
 @pytest.mark.anyio
 async def test_pulls_and_applies_a_snapshot_in_six_commands(
     redis_connection: tuple[str, Redis],
@@ -4068,7 +4073,7 @@ async def test_pulls_and_applies_a_snapshot_in_six_commands(
 ) -> None:
     url, redis = redis_connection
     await _seed(redis)
-    async with Outpost(url, client=polar_client, telemetry=False) as outpost:
+    async with Outpost(url, client=polar_client) as outpost:
         await outpost.meter(external_customer_id="alice", meter_id="meter")
         await _deliver(outpost, changes, _snapshot("alice", "tokens", BUCKET + 4))
         changes["changes"].append(_snapshot("alice", "tokens", BUCKET + 5))
@@ -4079,6 +4084,7 @@ async def test_pulls_and_applies_a_snapshot_in_six_commands(
         }
 
 
+@pytest.mark.usefixtures("without_telemetry")
 @pytest.mark.anyio
 async def test_applies_each_snapshot_of_a_page_in_two_commands(
     redis_connection: tuple[str, Redis],
@@ -4092,7 +4098,7 @@ async def test_applies_each_snapshot_of_a_page_in_two_commands(
         await redis.hset(
             f"outpost:v1:org-1:state:external:{customer}:tokens", "cold_until", BUCKET
         )
-    async with Outpost(url, client=polar_client, telemetry=False) as outpost:
+    async with Outpost(url, client=polar_client) as outpost:
         # A first page opens the connections the snapshots apply over side by side.
         await _deliver(
             outpost,
@@ -4109,6 +4115,7 @@ async def test_applies_each_snapshot_of_a_page_in_two_commands(
         }
 
 
+@pytest.mark.usefixtures("without_telemetry")
 @pytest.mark.anyio
 async def test_lets_the_instances_that_lose_the_pull_go_on_without_polling_its_lock(
     redis_connection: tuple[str, Redis],
@@ -4118,9 +4125,9 @@ async def test_lets_the_instances_that_lose_the_pull_go_on_without_polling_its_l
 ) -> None:
     url, redis = redis_connection
     async with (
-        Outpost(url, client=polar_client, telemetry=False) as first,
-        Outpost(url, client=polar_client, telemetry=False) as second,
-        Outpost(url, client=polar_client, telemetry=False) as third,
+        Outpost(url, client=polar_client) as first,
+        Outpost(url, client=polar_client) as second,
+        Outpost(url, client=polar_client) as third,
     ):
         # Due, not stale: no read waits for the pull. A stale one still makes the losers wait.
         await redis.hset(
@@ -4196,6 +4203,7 @@ async def test_pushes_an_instances_telemetry_in_one_command(
             ]
 
 
+@pytest.mark.usefixtures("without_telemetry")
 @pytest.mark.anyio
 async def test_lets_the_readers_of_a_cold_customer_wait_on_its_fetch_then_read_it_once(
     redis_connection: tuple[str, Redis],
@@ -4210,8 +4218,8 @@ async def test_lets_the_readers_of_a_cold_customer_wait_on_its_fetch_then_read_i
             "delay": 0.08,
         }
     async with (
-        Outpost(url, client=polar_client, telemetry=False) as first,
-        Outpost(url, client=polar_client, telemetry=False) as second,
+        Outpost(url, client=polar_client) as first,
+        Outpost(url, client=polar_client) as second,
     ):
 
         async def read() -> None:
@@ -4230,6 +4238,7 @@ async def test_lets_the_readers_of_a_cold_customer_wait_on_its_fetch_then_read_i
     assert cost["hget"] <= 2 * (0.08 / 0.025 + 6)
 
 
+@pytest.mark.usefixtures("without_telemetry")
 @pytest.mark.anyio
 async def test_waits_on_a_cold_customers_fetch_at_the_same_cost_however_many_reads_wait(
     redis_connection: tuple[str, Redis],
@@ -4244,10 +4253,8 @@ async def test_waits_on_a_cold_customers_fetch_at_the_same_cost_however_many_rea
             "delay": 0.5,
         }
     async with (
-        Outpost(url, client=polar_client, telemetry=False, snapshot_timeout=2) as first,
-        Outpost(
-            url, client=polar_client, telemetry=False, snapshot_timeout=2
-        ) as second,
+        Outpost(url, client=polar_client, snapshot_timeout=2) as first,
+        Outpost(url, client=polar_client, snapshot_timeout=2) as second,
         anyio.create_task_group() as group,
     ):
         group.start_soon(

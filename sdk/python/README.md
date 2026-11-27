@@ -272,10 +272,9 @@ The in-memory queue sends events in batches to Polar. It retries network errors,
 | Option             | Default                          | Meaning                                              |
 | ------------------ | -------------------------------- | ---------------------------------------------------- |
 | `redis`            | Required                         | Redis URL or caller-owned asynchronous Redis client. |
-| `telemetry`        | `True`                           | Send Outpost metrics and traces to Polar.            |
 | `snapshot_timeout` | `5`                              | Seconds a cold read waits for its initial snapshot.  |
 
-Telemetry can also be disabled with the `POLAR_OUTPOST_TELEMETRY=0` environment variable.
+Outpost sends its metrics and traces to Polar. Set `POLAR_OUTPOST_TELEMETRY=0` to turn this off.
 
 ## Webhooks
 

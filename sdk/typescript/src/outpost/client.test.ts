@@ -2016,16 +2016,9 @@ it("refuses a start that overlaps another", async () => {
   });
 });
 
-it.each([
-  ["option", false, undefined],
-  ["environment", true, "0"],
-] as const)("turns telemetry off through the %s", async (_, telemetry, environment) => {
-  if (environment !== undefined) vi.stubEnv(TELEMETRY_ENV, environment);
-  const outpost = new Outpost(redisServer.socket, {
-    client: core,
-    telemetry,
-    snapshotTimeout: 100,
-  });
+it("turns telemetry off through the environment", async () => {
+  vi.stubEnv(TELEMETRY_ENV, "0");
+  const outpost = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
   outposts.push(outpost);
   await outpost.start();
   await ingest(outpost, 3);
@@ -2667,7 +2660,10 @@ describe("Redis cost", () => {
     };
   };
   // Telemetry relays its exports through Redis after a pull: only its own test counts them.
-  const quiet = (options: Partial<OutpostOptions> = {}) => start({ telemetry: false, ...options });
+  const quiet = (options: Partial<OutpostOptions> = {}) => {
+    vi.stubEnv(TELEMETRY_ENV, "0");
+    return start(options);
+  };
   const event = () => ({
     ...customer,
     name: "api_call",

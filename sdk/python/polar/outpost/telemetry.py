@@ -45,8 +45,8 @@ METRIC_VIEWS = [
 SAMPLE_RATE_ATTRIBUTE = "outpost.sample_rate"
 
 
-def is_telemetry_enabled(telemetry: bool) -> bool:
-    return telemetry and os.environ.get(TELEMETRY_ENV) != "0"
+def is_telemetry_enabled() -> bool:
+    return os.environ.get(TELEMETRY_ENV) != "0"
 
 
 class TelemetryBuffer:

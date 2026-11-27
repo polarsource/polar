@@ -13,6 +13,7 @@ import { BunServices } from '@effect/platform-bun'
 import { Effect, type FileSystem } from 'effect'
 import type { ChildProcessSpawner } from 'effect/process'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
+import { CompiledBinary } from '@/services/telemetry'
 import {
   PACKAGE_NAME,
   REGISTRY_URL,
@@ -120,11 +121,27 @@ describe('detectMethod', () => {
     await rm(dir, { recursive: true, force: true })
   })
 
-  test('reports the standalone binary without asking package managers', async () => {
+  test('returns undefined without asking package managers when running from source', async () => {
     const calls: string[][] = []
 
     await expect(
       run(detectMethod(fakeExec({}, calls), join(dir, 'missing'))),
+    ).resolves.toBeUndefined()
+    await expect(
+      run(detectMethod(fakeExec({ npm: PACKAGE_NAME }, calls), executable)),
+    ).resolves.toBeUndefined()
+    expect(calls).toEqual([])
+  })
+
+  test('reports the standalone binary without asking package managers', async () => {
+    const calls: string[][] = []
+
+    await expect(
+      run(
+        detectMethod(fakeExec({}, calls), join(dir, 'missing')).pipe(
+          Effect.provideService(CompiledBinary, true),
+        ),
+      ),
     ).resolves.toBe('binary')
     expect(calls).toEqual([])
   })
@@ -140,7 +157,13 @@ describe('detectMethod', () => {
       calls,
     )
 
-    await expect(run(detectMethod(exec, executable))).resolves.toBe('pnpm')
+    await expect(
+      run(
+        detectMethod(exec, executable).pipe(
+          Effect.provideService(CompiledBinary, true),
+        ),
+      ),
+    ).resolves.toBe('pnpm')
     expect(calls.map((command) => command[0])).toEqual([
       'npm',
       'pnpm',
@@ -160,14 +183,26 @@ describe('detectMethod', () => {
       calls,
     )
 
-    await expect(run(detectMethod(exec, executable))).resolves.toBe('vp')
+    await expect(
+      run(
+        detectMethod(exec, executable).pipe(
+          Effect.provideService(CompiledBinary, true),
+        ),
+      ),
+    ).resolves.toBe('vp')
     expect(calls).toContainEqual(['vp', 'list', '--global', PACKAGE_NAME])
   })
 
   test('does not mistake a platform package for the CLI package', async () => {
     const exec = fakeExec({ bun: `${PACKAGE_NAME}-darwin-arm64@1.3.9\n` })
 
-    await expect(run(detectMethod(exec, executable))).resolves.toBeUndefined()
+    await expect(
+      run(
+        detectMethod(exec, executable).pipe(
+          Effect.provideService(CompiledBinary, true),
+        ),
+      ),
+    ).resolves.toBeUndefined()
   })
 
   test('matches yarn and npm output formats', async () => {
@@ -176,7 +211,7 @@ describe('detectMethod', () => {
         detectMethod(
           fakeExec({ yarn: `info "${PACKAGE_NAME}@1.3.9"` }),
           executable,
-        ),
+        ).pipe(Effect.provideService(CompiledBinary, true)),
       ),
     ).resolves.toBe('yarn')
     await expect(
@@ -184,7 +219,7 @@ describe('detectMethod', () => {
         detectMethod(
           fakeExec({ npm: `└── ${PACKAGE_NAME}@1.3.9` }),
           executable,
-        ),
+        ).pipe(Effect.provideService(CompiledBinary, true)),
       ),
     ).resolves.toBe('npm')
   })

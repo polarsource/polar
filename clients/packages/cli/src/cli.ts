@@ -115,12 +115,14 @@ if (process.argv[2] === Telemetry.SENDER_COMMAND) {
     BunRuntime.runMain({ disableErrorReporting: true }),
   )
 } else {
-  removeRetiredBinary()
-  const latestVersion = availableUpdate()
-  if (latestVersion && !isJsonFlag(process.argv)) {
-    process.stderr.write(ui.updateNotice(VERSION, latestVersion))
+  if (Telemetry.isCompiledBinary()) {
+    removeRetiredBinary()
+    const latestVersion = availableUpdate()
+    if (latestVersion && !isJsonFlag(process.argv)) {
+      process.stderr.write(ui.updateNotice(VERSION, latestVersion))
+    }
+    Effect.runFork(checkForUpdate().pipe(Effect.provide(FetchHttpClient.layer)))
   }
-  Effect.runFork(checkForUpdate().pipe(Effect.provide(FetchHttpClient.layer)))
   instrumented.pipe(
     Effect.provide(services),
     BunRuntime.runMain({ disableErrorReporting: true }),

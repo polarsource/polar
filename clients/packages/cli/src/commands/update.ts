@@ -5,6 +5,7 @@ import {
   getLatestRelease,
   isNewerVersion,
 } from '@/services/github-releases'
+import { CompiledBinary } from '@/services/telemetry'
 import { install, type InstallStep, UpdateError } from '@/services/update'
 import {
   type Method,
@@ -93,11 +94,20 @@ export const update = Command.make('update', {
     result: Outcome,
     run: ({ method }) =>
       Effect.gen(function* () {
+        const requested = Option.getOrUndefined(method)
+        if (
+          (!requested || requested === 'binary') &&
+          !(yield* CompiledBinary)
+        ) {
+          return yield* new UpdateError({
+            message: 'polar update only works on the compiled CLI binary',
+            hint: 'Install via install.sh or npm, or build with pnpm build:binary.',
+          })
+        }
         yield* note(ui.blank)
         yield* note(ui.step('Checking for updates...'))
         const updater = yield* Updater
-        const detected =
-          Option.getOrUndefined(method) ?? (yield* updater.detect)
+        const detected = requested ?? (yield* updater.detect)
         if (!detected) {
           return yield* new UpdateError({
             message: `Could not detect how the CLI was installed. Pass --method with one of ${methods.join(', ')}.`,

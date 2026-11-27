@@ -68,6 +68,11 @@ export const isCI = (env: Env) =>
 export const isCompiledBinary = (main = Bun.main) =>
   main.startsWith('/$bunfs/') || /^[A-Za-z]:\\~BUN\\/.test(main)
 
+export const CompiledBinary = Context.Reference<boolean>(
+  'polar/CompiledBinary',
+  { defaultValue: () => isCompiledBinary() },
+)
+
 export const detectAgent = (env: Env) => {
   const names = Object.keys(env).filter((name) => env[name])
   const known = agents.find(([, pattern]) =>

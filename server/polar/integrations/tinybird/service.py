@@ -668,7 +668,13 @@ class TinybirdEventsQuery:
                 if col is not None
                 else func.JSONExtractString(events_table.c.user_metadata, key)
             )
-            self._filters.append(or_(*[attr == v for v in values]))
+            condition = or_(*[attr == v for v in values])
+            if col is None and "" in values:
+                condition = and_(
+                    func.JSONType(events_table.c.user_metadata, key) == "String",
+                    condition,
+                )
+            self._filters.append(condition)
         return self
 
     def filter_by_query(self, query: str) -> Self:

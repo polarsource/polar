@@ -5539,21 +5539,21 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
             "allow_email_changes": True,
             "show_metered_usage": False,
         },
-        "emails": {
-            "order_confirmation": False,
-            "subscription_confirmation": True,
-            "trial_conversion_reminder": False,
-            "trial_converted": True,
-            "renewal_reminder": False,
-            "subscription_cycled": True,
-            "card_expiring": False,
-            "subscription_past_due": True,
-            "subscription_updated": False,
-            "subscription_paused": True,
-            "subscription_resumed": False,
-            "subscription_canceled": True,
-            "subscription_uncanceled": False,
-            "subscription_revoked": True,
+        "customer_notifications": {
+            "send_order_confirmation": False,
+            "send_subscription_confirmation": True,
+            "send_trial_conversion_reminder": False,
+            "send_trial_converted": True,
+            "send_renewal_reminder": False,
+            "send_subscription_cycled": True,
+            "send_card_expiring": False,
+            "send_subscription_past_due": True,
+            "send_subscription_updated": False,
+            "send_subscription_paused": True,
+            "send_subscription_resumed": False,
+            "send_subscription_canceled": True,
+            "send_subscription_uncanceled": False,
+            "send_subscription_revoked": True,
         },
     },
     "meters": [{**TOOL_CALLS_METER, "metadata": {"team": "billing"}}],
@@ -6765,7 +6765,10 @@ class TestCatalogDrafts:
             Config.model_validate(
                 {
                     "settings": {
-                        "emails": {"order_confirmation": False, "card_expiring": False}
+                        "customer_notifications": {
+                            "send_order_confirmation": False,
+                            "send_card_expiring": False,
+                        }
                     }
                 }
             ),

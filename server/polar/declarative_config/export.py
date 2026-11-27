@@ -444,6 +444,7 @@ async def export_config(
             benefits=benefits,
             products=products,
         ),
+        default_settings=ConfigSettingsRead.model_validate(_dump(ConfigSettings())),
         skipped=skipped,
         catalog=None
         if catalog is None

@@ -14,9 +14,8 @@ import pytest
 from fakeredis import FakeAsyncRedis, FakeServer
 from redis.asyncio import Redis
 
-from polar.metering.events import ingest_events
 from polar.metering.errors import DropReason, MeteringTimeoutError
-from polar.metering.events import EventInput
+from polar.metering.events import EventInput, ingest_events
 from polar.metering.queue import EventQueue
 from polar.metering.queue.redis import RedisEventQueue
 from tests.redis import _cost

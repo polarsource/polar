@@ -5,7 +5,7 @@ import type { EventInput } from "./metering/event";
 
 import { createPolar } from "./{{ (ir.versions[-2] | default(ir.versions[0])).version }}/client";
 import { Outpost, outpost } from "./outpost/client";
-import { NotReadyError } from "./outpost/errors";
+import { NotReadyError, UnavailableRedisError } from "./outpost/errors";
 import type { EventQueueStartOptions } from "./metering/queue/index";
 import type { ActorInput } from "./metering/actor";
 import { UnknownMeterError } from "./metering/errors";
@@ -457,6 +457,32 @@ test("close bounds its wait for an active custom flush and still closes resource
   } finally {
     release();
     await flushing;
+  }
+});
+
+test("delivers events after a meter read falls back when Outpost cannot start", async () => {
+  const startOutpost = vi.spyOn(Outpost.prototype, "start").mockRejectedValue(
+    new UnavailableRedisError(),
+  );
+  const fetch = vi.spyOn(globalThis, "fetch")
+    .mockResolvedValueOnce(new Response('{"items":[]}'))
+    .mockResolvedValueOnce(new Response(null, { status: 202 }));
+  const polar = createPolar({
+    accessToken: "token",
+    outpost: outpost({ redis: "redis://localhost" }),
+  });
+  try {
+    await expect(polar.meter("meter", event)).resolves.toBeNull();
+    await polar.track(event);
+    await polar.flush();
+    expect(startOutpost).toHaveBeenCalledOnce();
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      "https://api.polar.sh/v1/events/ingest",
+      expect.objectContaining({ method: "POST" }),
+    );
+  } finally {
+    await polar.close();
   }
 });
 

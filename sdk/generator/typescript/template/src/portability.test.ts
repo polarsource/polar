@@ -41,7 +41,9 @@ it("uses the memory queue without loading optional Outpost dependencies", () => 
       `
     import { registerHooks } from "node:module";
     registerHooks({ resolve(specifier, context, next) {
-      if (specifier === "ioredis" || specifier === "ws") throw new Error("Optional dependency loaded");
+      if (specifier === "ioredis" || specifier === "ws" || specifier.startsWith("@opentelemetry/")) {
+        throw new Error("Optional dependency loaded: " + specifier);
+      }
       return next(specifier, context);
     }});
     const { createPolar } = await import("@polar-sh/sdk/{{ (ir.versions[-2] | default(ir.versions[0])).version }}");

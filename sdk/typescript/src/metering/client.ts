@@ -197,13 +197,18 @@ export class PolarEventClient {
     }
   }
 
-  private async openOutpost(createOutpost: OutpostFactory): Promise<OutpostBackend> {
+  private async openOutpost(createOutpost: OutpostFactory): Promise<OutpostBackend | undefined> {
     this.checkShutdownDeadline();
-    const outpost = createOutpost(this.client);
-    await outpost.start();
-    await this.registerResource(outpost);
-    this.outpost = outpost;
-    return outpost;
+    try {
+      const outpost = createOutpost(this.client);
+      await outpost.start();
+      await this.registerResource(outpost);
+      this.outpost = outpost;
+      return outpost;
+    } catch (error) {
+      if (!(error instanceof PolarOutpostError)) throw error;
+      return undefined;
+    }
   }
 
   private startQueue(queue: EventQueue): Promise<void> {

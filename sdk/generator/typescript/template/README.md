@@ -197,6 +197,7 @@ Read a customer's meter directly or through an actor:
 const meter = await polar.meter("meter_uuid", {
   external_customer_id: "customer_123",
 });
+const actor = polar.actor({ external_customer_id: "customer_123" });
 const actorMeter = await actor.meter("meter_uuid");
 if (meter !== null) console.log(meter.consumed_units, meter.credited_units, meter.balance);
 ```

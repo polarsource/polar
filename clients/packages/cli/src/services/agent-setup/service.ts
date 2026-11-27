@@ -20,6 +20,7 @@ import {
   codex,
   detectPlugin,
   installPlugin,
+  latestVersion,
 } from '@/services/agent-setup/plugins'
 import {
   checkSkills,
@@ -43,7 +44,7 @@ export class AgentSetup extends Context.Service<
     ) => Effect.Effect<ReadonlyArray<ClientStatus>>
     readonly setUp: (
       status: ClientStatus,
-    ) => Effect.Effect<void, AgentSetupError>
+    ) => Effect.Effect<string | undefined, AgentSetupError>
     readonly skills: (
       scope: SkillScope,
     ) => Effect.Effect<SkillsStatus, AgentSetupError>
@@ -88,9 +89,12 @@ export const layer = Layer.effect(
     const detectClient = (client: Client) => {
       const plugin = plugins[client]
       if (plugin) {
-        return detectPlugin(plugin, exec, Bun.which(plugin.binary)).pipe(
-          Effect.provideContext(services),
-        )
+        return detectPlugin(
+          plugin,
+          exec,
+          Bun.which(plugin.binary),
+          latestVersion(plugin).pipe(Effect.provideContext(services)),
+        ).pipe(Effect.provideContext(services))
       }
       return detectCursor(
         paths.home,
@@ -116,7 +120,7 @@ export const layer = Layer.effect(
         return configureCursorMcp(paths.home).pipe(
           Effect.andThen(installSkillsAt(cursorSkills)),
           Effect.provideContext(services),
-          Effect.asVoid,
+          Effect.as(undefined),
         )
       },
       skills: (scope) =>

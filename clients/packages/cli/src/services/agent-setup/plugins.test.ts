@@ -64,6 +64,28 @@ describe('detectPlugin', () => {
       problem: 'Codex did not respond within 15s.',
     })
   })
+
+  test.each([
+    ['0.3.0', '0.3.0'],
+    ['0.2.9', undefined],
+    ['0.2.10', undefined],
+    ['main', undefined],
+    [undefined, undefined],
+  ])(
+    'with %s as the newest version, reports %s as the update',
+    async (newest, update) => {
+      const { exec } = fakeExec({
+        'claude plugin list --json': ok([
+          { id: claude.plugin, version: '0.2.10' },
+        ]),
+      })
+      const status = await run(
+        detectPlugin(claude, exec, '/bin/claude', Effect.succeed(newest)),
+      )
+      expect(status.installed).toBe(true)
+      expect(status.update).toBe(update)
+    },
+  )
 })
 
 describe('installPlugin', () => {

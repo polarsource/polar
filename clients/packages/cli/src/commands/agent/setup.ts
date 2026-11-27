@@ -18,9 +18,11 @@ import {
   describeClient,
   errorDetail,
   nextSteps,
+  skillsFound,
   skillsName,
   statusReport,
   summary,
+  versionChange,
 } from '@/utils/agent-setup'
 import { Output } from '@/utils/output'
 import { note, withProgress } from '@/utils/progress'
@@ -77,7 +79,9 @@ const pick = (
           title: status.name,
           value: status.client,
           description: describeClient(status),
-          selected: !status.installed && status.problem === undefined,
+          selected:
+            status.problem === undefined &&
+            (!status.installed || status.update !== undefined),
         })),
         ...skillScopes.map((value) => {
           const outdated = skills.some(
@@ -146,9 +150,15 @@ const select = (
       })
     }
     const skills = yield* withProgress((progress) =>
-      progress
-        .start('Checking the Polar skills')
-        .pipe(Effect.andThen(installedSkills)),
+      progress.start('Checking the Polar skills').pipe(
+        Effect.andThen(findSkills),
+        Effect.tap((found) => progress.finish(skillsFound(found))),
+        Effect.catch((error) =>
+          progress
+            .fail(error.message)
+            .pipe(Effect.as<ReadonlyArray<SkillsStatus>>([])),
+        ),
+      ),
     )
     yield* note(ui.blank)
     return yield* pick(detected, scope, skills)
@@ -179,26 +189,27 @@ const setUpClient = (target: ClientStatus, force: boolean) =>
     target.client,
     target.name,
     Effect.gen(function* () {
-      if (target.installed && !force) {
+      if (target.installed && !target.update && !force) {
         yield* note(ui.success(`${target.name} ${ui.dim('already set up')}`))
         return step(target.client, target.name, 'unchanged')
       }
       const setup = yield* AgentSetup
-      yield* withProgress((progress) =>
-        progress
-          .start(target.name)
-          .pipe(
-            Effect.andThen(
-              target.problem
-                ? Effect.fail(new AgentSetupError({ message: target.problem }))
-                : setup.setUp(target),
-            ),
+      const change = yield* withProgress((progress) =>
+        progress.start(target.name).pipe(
+          Effect.andThen(
+            target.problem
+              ? Effect.fail(new AgentSetupError({ message: target.problem }))
+              : setup.setUp(target),
           ),
+          Effect.map((version) => versionChange(target.version, version)),
+          Effect.tap((change) => progress.finish(change)),
+        ),
       )
       return step(
         target.client,
         target.name,
         target.installed ? 'updated' : 'installed',
+        change,
       )
     }),
   )
@@ -230,11 +241,13 @@ const setUpSkills = (scope: SkillScope, force: boolean) => {
   )
 }
 
-const installedSkills = Effect.gen(function* () {
+const findSkills = Effect.gen(function* () {
   const setup = yield* AgentSetup
   const found = yield* Effect.forEach(skillScopes, setup.skills)
   return found.filter((status) => status.state !== 'missing')
-}).pipe(
+})
+
+const installedSkills = findSkills.pipe(
   Effect.catch((error) =>
     note(ui.warning(`Could not check the Polar skills: ${error.message}`)).pipe(
       Effect.as([]),

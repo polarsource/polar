@@ -271,7 +271,7 @@ async def recover_order_command(
                 else:
                     manager.reset()
     finally:
-        await redis.close()
+        await redis.aclose()
         await engine.dispose()
 
 

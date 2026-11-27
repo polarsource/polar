@@ -8,7 +8,6 @@ from polar.base import (
     RequestTimeout,
     SyncServiceBase,
     parse_response_json,
-    parse_response_text,
 )
 from polar.v2026_04.errors import (
     AlreadyCanceledSubscription,
@@ -35,7 +34,6 @@ from polar.v2026_04.inputs import (
 )
 from polar.v2026_04.literals import (
     CustomerCancellationReason,
-    SubscriptionExportColumn,
     SubscriptionSortProperty,
     SubscriptionStatus,
 )
@@ -94,7 +92,7 @@ class SubscriptionsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -184,7 +182,7 @@ class SubscriptionsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -260,7 +258,7 @@ class SubscriptionsSync(SyncServiceBase):
         **Scopes**: `subscriptions:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -286,69 +284,6 @@ class SubscriptionsSync(SyncServiceBase):
         }
         return parse_response_json(response, Subscription, method_errors)
 
-    def export(
-        self,
-        *,
-        organization_id: str | builtins.list[str] | None = None,
-        product_id: str | builtins.list[str] | None = None,
-        status: SubscriptionStatus | builtins.list[SubscriptionStatus] | None = None,
-        cancel_at_period_end: bool | None = None,
-        started_after: str | None = None,
-        started_before: str | None = None,
-        timezone: str = "UTC",
-        columns: SubscriptionExportColumn
-        | builtins.list[SubscriptionExportColumn]
-        | None = None,
-        request_timeout: RequestTimeout | None = None,
-        request_access_token: str | None = None,
-    ) -> str:
-        """
-        Export subscriptions as a CSV file.
-
-        **Scopes**: `subscriptions:read` `subscriptions:write`
-
-        Args:
-            organization_id: Filter by organization ID.
-            product_id: Filter by product ID.
-            status: Filter by subscription status.
-            cancel_at_period_end: Filter by subscriptions that are set to cancel at period end.
-            started_after: Only include subscriptions started after this date. Must include a UTC offset.
-            started_before: Only include subscriptions started before this date. Must include a UTC offset.
-            timezone: Time zone used to render dates in the CSV.
-            columns: Columns to include in the CSV, in order. Defaults to email, started_at, product, amount, currency, status and recurring_interval.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
-            request_access_token: Access token override for this request.
-
-
-        Raises:
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="GET",
-            url="/v1/subscriptions/export",
-            path_params={},
-            query_params={
-                "organization_id": organization_id,
-                "product_id": product_id,
-                "status": status,
-                "cancel_at_period_end": cancel_at_period_end,
-                "started_after": started_after,
-                "started_before": started_before,
-                "timezone": timezone,
-                "columns": columns,
-            },
-            request_timeout=request_timeout,
-            request_access_token=request_access_token,
-        )
-        response = self.client.send_request(request)
-        method_errors = {
-            422: HTTPValidationError,
-        }
-        return parse_response_text(response, method_errors)
-
     def get(
         self,
         id: str,
@@ -363,7 +298,7 @@ class SubscriptionsSync(SyncServiceBase):
 
         Args:
             id: The subscription ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -405,7 +340,7 @@ class SubscriptionsSync(SyncServiceBase):
 
         Args:
             id: The subscription ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -542,7 +477,7 @@ class SubscriptionsSync(SyncServiceBase):
 
         Args:
             id: The subscription ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -628,7 +563,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -718,7 +653,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -795,7 +730,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         **Scopes**: `subscriptions:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -821,69 +756,6 @@ class SubscriptionsAsync(AsyncServiceBase):
         }
         return parse_response_json(response, Subscription, method_errors)
 
-    async def export(
-        self,
-        *,
-        organization_id: str | builtins.list[str] | None = None,
-        product_id: str | builtins.list[str] | None = None,
-        status: SubscriptionStatus | builtins.list[SubscriptionStatus] | None = None,
-        cancel_at_period_end: bool | None = None,
-        started_after: str | None = None,
-        started_before: str | None = None,
-        timezone: str = "UTC",
-        columns: SubscriptionExportColumn
-        | builtins.list[SubscriptionExportColumn]
-        | None = None,
-        request_timeout: RequestTimeout | None = None,
-        request_access_token: str | None = None,
-    ) -> str:
-        """
-        Export subscriptions as a CSV file.
-
-        **Scopes**: `subscriptions:read` `subscriptions:write`
-
-        Args:
-            organization_id: Filter by organization ID.
-            product_id: Filter by product ID.
-            status: Filter by subscription status.
-            cancel_at_period_end: Filter by subscriptions that are set to cancel at period end.
-            started_after: Only include subscriptions started after this date. Must include a UTC offset.
-            started_before: Only include subscriptions started before this date. Must include a UTC offset.
-            timezone: Time zone used to render dates in the CSV.
-            columns: Columns to include in the CSV, in order. Defaults to email, started_at, product, amount, currency, status and recurring_interval.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
-            request_access_token: Access token override for this request.
-
-
-        Raises:
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="GET",
-            url="/v1/subscriptions/export",
-            path_params={},
-            query_params={
-                "organization_id": organization_id,
-                "product_id": product_id,
-                "status": status,
-                "cancel_at_period_end": cancel_at_period_end,
-                "started_after": started_after,
-                "started_before": started_before,
-                "timezone": timezone,
-                "columns": columns,
-            },
-            request_timeout=request_timeout,
-            request_access_token=request_access_token,
-        )
-        response = await self.client.send_request(request)
-        method_errors = {
-            422: HTTPValidationError,
-        }
-        return parse_response_text(response, method_errors)
-
     async def get(
         self,
         id: str,
@@ -898,7 +770,7 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Args:
             id: The subscription ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -940,7 +812,7 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Args:
             id: The subscription ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1077,7 +949,7 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Args:
             id: The subscription ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters

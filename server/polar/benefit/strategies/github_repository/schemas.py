@@ -1,10 +1,10 @@
 from typing import Annotated, Literal
 
-from pydantic import UUID4, Field
+from pydantic import MISSING, UUID4, Field
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.schemas import Schema
-from polar.kit.versioning import Version
+from polar.kit.versioning import Omissible, Version
 from polar.models.benefit import BenefitType
 from polar.version import V2026_10
 
@@ -80,7 +80,7 @@ class BenefitGitHubRepositoryCreate(BenefitCreateBase):
 
 class BenefitGitHubRepositoryUpdate(BenefitUpdateBase):
     type: Literal[BenefitType.github_repository]
-    properties: BenefitGitHubRepositoryCreateProperties | None = None
+    properties: Omissible[BenefitGitHubRepositoryCreateProperties] = MISSING
 
 
 class BenefitGitHubRepository(BenefitBase):

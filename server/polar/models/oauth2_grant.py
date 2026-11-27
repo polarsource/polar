@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, String, Text, UniqueConstraint, Uuid
@@ -6,6 +7,9 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models import RecordModel
 from polar.models.organization import Organization
 from polar.models.user import User
+
+if TYPE_CHECKING:
+    from .oauth2_grant_organization import OAuth2GrantOrganization
 
 
 class OAuth2Grant(RecordModel):
@@ -37,6 +41,14 @@ class OAuth2Grant(RecordModel):
     @declared_attr
     def organization(cls) -> Mapped[Organization | None]:
         return relationship(Organization, lazy="joined")
+
+    @declared_attr
+    def organization_scopes(cls) -> Mapped[list["OAuth2GrantOrganization"]]:
+        return relationship(
+            "OAuth2GrantOrganization",
+            lazy="raise",
+            cascade="all, delete-orphan",
+        )
 
     @property
     def scopes(self) -> list[str]:

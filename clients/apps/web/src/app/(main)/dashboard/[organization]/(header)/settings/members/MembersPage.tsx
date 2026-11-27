@@ -7,6 +7,7 @@ import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
 import { useAuth } from '@/hooks/auth'
 import { useHasPermission } from '@/hooks/permissions'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import {
   useLeaveOrganization,
   useListOrganizationMembers,
@@ -29,7 +30,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { Text } from '@polar-sh/orbit'
+import { Text, Truncated } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
@@ -118,7 +119,14 @@ export default function ClientPage({
 
   const onConfirmLeave = useCallback(async () => {
     try {
-      await leaveOrganization.mutateAsync()
+      const { error } = await leaveOrganization.mutateAsync()
+      if (error) {
+        toast({
+          title: 'Failed to leave organization',
+          description: extractApiErrorMessage(error),
+        })
+        return
+      }
       toast({
         title: 'Left organization',
         description: `You have left ${organization.name}.`,
@@ -143,9 +151,11 @@ export default function ClientPage({
       ),
       cell: ({ row: { original: member } }) => {
         return (
-          <Box flexDirection="row" alignItems="center" gap="s">
+          <Box flexDirection="row" alignItems="center" gap="s" minWidth={0}>
             <Avatar avatar_url={member.avatar_url} name={member.email} />
-            <Text>{member.email}</Text>
+            <Truncated>
+              <Text as="span">{member.email}</Text>
+            </Truncated>
           </Box>
         )
       },
@@ -225,6 +235,7 @@ export default function ClientPage({
   return (
     <DashboardBody
       wrapperClassName="max-w-(--breakpoint-md)!"
+      title="Members"
       className="flex flex-col gap-y-8"
       header={
         canManageMembers ? (

@@ -1,8 +1,9 @@
 import { usePolarClient } from '@/providers/PolarClientProvider'
 import { useSession } from '@/providers/SessionProvider'
+import { posthog } from '@/utils/posthog'
 import { schemas, unwrap } from '@polar-sh/client'
 import { useQuery } from '@tanstack/react-query'
-import { createContext, PropsWithChildren, useContext } from 'react'
+import { createContext, PropsWithChildren, useContext, useEffect } from 'react'
 
 export type User = schemas['UserInfoUser']
 
@@ -30,6 +31,10 @@ export function UserProvider({ children }: PropsWithChildren) {
     },
     enabled: !!session,
   })
+
+  useEffect(() => {
+    if (user) posthog.identify(`user:${user.sub}`)
+  }, [user])
 
   return (
     <UserContext.Provider value={{ user, isLoading }}>

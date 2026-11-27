@@ -61,8 +61,8 @@ bump can still outrun a cached image.)
 
 ## First boot fails cloning a git dependency
 
-`uv sync` clones a git dependency (the dramatiq fork) over the network, and
-Docker's embedded DNS can flap transiently:
+`uv sync` clones git dependencies over the network, and Docker's embedded DNS
+can flap transiently:
 
 ```
 failed to fetch commit ... Could not resolve host: github.com

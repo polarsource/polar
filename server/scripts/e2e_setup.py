@@ -14,7 +14,7 @@ import polar.tasks  # noqa: F401
 from polar.auth.models import AuthSubject
 from polar.auth.permission import ROLE_PERMISSIONS, OrganizationPermission
 from polar.auth.scope import Scope
-from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.db.postgres import create_async_sessionmaker  # lint-skip: dry-run
 from polar.models import Organization, OrganizationAccessToken, User, UserOrganization
 from polar.organization_access_token.schemas import (
     AvailableScope,

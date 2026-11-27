@@ -6,7 +6,7 @@ from unittest.mock import ANY, AsyncMock, Mock
 
 import anyio
 import anyio.lowlevel
-import httpx
+import httpx2
 import pytest
 
 from polar import PolarClientError, PolarError, PolarNetworkError
@@ -18,12 +18,15 @@ from polar.metering import (
     FlushProtocol,
     InvalidActorError,
     Metering,
+    MeteringDeliveryError,
     MeteringError,
     MeteringOutpostOptions,
     MeteringStrategyProtocol,
+    MeteringTimeoutError,
     ValidateProtocol,
 )
 from polar.metering.buffered import BufferedMeteringStrategy
+from polar.metering.errors import UnknownMeterError
 from polar.outpost import Outpost
 from polar.v2026_04 import PolarAsync
 
@@ -46,13 +49,14 @@ async def test_flush_optional_strategies(fail: bool) -> None:
         polar.metering(strategies=[first, ordinary, second]) as metering,
     ):
         if fail:
-            with pytest.raises(ExceptionGroup) as exc_info:
+            with pytest.raises(RuntimeError) as exc_info:
                 await metering.flush()
-            assert exc_info.value.exceptions == (error,)
+            assert exc_info.value is error
         else:
             await metering.flush()
-        first.flush.assert_awaited_once_with()
-        second.flush.assert_awaited_once_with()
+        for strategy in (first, second):
+            strategy.flush.assert_awaited_once()
+            assert 0 < strategy.flush.await_args.kwargs["timeout"] <= 30
         first.__aexit__.assert_not_awaited()
         await metering.track(name="usage", external_customer_id="customer")
         first.track.assert_awaited_once()
@@ -92,13 +96,14 @@ async def test_factory_outpost_configuration(
         metering = polar.metering(outpost=outpost_options)
         monkeypatch.setenv("REDIS_URL", "redis://changed:6379")
         async with metering:
-            assert isinstance(metering.strategies[0], BufferedMeteringStrategy)
-            assert len(metering.strategies) == (2 if expected_url else 1)
+            # Outpost delivers its events itself: the buffer would send each one twice.
+            [strategy] = metering.strategies
             if expected_url:
-                outpost = metering.strategies[1]
-                assert isinstance(outpost, Outpost)
-                assert outpost.redis_url == expected_url
-                assert outpost._client is polar._client._client
+                assert isinstance(strategy, Outpost)
+                assert strategy.redis_url == expected_url
+                assert strategy._client is polar._client._client
+            else:
+                assert isinstance(strategy, BufferedMeteringStrategy)
     assert enter.await_count == (1 if expected_url else 0)
     assert exit.await_count == (1 if expected_url else 0)
 
@@ -160,6 +165,8 @@ async def test_factory_buffer_options(monkeypatch: pytest.MonkeyPatch) -> None:
             with anyio.fail_after(1):
                 while not on_dropped.await_count:
                     await anyio.lowlevel.checkpoint()
+            with pytest.raises(MeteringDeliveryError):
+                await metering.flush()
         send.assert_awaited_once()
         on_dropped.assert_awaited_once_with(
             [{"name": "usage", "external_customer_id": "customer", "timestamp": ANY}],
@@ -168,87 +175,37 @@ async def test_factory_buffer_options(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.anyio
-async def test_factory_confirms_accepted_and_dropped_events_in_outpost(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    for name in ("__aexit__", "track"):
-        monkeypatch.setattr(Outpost, name, AsyncMock(return_value=None))
-
-    async def enter(outpost: Outpost) -> Outpost:
-        return outpost
-
-    monkeypatch.setattr(Outpost, "__aenter__", enter)
-    acknowledge = AsyncMock()
-    confirm = AsyncMock()
-    monkeypatch.setattr(Outpost, "acknowledge", acknowledge)
-    monkeypatch.setattr(Outpost, "confirm", confirm)
-    accepted: EventInput = {
-        "name": "usage",
-        "external_customer_id": "customer",
-        "external_id": "accepted",
-        "timestamp": "2026-10-22T08:00:00Z",
-    }
-    dropped: EventInput = {**accepted, "external_id": "dropped"}
+async def test_factory_runs_outpost_alone_and_refuses_buffer_options_beside_it() -> (
+    None
+):
     on_delivered = AsyncMock()
     on_dropped = AsyncMock()
-
-    async def ingest(*, events: list[EventInput]) -> None:
-        if events[0]["external_id"] == "dropped":
-            raise PolarError("rejected")
-
+    options = MeteringOutpostOptions(
+        redis_url="redis://localhost:6379",
+        telemetry=False,
+        on_delivered=on_delivered,
+        on_dropped=on_dropped,
+    )
     async with PolarAsync("token") as polar:
-        monkeypatch.setattr(polar.events, "ingest", ingest)
-        async with polar.metering(
-            buffered=BufferedMeteringOptions(
-                batch_size=1,
-                max_attempts=1,
-                on_delivered=on_delivered,
-                on_dropped=on_dropped,
-            ),
-            outpost=MeteringOutpostOptions(
-                redis_url="redis://localhost:6379", telemetry=False
-            ),
-        ) as metering:
-            await metering.track(**accepted)
-            await metering.track(**dropped)
-            await metering.flush()
-    # Received events settle where their bucket is hot; dropped ones settle everywhere.
-    acknowledge.assert_awaited_once_with([accepted])
-    confirm.assert_awaited_once_with([dropped])
-    on_delivered.assert_awaited_once_with([accepted])
-    on_dropped.assert_awaited_once_with([dropped], "permanent_error")
+        with pytest.raises(MeteringError):
+            polar.metering(buffered=BufferedMeteringOptions(), outpost=options)
+        [outpost] = polar.metering(outpost=options).strategies
+        assert isinstance(outpost, Outpost)
+        assert outpost._on_delivered is on_delivered
+        assert outpost._on_dropped is on_dropped
 
 
 @pytest.mark.anyio
-async def test_factory_drains_the_buffer_into_outpost_before_closing_it(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    calls: list[str] = []
-
-    async def enter(outpost: Outpost) -> Outpost:
-        return outpost
-
-    async def exit(outpost: Outpost, *exc_info: object) -> None:
-        calls.append("close")
-
-    async def acknowledge(outpost: Outpost, events: list[EventInput]) -> None:
-        calls.append("acknowledge")
-
-    monkeypatch.setattr(Outpost, "__aenter__", enter)
-    monkeypatch.setattr(Outpost, "__aexit__", exit)
-    monkeypatch.setattr(Outpost, "track", AsyncMock(return_value=None))
-    monkeypatch.setattr(Outpost, "acknowledge", acknowledge)
-    async with PolarAsync("token") as polar:
-        monkeypatch.setattr(polar.events, "ingest", AsyncMock())
-        async with polar.metering(
-            outpost=MeteringOutpostOptions(
-                redis_url="redis://localhost:6379", telemetry=False
-            )
-        ) as metering:
-            await metering.track(
-                name="usage", external_customer_id="customer", external_id="last"
-            )
-    assert calls == ["acknowledge", "close"]
+async def test_factory_refuses_the_buffer_beside_outpost_as_explicit_strategies() -> (
+    None
+):
+    async with PolarAsync("token") as polar, httpx2.AsyncClient() as client:
+        strategies: list[MeteringStrategyProtocol] = [
+            BufferedMeteringStrategy(polar),
+            Outpost("redis://localhost:6379", client=client),
+        ]
+        with pytest.raises(MeteringError):
+            polar.metering(strategies=strategies)
 
 
 @pytest.mark.anyio
@@ -263,23 +220,19 @@ async def test_factory_outpost_options_and_startup_failure(
                 redis_url="redis://localhost:6379", telemetry=False
             )
         )
-        outpost = metering.strategies[1]
+        [outpost] = metering.strategies
         assert isinstance(outpost, Outpost)
         assert not outpost._telemetry
         with pytest.raises(RuntimeError, match="Redis unavailable"):
             async with metering:
                 pytest.fail("Startup should have failed")
-        with pytest.raises(anyio.ClosedResourceError):
-            await metering.strategies[0].track(
-                {"name": "usage", "external_customer_id": "customer"}
-            )
 
 
 @pytest.mark.anyio
 async def test_metering_enters_and_calls_both_strategies(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    async with PolarAsync("token") as polar, httpx.AsyncClient() as client:
+    async with PolarAsync("token") as polar, httpx2.AsyncClient() as client:
         buffered = BufferedMeteringStrategy(polar)
         outpost = Outpost("redis://localhost:6379", client=client)
         mocks: list[tuple[AsyncMock, AsyncMock, AsyncMock]] = []
@@ -370,7 +323,7 @@ async def test_failed_strategy_startup_closes_buffered_strategy(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     event: EventInput = {"name": "usage", "external_customer_id": "customer"}
-    async with PolarAsync("token") as polar, httpx.AsyncClient() as client:
+    async with PolarAsync("token") as polar, httpx2.AsyncClient() as client:
         ingest = AsyncMock()
         monkeypatch.setattr(polar.events, "ingest", ingest)
         buffered = BufferedMeteringStrategy(polar, batch_interval=60)
@@ -471,7 +424,6 @@ from unittest.mock import AsyncMock
 
 sys.modules["polar.outpost"] = None
 sys.modules["redis"] = None
-sys.modules["httpx_ws"] = None
 sys.modules["opentelemetry"] = None
 
 from polar.base import AsyncClientBase
@@ -510,7 +462,7 @@ async def test_meter_api_fallback(
         "id": "customer-meter",
     }
     send = AsyncMock(
-        return_value=httpx.Response(
+        return_value=httpx2.Response(
             200,
             json={
                 "items": [] if missing else [value],
@@ -582,13 +534,90 @@ async def test_meter_strategy_is_authoritative(
 
 
 @pytest.mark.anyio
+async def test_meter_unknown_to_its_strategy_is_read_through_the_api(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    send = AsyncMock(
+        return_value=httpx2.Response(
+            200,
+            json={
+                "items": [
+                    {
+                        "meter_id": "meter",
+                        "customer_id": "customer",
+                        "consumed_units": 3,
+                        "credited_units": 10,
+                        "balance": 7,
+                        "id": "customer-meter",
+                    }
+                ],
+                "pagination": {"total_count": 1, "max_page": 1},
+            },
+        )
+    )
+    strategy = AsyncMock(spec=MeteringStrategyProtocol)
+    strategy.meter = AsyncMock(
+        side_effect=UnknownMeterError("Outpost reduces no meter")
+    )
+    async with PolarAsync("token", organization_id="org") as polar:
+        monkeypatch.setattr(polar._client, "send_request", send)
+        async with Metering(strategies=[strategy], client=polar._client) as metering:
+            result = await metering.meter(meter_id="meter", customer_id="customer")
+    assert result == CustomerMeter(
+        meter_id="meter",
+        customer_id="customer",
+        consumed_units=3,
+        credited_units=10,
+        balance=7,
+    )
+    assert send.call_args.args[0].url.path == "/v1/customer-meters/"
+
+
+@pytest.mark.anyio
 async def test_meter_api_error_propagates(monkeypatch: pytest.MonkeyPatch) -> None:
     async with PolarAsync("token") as polar:
         monkeypatch.setattr(
             polar._client,
             "send_request",
-            AsyncMock(return_value=httpx.Response(403, text="Forbidden")),
+            AsyncMock(return_value=httpx2.Response(403, text="Forbidden")),
         )
         async with polar.metering() as metering:
             with pytest.raises(PolarClientError):
                 await metering.meter(meter_id="meter", external_customer_id="customer")
+
+
+@pytest.mark.anyio
+async def test_public_flush_enforces_timeout_for_custom_strategy() -> None:
+    strategy = AsyncMock(spec=MeteringStrategyProtocol)
+    strategy.flush = AsyncMock()
+
+    async def flush(*, timeout: float = 30.0) -> None:
+        await anyio.sleep_forever()
+
+    strategy.flush.side_effect = flush
+    async with (
+        PolarAsync("token") as polar,
+        polar.metering(strategies=[strategy]) as metering,
+    ):
+        with anyio.fail_after(1), pytest.raises(MeteringTimeoutError):
+            await metering.flush(timeout=0.01)
+
+
+@pytest.mark.anyio
+async def test_context_preserves_body_and_delivery_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body_error = ValueError("body failed")
+    delivery_error = PolarClientError(422, "rejected")
+    async with PolarAsync("token") as polar:
+        monkeypatch.setattr(
+            polar.events, "ingest", AsyncMock(side_effect=delivery_error)
+        )
+        with pytest.raises(ExceptionGroup) as failure:
+            async with polar.metering() as metering:
+                await metering.track(name="usage", external_customer_id="customer")
+                raise body_error
+    assert failure.value.exceptions[0] is body_error
+    delivery = failure.value.exceptions[1]
+    assert isinstance(delivery, MeteringDeliveryError)
+    assert delivery.failures[0].cause is delivery_error

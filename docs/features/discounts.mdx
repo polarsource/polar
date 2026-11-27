@@ -1,73 +1,183 @@
 ---
 title: "Discounts"
-description: "Create discounts on products and subscriptions"
+description: "Create percentage or fixed-amount discounts, limit who can redeem them, and apply them through codes, Checkout Links, the API or a subscription."
 ---
 
-Discounts are a way to reduce the price of a product or subscription. They can be applied to one-time purchasable products or subscriptions.
+A **discount** lowers the price of a one-time purchase or a subscription. It's either a percentage or a fixed amount, can carry a code customers type at checkout, and can run once, for a number of months or forever.
 
-<img className="block dark:hidden" src="/assets/features/discounts/create.light.png" />
-<img className="hidden dark:block" src="/assets/features/discounts/create.dark.png" />
+The code examples use API version `2026-10` and the sandbox.
+
+## Types
+
+| Dashboard | API `type` | Value |
+| --- | --- | --- |
+| **Percentage discount** | `percentage` | `basis_points` from 1 to 10000. A basis point is 1/100 of a percent, so 2550 is 25.5% |
+| **Fixed amount discount** | `fixed` | `amounts`: one amount in cents per currency, such as `{ "usd": 500, "eur": 450 }` |
+
+A fixed-amount discount only applies in the currencies it has an amount for.
+
+## Duration
+
+For subscriptions, `duration` sets how many billing cycles the discount covers. One-time purchases are discounted once either way.
+
+| Dashboard | API `duration` | Applies to |
+| --- | --- | --- |
+| **Once** | `once` | The first invoice after it's applied |
+| **Forever** | `forever` | Every invoice |
+| **For several months** | `repeating` with `duration_in_months` (1 to 999) | Invoices for that many months. For a yearly plan, multiply years by 12 |
 
 ## Create a discount
 
-Go to the [**Discounts**](https://polar.sh/to/dashboard/products/discounts) page
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Catalog → Discounts**
+    - Click **New Discount**
+    - Enter a **Name** and, optionally, a **Code**
+    - Choose **Percentage discount** and enter 20
+    - Set the duration to **For several months** and **Number of months** to 3
+    - Set **Maximum redemptions per customer** to 1
+    - Click **Create Discount**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar discounts create --name "Launch" --code LAUNCH --type percentage \
+      --basis-points 2000 --duration repeating --duration-in-months 3 \
+      --max-redemptions-per-customer 1
+    ```
 
-#### Name
+    See [`polar discounts`](/integrate/cli/reference/discounts).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Create a 20% discount with code LAUNCH for the first 3 months, once per customer, in my Polar sandbox organization.
+    ```
 
-Displayed to the customer when they apply the discount.
+    Uses the `discounts_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
 
-#### Code
+<CodeGroup>
+```typescript TypeScript
+const discount = await polar.discounts.create({
+  name: "Launch",
+  code: "LAUNCH",
+  type: "percentage",
+  basis_points: 2000,
+  duration: "repeating",
+  duration_in_months: 3,
+  max_redemptions_per_customer: 1,
+});
+```
 
-Optional code (case insensitive) that the customer can use to apply the discount. If left empty, the discount can only be applied through a Checkout Link or the API.
+```python Python
+discount = polar.discounts.create(
+    name="Launch",
+    code="LAUNCH",
+    type="percentage",
+    basis_points=2000,
+    duration="repeating",
+    duration_in_months=3,
+    max_redemptions_per_customer=1,
+)
+```
 
-#### Percentage Discount
+```bash cURL
+export DISCOUNT_ID=$(curl -s -X POST https://sandbox-api.polar.sh/v1/discounts/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Launch",
+    "code": "LAUNCH",
+    "type": "percentage",
+    "basis_points": 2000,
+    "duration": "repeating",
+    "duration_in_months": 3,
+    "max_redemptions_per_customer": 1
+  }' | jq -r .id)
+```
+</CodeGroup>
 
-The percentage discount to apply to the product or subscription.
+### Fields
 
-#### Fixed Amount Discount
+| Dashboard | API field | Notes |
+| --- | --- | --- |
+| **Name** | `name` | Shown to the customer when the discount is applied |
+| **Code** | `code` | 3 to 256 letters and digits, case-insensitive. Without a code, the discount can only be applied through a Checkout Link or the API |
+| **Products** | `products` | Limit the discount to these products. Empty means every product, including ones created later |
+| **Starts at**, **Ends at** | `starts_at`, `ends_at` | The window in which it can be redeemed |
+| **Maximum number of redemptions** | `max_redemptions` | Across all customers |
+| **Maximum redemptions per customer** | `max_redemptions_per_customer` | See [Per-customer limits](#per-customer-limits) |
 
-The discount deducts a fixed amount from the price of the product or subscription.
-
-#### Recurring Discount
-
-The percentage discount to apply to the product or subscription.
-
-- **Once** The discount is applied once.
-- **Several Months** The discount is applied for a fixed number of months.
-- **Forever** The discount is applied indefinitely.
-
-#### Restrictions
-
-- **Products** The discount can only be applied to specific products. By default the discount can be applied to all products, also ones created after the discount was created.
-- **Starts at** The discount can only be applied after this date
-- **Ends at** The discount can only be applied before this date
-- **Maximum redemptions** The maximum number of times the discount can be applied, counting across all customers.
-- **Maximum redemptions per customer** The maximum number of times a single customer can apply the discount. See [Per-customer limits](#per-customer-limits).
+The product restriction is checked when the discount is redeemed, at checkout or when it's applied to a subscription. Once on a subscription, the discount stays through plan changes, including to products outside the restriction, so a change never raises the price unexpectedly. **Once** covers the first billing cycle after it's applied, so its value follows that cycle's length: after a switch from monthly to yearly, it covers a yearly charge.
 
 ## Per-customer limits
 
-A per-customer limit caps how many times a single buyer can redeem a code, while leaving the code open to everyone else. Share it publicly, set the limit to 1, and each buyer gets one redemption.
+A per-customer limit caps how many times one buyer can redeem a code, while the code stays open to everyone else. Share it publicly, set the limit to 1, and each buyer gets one redemption.
 
-Polar identifies a customer by three signals, and a match on any one is enough:
+Polar matches a customer on any one of three signals:
 
-- The (external) customer ID on the checkout or the subscription.
-- The email address (ignoring plus-aliases: `ada+polar@example.com` matches `ada@example.com`)
-- The payment card, so a new email address on the same card still counts. Free products and 100% forever subscriptions never ask for a card, so those match on ID and email alone.
+- The customer ID or external customer ID on the checkout or subscription.
+- The email address, ignoring plus-aliases: `jane+polar@example.com` matches `jane@example.com`.
+- The payment card, so a new email on the same card still counts. Free products and 100% forever discounts never ask for a card, so those match on ID and email only.
 
-Refunding an order frees the customer's slot, and they can use the code again (note: a partial refund doesn't). [Polar-issued refunds as part of chargeback prevention](/features/refunds) also don't free the customer's slot.
+Fully refunding an order frees the customer's slot, so they can use the code again. A partial refund doesn't. [Refunds Polar issues to prevent chargebacks](/features/refunds#refunds-issued-by-polar) don't free the slot either.
 
 ## Apply a discount
 
-### Auto-apply via Checkout Link
+- **Checkout Link.** Preset a discount on a [Checkout Link](/features/checkout/links) and it's applied when customers land on checkout, no code needed.
+- **Query parameter.** Add `?discount_code=LAUNCH` to a Checkout Link URL to prefill the code. The customer still sees it in the form.
+- **Checkout Session.** Pass `discount_id` when you [create a Checkout Session](/features/checkout/session).
+- **Subscription.** Set `discount_id` on an existing subscription. It applies from the next billing cycle. Set it to `null` to remove the discount. See [Manage subscriptions](/features/subscriptions/manage).
 
-When creating a [Checkout Link](/features/checkout/links), you can preset a discount that will be automatically applied when customers land on the checkout page. This is useful for promotional campaigns or special offers where you want to guarantee the discount is applied without requiring customers to enter a code.
+To apply a discount to a subscription in the dashboard:
 
-<Info>Discounts without a code can only be auto-applied through Checkout Links or the API.</Info>
+- Open **Sales → Subscriptions** and select the subscription
+- Click **Update Subscription**
+- On the **Plan** tab, pick the **Discount**, or remove the current one
+- Click **Update Subscription**
 
-### Prefill via query parameter
+<CodeGroup>
+```typescript TypeScript
+await polar.subscriptions.update(subscriptionId, { discount_id: discount.id });
+```
 
-You can pass a `discount_code` query parameter to any Checkout Link URL to prefill a discount code in the checkout form. Note that this only prefills the field—customers will still see the code and it will be visible in the form.
+```python Python
+polar.subscriptions.update(subscription_id, discount_id=discount.id)
+```
 
-### Apply via API
+```bash cURL
+curl -X PATCH "https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID" \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "discount_id": "'"$DISCOUNT_ID"'" }'
+```
+</CodeGroup>
 
-When creating a Checkout Session via the API, you can specify a discount to apply programmatically. See the [Checkout API documentation](/features/checkout/session) for details.
+From the CLI: `polar subscriptions update <subscription_id> --discount-id <discount_id>`.
+
+On subscriptions with metered prices, a fixed-amount discount isn't applied to separate [meter cycle](/features/usage-based-billing/billing#meter-cycle) orders. A percentage discount is.
+
+## Edit a discount
+
+You can rename a discount and change its code, restrictions and limits at any time. Once it has been redeemed (`redemptions_count` above 0), its value and length are locked: `basis_points`, `amounts` (or `amount` and `currency`) and `duration_in_months` can't change. The dashboard also locks the duration after creation. To offer different terms, create a new discount.
+
+## From the CLI or your agent
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| List discounts | `polar discounts list` | `discounts_list` |
+| Create a discount | `polar discounts create` | `discounts_create` |
+| Get a discount | `polar discounts get <id>` | `discounts_get` |
+| Update a discount | `polar discounts update <id>` | `discounts_update` |
+| Delete a discount | `polar discounts delete <id>` | `discounts_delete` |
+| Apply to a subscription | `polar subscriptions update <id> --discount-id <discount_id>` | `subscriptions_update` |
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Checkout Links](/features/checkout/links) | Preset a discount on a shareable link |
+| [Manage subscriptions](/features/subscriptions/manage) | Apply or remove a discount on a subscription |
+| [Discounts API](/api-reference/current/discounts/list-discounts) | Create and manage discounts programmatically |

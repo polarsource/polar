@@ -59,6 +59,9 @@ class EmailTemplate(StrEnum):
     subscription_uncanceled = "subscription_uncanceled"
     subscription_renewal_reminder = "subscription_renewal_reminder"
     subscription_trial_conversion_reminder = "subscription_trial_conversion_reminder"
+    subscription_trial_payment_method_required = (
+        "subscription_trial_payment_method_required"
+    )
     subscription_updated = "subscription_updated"
     subscription_usage_invoice = "subscription_usage_invoice"
     webhook_endpoint_disabled = "webhook_endpoint_disabled"
@@ -69,6 +72,8 @@ class EmailTemplate(StrEnum):
     notification_subscription_renewal = "notification_subscription_renewal"
     notification_credits_granted = "notification_credits_granted"
     notification_file_flagged_malicious = "notification_file_flagged_malicious"
+    domain_verification_lost = "domain_verification_lost"
+    organization_email_verification = "organization_email_verification"
     chargeback_prevention_refund = "chargeback_prevention_refund"
     polar_self_subscription_cancellation = "polar_self_subscription_cancellation"
     polar_self_subscription_confirmation = "polar_self_subscription_confirmation"
@@ -396,6 +401,19 @@ class SubscriptionTrialConversionReminderEmail(BaseModel):
     props: SubscriptionTrialConversionReminderProps
 
 
+class SubscriptionTrialPaymentMethodRequiredProps(SubscriptionPropsBase):
+    trial_end_date: str
+    payment_method_required: bool = True
+    billing_address_required: bool = False
+
+
+class SubscriptionTrialPaymentMethodRequiredEmail(BaseModel):
+    template: Literal[EmailTemplate.subscription_trial_payment_method_required] = (
+        EmailTemplate.subscription_trial_payment_method_required
+    )
+    props: SubscriptionTrialPaymentMethodRequiredProps
+
+
 class SubscriptionRevokedProps(SubscriptionPropsBase): ...
 
 
@@ -507,6 +525,34 @@ class NotificationFileFlaggedMaliciousEmail(BaseModel):
         EmailTemplate.notification_file_flagged_malicious
     )
     props: MaintainerFileFlaggedMaliciousNotificationPayload
+
+
+class DomainVerificationLostProps(EmailProps):
+    domain: str
+    organization_name: str
+    settings_url: str
+    record_name: str
+    record_value: str
+
+
+class DomainVerificationLostEmail(BaseModel):
+    template: Literal[EmailTemplate.domain_verification_lost] = (
+        EmailTemplate.domain_verification_lost
+    )
+    props: DomainVerificationLostProps
+
+
+class OrganizationEmailVerificationProps(EmailProps):
+    code: str
+    code_lifetime_minutes: int
+    organization_name: str
+
+
+class OrganizationEmailVerificationEmail(BaseModel):
+    template: Literal[EmailTemplate.organization_email_verification] = (
+        EmailTemplate.organization_email_verification
+    )
+    props: OrganizationEmailVerificationProps
 
 
 class ChargebackPreventionRefundProps(EmailProps):
@@ -636,6 +682,7 @@ Email = Annotated[
     | SubscriptionResumedEmail
     | SubscriptionRenewalReminderEmail
     | SubscriptionTrialConversionReminderEmail
+    | SubscriptionTrialPaymentMethodRequiredEmail
     | SubscriptionRevokedEmail
     | SubscriptionUncanceledEmail
     | SubscriptionUpdatedEmail
@@ -647,6 +694,8 @@ Email = Annotated[
     | NotificationSubscriptionRenewalEmail
     | NotificationCreditsGrantedEmail
     | NotificationFileFlaggedMaliciousEmail
+    | DomainVerificationLostEmail
+    | OrganizationEmailVerificationEmail
     | ChargebackPreventionRefundEmail
     | PolarSelfSubscriptionCancellationEmail
     | PolarSelfSubscriptionConfirmationEmail

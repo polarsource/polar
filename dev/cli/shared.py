@@ -11,13 +11,18 @@ import tempfile
 import threading
 import time
 from dataclasses import dataclass, field
+from difflib import get_close_matches
 from pathlib import Path
 
-from rich.console import Console
+from rich.console import Console, Group
 from rich.live import Live
+from rich.markup import escape
 from rich.padding import Padding
+from rich.panel import Panel
 from rich.spinner import Spinner
+from rich.table import Table
 from rich.text import Text
+from typer.core import TyperGroup
 
 from secrets_io import SECRETS_FILE, read_secrets, update_secrets
 
@@ -66,6 +71,83 @@ class Context:
     skip_integrations: bool = False
     database_name: str | None = None
     state: dict = field(default_factory=dict)
+    failure_reason: str | None = None
+
+
+last_command_interrupted = False
+
+
+COMMAND_SYNONYMS = {
+    "migrate": "db migrate",
+    "doctor": "status",
+    "db downgrade": "db rollback",
+    "pu": "up",
+    "server": "api",
+}
+
+
+def _command_paths(group, prefix: str = ""):
+    for name, command in group.commands.items():
+        if command.hidden:
+            continue
+        path = f"{prefix} {name}".strip()
+        yield path, command
+        if hasattr(command, "commands"):
+            yield from _command_paths(command, path)
+
+
+class CommandGroup(TyperGroup):
+    """Suggests commands from every group, including ones whose names don't look like what people try."""
+
+    def resolve_command(self, ctx, args: list[str]):
+        name = args[0] if args else ""
+        if name and not name.startswith("-") and self.get_command(ctx, name) is None:
+            parents = []
+            current = ctx
+            while current.parent is not None:
+                parents.insert(0, current.info_name)
+                current = current.parent
+            commands = dict(_command_paths(current.command))
+
+            by_name: dict[str, list[str]] = {}
+            for path in commands:
+                by_name.setdefault(path.split()[-1], []).append(path)
+            matches = [path for match in get_close_matches(name, by_name) for path in by_name[match]]
+            matches = sorted(matches, key=lambda path: path.split()[:-1] != parents)[:3]
+            synonym = COMMAND_SYNONYMS.get(" ".join([*parents, name]))
+            if synonym:
+                matches = [synonym]
+
+            tried = escape(" ".join(["dev", *parents, name]))
+            group_help = escape(" ".join(["dev", *parents, "--help"]))
+            scope = f"the {escape(' '.join(parents))} commands" if parents else "all commands"
+            if matches:
+                body = Table(show_header=False, box=None, padding=(0, 3), pad_edge=False)
+                body.add_column(style="bold cyan", no_wrap=True)
+                body.add_column(style="dim")
+                for path in matches:
+                    body.add_row(escape(f"dev {path}"), escape(commands[path].get_short_help_str(60)))
+                body = Group("Did you mean", "", body)
+                hint = f"[dim]{group_help} shows {scope}[/dim]"
+            else:
+                body = f"Run [bold cyan]{group_help}[/bold cyan] to see {scope}."
+                hint = None
+            Console(stderr=True, highlight=False).print(
+                "",
+                Panel(
+                    Padding(body, (1, 2)),
+                    title=f"[red]✗ No such command[/red] [bold yellow]{tried}[/bold yellow]",
+                    title_align="left",
+                    subtitle=hint,
+                    subtitle_align="right",
+                    border_style="red",
+                    expand=False,
+                ),
+                "",
+                sep="\n",
+            )
+            ctx.exit(2)
+        return super().resolve_command(ctx, args)
 
 
 def run_command(
@@ -98,8 +180,41 @@ def run_command(
     except subprocess.TimeoutExpired:
         return None
     except KeyboardInterrupt:
+        global last_command_interrupted
+        last_command_interrupted = True
         console.print("\n[yellow]Interrupted[/yellow]")
         return None
+
+
+def link_polar_self(keep_valid: bool = False) -> bool:
+    """Point the API's own Polar integration at the seeded Polar organization.
+
+    Returns whether new values reached the env files. With `keep_valid`, a token the database
+    still accepts is left alone, since a new one breaks a running API until it restarts.
+    """
+    command = ["uv", "run", "python", "-m", "scripts.seeds_load", "polar-self-env"]
+    if keep_valid:
+        command.append("--keep-valid")
+    result = run_command(command, cwd=SERVER_DIR, capture=True)
+    if not result or result.returncode != 0:
+        return False
+
+    values = dict(
+        line.strip().split("=", 1)
+        for line in result.stdout.splitlines()
+        if line.startswith("POLAR_") and "=" in line
+    )
+    if not values:
+        return False
+    update_secrets(values)
+    rebuilt = run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
+    if not rebuilt or rebuilt.returncode != 0:
+        console.print(
+            "  [yellow]Saved a new Polar self-integration token, but the env files could not be rebuilt.[/yellow]"
+        )
+        console.print("  [yellow]Run dev/setup-environment by hand to see why.[/yellow]")
+        return False
+    return True
 
 
 def check_command_exists(cmd: str) -> bool:

@@ -14,7 +14,10 @@ from sqlalchemy.orm import joinedload
 from standardwebhooks.webhooks import EmptyWebhookSecretError
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
-from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
+from polar.kit.db.postgres import (  # lint-skip: dry-run
+    AsyncSession,
+    create_async_sessionmaker,
+)
 from polar.models import WebhookEndpoint
 from polar.postgres import create_async_engine
 from polar.webhook.constants import (
@@ -82,7 +85,7 @@ async def clear_secret_generated_at(
         .values(secret_generated_at=None)
     )
     result = await session.execute(statement)
-    return cast(CursorResult[Any], result).rowcount
+    return cast(CursorResult[*tuple[Any, ...]], result).rowcount
 
 
 def validate_secret(secret: str) -> None:
@@ -94,11 +97,11 @@ def validate_secret(secret: str) -> None:
         raise EmptyKey() from e
 
 
-def audit(endpoints: list[WebhookEndpoint]) -> list[InvalidSecretFinding]:
+async def audit(endpoints: list[WebhookEndpoint]) -> list[InvalidSecretFinding]:
     invalid_secrets: list[InvalidSecretFinding] = []
     for endpoint in endpoints:
         try:
-            validate_secret(endpoint.secret)
+            validate_secret(await endpoint.get_secret())
         except InvalidStandardSecret as e:
             invalid_secrets.append(
                 InvalidSecretFinding(
@@ -165,7 +168,7 @@ async def main(
     try:
         async with sessionmaker() as session:
             endpoints = await load_marked_standard(session)
-            findings = audit(endpoints)
+            findings = await audit(endpoints)
             render(findings, len(endpoints), verbose=verbose)
 
             if not correct:

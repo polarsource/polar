@@ -50,24 +50,25 @@ export const MeterGetStarted = ({ meter }: MeterGetStartedProps) => {
         <SyntaxHighlighterProvider>
           <SyntaxHighlighterClient
             lang="typescript"
-            code={`import { Polar } from "@polar-sh/sdk";
+            code={`import { createPolar } from "@polar-sh/sdk/2026-10";
 
-const polar = new Polar({
+const polar = createPolar({
   accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",${
     CONFIG.IS_SANDBOX
       ? `
-  server: "sandbox",`
+  environment: "sandbox",`
       : ''
   }
 });
 
-export const GET = async (req: Request, res: Response) => {
+export const GET = async () => {
+  const customerId = "your_customer_id";
+
   await polar.events.ingest({
     events: [
       {
         name: "${nameClauseValue}",
-        // Replace with your logic to get the customer id
-        externalCustomerId: req.ctx.customerId,
+        external_customer_id: customerId,
         metadata: {
           route: "/api/metered-route",
           method: "GET",
@@ -76,8 +77,8 @@ export const GET = async (req: Request, res: Response) => {
     ],
   });
 
-  return new Response({ hello: 'world' })
-}`}
+  return Response.json({ hello: "world" });
+};`}
           />
         </SyntaxHighlighterProvider>
       </pre>

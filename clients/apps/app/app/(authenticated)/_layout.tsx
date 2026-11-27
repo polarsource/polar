@@ -8,12 +8,18 @@ import { PolarQueryClientProvider } from '@/providers/PolarQueryClientProvider'
 import { useSession } from '@/providers/SessionProvider'
 import { ToastProvider } from '@/providers/ToastProvider'
 import { UserProvider } from '@/providers/UserProvider'
-import { DarkTheme, ThemeProvider } from '@react-navigation/native'
 import { useQueryClient } from '@tanstack/react-query'
-import { Redirect, Stack, useRouter } from 'expo-router'
+import {
+  DarkTheme,
+  Redirect,
+  Stack,
+  ThemeProvider,
+  useRouter,
+} from 'expo-router'
 import { PropsWithChildren } from 'react'
 import { ErrorBoundary as ErrorBoundaryComponent } from 'react-error-boundary'
 import { StatusBar } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const AuthenticatedErrorBoundary = ({ children }: PropsWithChildren) => {
   const queryClient = useQueryClient()
@@ -37,6 +43,7 @@ const AuthenticatedErrorBoundary = ({ children }: PropsWithChildren) => {
 const RootLayout = () => {
   const theme = useTheme()
   const { session } = useSession()
+  const insets = useSafeAreaInsets()
 
   useAppOpenTracking()
 
@@ -56,7 +63,11 @@ const RootLayout = () => {
             color: theme.colors.text,
             fontSize: 18,
           },
-          contentStyle: { backgroundColor: theme.colors.background },
+          contentStyle: {
+            backgroundColor: theme.colors.background,
+            paddingLeft: insets.left,
+            paddingRight: insets.right,
+          },
           headerShadowVisible: false,
         }}
       />

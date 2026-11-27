@@ -25,6 +25,14 @@ export const confirm = Flag.Boolean('confirm').pipe(
   Flag.withDescription('Skip the confirmation prompt for destructive requests'),
 )
 
+export const org = Flag.String('org').pipe(
+  Flag.optional,
+  Flag.map(Option.getOrUndefined),
+  Flag.withDescription(
+    'Organization ID or slug for this invocation only',
+  ),
+)
+
 export const fields = Flag.String('fields').pipe(
   Flag.optional,
   Flag.withDescription(
@@ -40,6 +48,36 @@ export const missingFlags = (
     .filter((key) => (input as Record<string, unknown>)[key] === undefined)
     .map((key) => `--${key.replaceAll('_', '-')}`)
 
+const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i
+
+const splitList = (value: string): ReadonlyArray<string> => {
+  if (value.trimStart().startsWith('[')) {
+    try {
+      const parsed: unknown = JSON.parse(value)
+      if (
+        Array.isArray(parsed) &&
+        parsed.length > 0 &&
+        parsed.every((item) => typeof item === 'string')
+      ) {
+        return parsed
+      }
+    } catch {
+      return [value]
+    }
+  }
+  const parts = value.split(',').map((part) => part.trim())
+  return parts.length > 1 && parts.every((part) => UUID.test(part))
+    ? parts
+    : [value]
+}
+
+const expandLists = (value: unknown) =>
+  Array.isArray(value)
+    ? value.flatMap((item) =>
+        typeof item === 'string' ? splitList(item) : [item],
+      )
+    : value
+
 // The prototype validates flags and JSON syntax; full input validation remains server-side.
 export const mergeInput = <A>(
   json: Option.Option<Record<string, unknown>>,
@@ -47,7 +85,7 @@ export const mergeInput = <A>(
 ): A => {
   const provided = Object.fromEntries(
     Object.entries(fields).flatMap(([key, value]) =>
-      Option.isSome(value) ? [[key, value.value]] : [],
+      Option.isSome(value) ? [[key, expandLists(value.value)]] : [],
     ),
   )
   return { ...Option.getOrElse(json, () => ({})), ...provided } as A

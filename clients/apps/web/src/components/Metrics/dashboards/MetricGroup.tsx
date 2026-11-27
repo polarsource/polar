@@ -11,6 +11,7 @@ interface MetricGroupProps {
   metricKeys: (keyof schemas['Metrics'])[]
   interval: schemas['TimeInterval']
   loading?: boolean
+  context?: string
 }
 
 export function MetricGroup({
@@ -18,6 +19,7 @@ export function MetricGroup({
   data,
   interval,
   loading,
+  context,
 }: MetricGroupProps) {
   const [hoveredPeriodIndex, setHoveredPeriodIndex] = useState<number | null>(
     null,
@@ -38,6 +40,7 @@ export function MetricGroup({
               height={200}
               chartType="line"
               loading={loading}
+              context={context}
               hoveredPeriodIndex={hoveredPeriodIndex}
               onHoverPeriodChange={(period) => {
                 if (period !== null) {

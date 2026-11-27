@@ -1,10 +1,18 @@
 import { OnboardingProvider } from '@/components/Onboarding/OnboardingContext'
+import { AuthProvider } from '@/providers/AuthProvider'
+import { requireAuthenticatedUser } from '@/utils/user'
 import type { ReactNode } from 'react'
 
-export default function OnboardingLayout({
+export default async function OnboardingLayout({
   children,
 }: {
   children: ReactNode
 }) {
-  return <OnboardingProvider>{children}</OnboardingProvider>
+  await requireAuthenticatedUser()
+
+  return (
+    <AuthProvider>
+      <OnboardingProvider>{children}</OnboardingProvider>
+    </AuthProvider>
+  )
 }

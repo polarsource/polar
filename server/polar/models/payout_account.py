@@ -31,10 +31,10 @@ class PayoutAccount(RecordModel):
         StringEnum(PayoutAccountType), nullable=False
     )
 
-    admin_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id"))
+    admin_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id"), index=True)
 
     stripe_id: Mapped[str | None] = mapped_column(
-        String(100), nullable=True, default=None
+        String(100), nullable=True, default=None, index=True
     )
     open_collective_slug: Mapped[str | None] = mapped_column(
         String(255), nullable=True, default=None, deferred=True

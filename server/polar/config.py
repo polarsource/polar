@@ -2,14 +2,14 @@ import functools
 import json
 import os
 import tempfile
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Any, Literal
 from urllib.parse import parse_qs, unquote, urlparse
 
 from annotated_types import Ge
-from pydantic import AfterValidator, DirectoryPath, model_validator
+from pydantic import AfterValidator, DirectoryPath, SecretStr, model_validator
 from pydantic_ai.models import Model, infer_model, parse_model_id
 from pydantic_ai.providers.gateway import gateway_provider
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,7 +17,6 @@ from sqlalchemy import URL
 
 from polar.enums import EmailSender, TaxProcessor
 from polar.kit.address import Address, CountryAlpha2
-from polar.kit.utils import utc_now
 
 # A token hash reads `<secret_id>$<digest>`. The digest is 64 characters
 HASH_SEPARATOR = "$"
@@ -110,6 +109,7 @@ class Settings(BaseSettings):
     SLACK_BOT_TOKEN: str | None = None
     SLACK_CHANNEL: str | None = None
     MERCHANT_MIGRATION_SLACK_CHANNEL: str = "C0B76J9KR8F"
+    MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD: timedelta = timedelta(days=90)
 
     # SLO Report
     SLO_REPORT_ENABLED: bool = True
@@ -118,7 +118,7 @@ class Settings(BaseSettings):
     WEBHOOK_FIFO_GUARD_DELAY_MS: int = 300  # p95 is 236ms
     WEBHOOK_FIFO_GUARD_MAX_AGE: timedelta = timedelta(minutes=1)
     WEBHOOK_EVENT_RETENTION_PERIOD: timedelta = timedelta(days=90)
-    WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD: timedelta = timedelta(days=90)
+    WEBHOOK_DELIVERY_RETENTION_PERIOD: timedelta = timedelta(days=90)
     WEBHOOK_FAILURE_THRESHOLD: int = 10
 
     WORKER_DEFAULT_DEBOUNCE_MIN_THRESHOLD: timedelta = timedelta(seconds=15)
@@ -126,6 +126,11 @@ class Settings(BaseSettings):
 
     CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD: timedelta = timedelta(seconds=15)
     CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD: timedelta = timedelta(minutes=180)
+    # Test environments only: invoices, rollovers and credit reversals still read
+    # the events, so a customer's balance could disagree with their invoice.
+    CUSTOMER_METER_UNITS_FROM_REDUCER: bool = False
+
+    OUTPOST_PULL_INTERVAL: timedelta = timedelta(seconds=30)
 
     SECRET: str = "super secret jwt secret"
     HASH_SECRETS: dict[str, str] = {}
@@ -134,10 +139,7 @@ class Settings(BaseSettings):
     LOCAL_JWKS: str = DEVELOPMENT_JWKS
     LOCAL_JWK_KID: str = "polar_dev"
     WWW_AUTHENTICATE_REALM: str = "polar"
-
-    # Self-service sign-up for AI agents (ADR-0014): the sign-up endpoint, the
-    # JWT-bearer grant and the discovery documents that point agents to them.
-    AGENT_SIGN_UP_ENABLED: bool = False
+    ORGANIZATION_ACCESS_TOKEN_CACHE_TTL_SECONDS: float = 0
 
     # JSON list of accepted CORS origins
     CORS_ORIGINS: list[str] = []
@@ -154,6 +156,14 @@ class Settings(BaseSettings):
     BASE_URL: str = "http://127.0.0.1:8000"
     BACKOFFICE_ENABLED: bool = True
     BACKOFFICE_HOST: str | None = None
+    BACKOFFICE_GOOGLE_CLIENT_ID: str = ""
+    BACKOFFICE_GOOGLE_CLIENT_SECRET: SecretStr = SecretStr("")
+    BACKOFFICE_GOOGLE_HOSTED_DOMAIN: str = ""
+    BACKOFFICE_DEVELOPMENT_MODE: bool = False
+    BACKOFFICE_AUTHENTICATION_SESSION_COOKIE_KEY: str = "polar_backoffice_auth_session"
+    BACKOFFICE_AUTHENTICATION_SESSION_TTL: timedelta = timedelta(minutes=15)
+    BACKOFFICE_USER_SESSION_COOKIE_KEY: str = "polar_backoffice_session"
+    BACKOFFICE_USER_SESSION_TTL: timedelta = timedelta(hours=12)
     CHECKOUT_LINK_HOST: str | None = None  # e.g., "buy.polar.sh" in production
 
     # URL to frontend app.
@@ -178,6 +188,8 @@ class Settings(BaseSettings):
     APP_REVIEW_EMAIL: str | None = None
     APP_REVIEW_OTP_CODE: str | None = None
 
+    PROTECTED_OAUTH2_CLIENT_IDS: list[str] | None = None
+
     # OAuth2 session state
     OAUTH2_SESSION_STATE_TTL: timedelta = timedelta(minutes=10)
     OAUTH2_SESSION_STATE_COOKIE_KEY: str = "polar_oauth2_state"
@@ -193,6 +205,9 @@ class Settings(BaseSettings):
     CUSTOMER_SESSION_TTL: timedelta = timedelta(hours=1)
     CUSTOMER_SESSION_CODE_TTL: timedelta = timedelta(minutes=30)
     CUSTOMER_SESSION_CODE_LENGTH: int = 6
+    CUSTOMER_SESSION_AUTHENTICATION_SESSION_COOKIE_KEY: str = (
+        "polar_customer_auth_session"
+    )
 
     # Impersonation session
     IMPERSONATION_COOKIE_KEY: str = "polar_original_session"
@@ -219,6 +234,9 @@ class Settings(BaseSettings):
     # Full connection URL, as injected by managed Postgres integrations
     # (e.g. Neon). When set, its components take precedence over the parts above.
     POSTGRES_URL_NON_POOLING: str | None = None
+    # Dedicated role for migrations
+    POSTGRES_MIGRATION_USER: str | None = None
+    POSTGRES_MIGRATION_PWD: str | None = None
     DATABASE_POOL_SIZE: int = 5
     DATABASE_SYNC_POOL_SIZE: int = 1  # Specific pool size for sync connection: since we only use it in OAuth2 router, don't waste resources.
     DATABASE_POOL_RECYCLE_SECONDS: int = 600  # 10 minutes
@@ -312,6 +330,7 @@ class Settings(BaseSettings):
     # Pydantic AI Gateway
     PYDANTIC_AI_GATEWAY_API_KEY: str = "DummyKey"
     PYDANTIC_AI_GATEWAY_MODEL: str = "openai:gpt-5.5"
+    PYDANTIC_AI_GATEWAY_ORGANIZATION_REVIEW_MODEL: str = "openai:gpt-6.1-sol"
 
     # Organization review website scraping. Firecrawl Cloud backs the JS-render
     # path of the collector: it renders JavaScript, follows redirects, and
@@ -389,6 +408,8 @@ class Settings(BaseSettings):
 
     # Logfire
     LOGFIRE_TOKEN: str | None = None
+    # Records only root spans, like request spans, without database or Redis spans
+    LOGFIRE_ROOT_SPANS_ONLY: bool = False
     LOGFIRE_IGNORED_ACTORS: set[str] = {
         "organization_access_token.record_usage",
         "personal_access_token.record_usage",
@@ -470,6 +491,11 @@ class Settings(BaseSettings):
     # Chargeback Stop
     CHARGEBACK_STOP_WEBHOOK_SECRET: str = ""
 
+    # PaymentRetryAlert (Mastercard retry signals, by ChargebackStop)
+    PAYMENT_RETRY_ALERT_API_KEY: str = ""
+    PAYMENT_RETRY_ALERT_API_BASE_URL: str = "https://api.paymentretryalert.com/v1"
+    PAYMENT_RETRY_ALERT_WEBHOOK_SECRET: str = ""
+
     # Polar's usage of Polar
     POLAR_ACCESS_TOKEN: str = ""
     POLAR_WEBHOOK_SECRET: str = ""
@@ -527,6 +553,9 @@ class Settings(BaseSettings):
     PAYOUT_INVOICES_PREFIX: str = "POLAR-"
 
     # Application behaviours
+    ORGANIZATION_DEFAULT_PRODUCTS_LIMIT: int = 1000
+    ORGANIZATION_DEFAULT_BENEFITS_LIMIT: int = 1000
+
     API_PAGINATION_MAX_LIMIT: int = 100
     API_MAX_REQUEST_BODY_SIZE: int = 10 * 1024 * 1024
 
@@ -642,6 +671,10 @@ class Settings(BaseSettings):
         ".well-known",
     ]
 
+    # Lets late usage events land and reducer buckets covering the period end
+    # close and sync to Postgres before the order is billed.
+    SUBSCRIPTION_ORDER_GRACE_PERIOD: timedelta = timedelta(minutes=15)
+
     # Dunning Configuration
     DUNNING_RETRY_INTERVALS: list[timedelta] = [
         timedelta(days=2),  # First retry after 2 days
@@ -650,23 +683,11 @@ class Settings(BaseSettings):
         timedelta(days=7),  # Fourth retry after 21 days (2 + 5 + 7 + 7)
     ]
     CUSTOMER_RETRY_MAX_ATTEMPTS: int = 5
+    PAYMENT_RETRY_ALERT_MAX_ATTEMPTS: int = 3
     PAYMENT_LOCK_STALE_THRESHOLD: timedelta = timedelta(hours=1)
 
-    TAX_PROCESSORS: list[TaxProcessor] = [TaxProcessor.stripe]
-    TAX_RECORD_PROCESSOR: TaxProcessor = TaxProcessor.stripe
-
-    # shortcut: remove after November 1, 2026, once production Terraform uses Numeral.
-    @property
-    def tax_processors(self) -> list[TaxProcessor]:
-        if self.is_production() and utc_now() >= datetime(2026, 11, 1, tzinfo=UTC):
-            return [TaxProcessor.numeral, TaxProcessor.stripe]
-        return self.TAX_PROCESSORS
-
-    @property
-    def tax_record_processor(self) -> TaxProcessor:
-        if self.is_production() and utc_now() >= datetime(2026, 11, 1, tzinfo=UTC):
-            return TaxProcessor.numeral
-        return self.TAX_RECORD_PROCESSOR
+    TAX_PROCESSORS: list[TaxProcessor] = [TaxProcessor.numeral, TaxProcessor.stripe]
+    TAX_RECORD_PROCESSOR: TaxProcessor = TaxProcessor.numeral
 
     model_config = SettingsConfigDict(
         env_prefix="polar_",
@@ -783,7 +804,7 @@ class Settings(BaseSettings):
 
     def _build_postgres_dsn(
         self,
-        driver: Literal["asyncpg", "psycopg2"],
+        driver: Literal["asyncpg", "psycopg"],
         *,
         username: str | None,
         password: str | None,
@@ -815,11 +836,25 @@ class Settings(BaseSettings):
             },
         ).render_as_string(hide_password=False)
 
-    def get_postgres_dsn(self, driver: Literal["asyncpg", "psycopg2"]) -> str:
+    def get_postgres_dsn(self, driver: Literal["asyncpg", "psycopg"]) -> str:
         return self._build_postgres_dsn(
             driver,
             username=self.POSTGRES_USER,
             password=self.POSTGRES_PWD,
+            host=self.POSTGRES_HOST,
+            port=self.POSTGRES_PORT,
+            database=self.POSTGRES_DATABASE,
+            fallback_host=self.POSTGRES_HOST_FALLBACK,
+            fallback_port=self.POSTGRES_PORT_FALLBACK,
+        )
+
+    def get_postgres_migration_dsn(self, driver: Literal["asyncpg", "psycopg"]) -> str:
+        if self.POSTGRES_MIGRATION_USER is None:
+            return self.get_postgres_dsn(driver)
+        return self._build_postgres_dsn(
+            driver,
+            username=self.POSTGRES_MIGRATION_USER,
+            password=self.POSTGRES_MIGRATION_PWD,
             host=self.POSTGRES_HOST,
             port=self.POSTGRES_PORT,
             database=self.POSTGRES_DATABASE,
@@ -839,7 +874,7 @@ class Settings(BaseSettings):
         )
 
     def get_postgres_read_dsn(
-        self, driver: Literal["asyncpg", "psycopg2"]
+        self, driver: Literal["asyncpg", "psycopg"]
     ) -> str | None:
         if not self.is_read_replica_configured():
             return None

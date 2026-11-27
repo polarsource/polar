@@ -178,7 +178,7 @@ async def _run_snooze(
                     },
                 )
                 await session.commit()
-                rows_updated = cast(CursorResult[Any], result).rowcount
+                rows_updated = cast(CursorResult[*tuple[Any, ...]], result).rowcount
 
                 if rows_updated == 0:
                     progress.update(

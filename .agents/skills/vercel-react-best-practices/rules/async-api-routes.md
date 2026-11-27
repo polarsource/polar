@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   const session = await sessionPromise
   const [config, data] = await Promise.all([
     configPromise,
-    fetchData(session.user.id)
+    fetchData(session.user.id),
   ])
   return Response.json({ data, config })
 }

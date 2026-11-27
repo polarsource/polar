@@ -29,7 +29,7 @@ STATE_DIR=$(mktemp -d)
 CREATING=false
 trap 'rm -rf "$STATE_DIR"' EXIT
 
-RENDER_CURL=(curl --silent --show-error --fail --connect-timeout 1
+RENDER_CURL=(curl --silent --show-error --fail --connect-timeout 5
   -H "Accept: application/json"
   -H "Authorization: Bearer ${RENDER_API_TOKEN}")
 
@@ -145,7 +145,7 @@ deploy_servers() {
     for record in "${records[@]}"; do
       server_id=$(cat "$record/service")
       deploy_id=$(jq -r '.id' "$record/response")
-      request 10 "$record/status" "https://api.render.com/v1/services/${server_id}/deploys/${deploy_id}"
+      request 10 "$record/status" --retry 3 "https://api.render.com/v1/services/${server_id}/deploys/${deploy_id}"
       status=$(jq -er '.status' "$record/status")
 
       case "$status" in

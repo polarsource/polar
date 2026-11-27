@@ -31,7 +31,8 @@ def clipboard_button(text: str) -> Generator[None]:
     with tag.button(
         type="button",
         classes="font-normal cursor-pointer",
-        _=f"install CopyToClipboard(text: '{text}')",
+        data_clipboard_text=text,
+        _="install CopyToClipboard",
     ):
         with tag.div(classes="icon-clipboard"):
             pass

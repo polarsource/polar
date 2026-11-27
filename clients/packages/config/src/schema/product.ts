@@ -1,0 +1,537 @@
+import { Schema } from 'effect'
+import { Builder } from './builder'
+import { optional, Slug } from './customField'
+import type { OptionalField } from './customField'
+import { ExternalId } from './external-id'
+import { deprecatedKey, withDeprecation } from './deprecation'
+import { Metadata, withMetadata } from './metadata'
+import type { Currency } from './money'
+import {
+  fixed,
+  free,
+  metered,
+  PriceConfig,
+  priceConfigs,
+  priceCurrencies,
+  sameCurrencies,
+  seats,
+  tier,
+  units,
+} from './price'
+import type { PriceDefinition } from './price'
+import { Visibility, withVisibility } from './visibility'
+
+const IntervalUnit = Schema.Literals(['day', 'week', 'month', 'year'])
+
+type IntervalUnit = typeof IntervalUnit.Type
+
+const AT_MOST_ONE = {
+  fixed: 'Only one fixed or free price is allowed.',
+  seat_based: 'Only one seat-based price is allowed.',
+  unit_based: 'Only one unit-based price is allowed.',
+} as const
+
+// Mirrors the backend: per currency, a product may combine one fixed price
+// with one seat-based or unit-based price, plus one metered price per meter.
+const compositionIssues = (
+  prices: ReadonlyArray<PriceConfig>,
+): ReadonlyArray<string> => {
+  const issues = new Set<string>()
+  const currencies = new Set(prices.map(({ price_currency }) => price_currency))
+  for (const currency of currencies) {
+    const inCurrency = prices.filter(
+      ({ price_currency }) => price_currency === currency,
+    )
+    const count = (type: PriceConfig['amount_type']) =>
+      inCurrency.filter(({ amount_type }) => amount_type === type).length
+    for (const [type, issue] of Object.entries(AT_MOST_ONE)) {
+      if (count(type as keyof typeof AT_MOST_ONE) > 1) issues.add(issue)
+    }
+    if (count('seat_based') > 0 && count('unit_based') > 0) {
+      issues.add(
+        'A seat-based price cannot be combined with a unit-based price.',
+      )
+    }
+    const meters = inCurrency.flatMap((price) =>
+      'meter' in price ? [price.meter] : [],
+    )
+    meters
+      .filter((meter, index) => meters.indexOf(meter) !== index)
+      .forEach((meter) =>
+        issues.add(`Meter "${meter}" is used by more than one price.`),
+      )
+  }
+  return [...issues]
+}
+
+// Mirrors meter_interval_divides_billing_interval on the backend: the meter
+// cycle must re-align with the billing cycle at every renewal.
+const meterCycleDividesBilling = (
+  meter: IntervalUnit,
+  meterCount: number,
+  billing: IntervalUnit,
+  billingCount: number,
+): boolean => {
+  if (meter === billing) return billingCount % meterCount === 0
+  if (meter === 'day' && billing === 'week') {
+    return (billingCount * 7) % meterCount === 0
+  }
+  if (meter === 'month' && billing === 'year') {
+    return (billingCount * 12) % meterCount === 0
+  }
+  if (meter === 'day') return meterCount === 1
+  return false
+}
+
+const meterCycleIssue = ({
+  recurring_interval,
+  recurring_interval_count,
+  meter_interval,
+  meter_interval_count,
+}: {
+  readonly recurring_interval: IntervalUnit | null
+  readonly recurring_interval_count: number | null
+  readonly meter_interval?: IntervalUnit
+  readonly meter_interval_count?: number
+}) => {
+  if (meter_interval === undefined) {
+    return meter_interval_count === undefined
+      ? undefined
+      : {
+          path: ['meter_interval_count'],
+          issue: 'A meter interval count requires a meter interval.',
+        }
+  }
+  if (recurring_interval === null) {
+    return {
+      path: ['meter_interval'],
+      issue: 'A meter cycle is only supported on recurring products.',
+    }
+  }
+  return meterCycleDividesBilling(
+    meter_interval,
+    meter_interval_count ?? 1,
+    recurring_interval,
+    recurring_interval_count ?? 1,
+  )
+    ? undefined
+    : {
+        path: ['meter_interval'],
+        issue:
+          'The meter cycle must evenly divide the billing cycle, so it re-aligns with the billing cycle at every renewal.',
+      }
+}
+
+export const ProductConfig = Schema.Struct({
+  external_id: ExternalId,
+  name: Schema.String.check(Schema.isMinLength(3), Schema.isMaxLength(64)),
+  recurring_interval: Schema.NullOr(IntervalUnit),
+  recurring_interval_count: Schema.NullOr(
+    Schema.Int.check(
+      Schema.isGreaterThanOrEqualTo(1),
+      Schema.isLessThanOrEqualTo(999),
+    ),
+  ),
+  trial_interval: Schema.optionalKey(IntervalUnit),
+  trial_interval_count: Schema.optionalKey(
+    Schema.Int.check(
+      Schema.isGreaterThanOrEqualTo(1),
+      Schema.isLessThanOrEqualTo(1000),
+    ),
+  ),
+  trial_payment_setup_required: Schema.optionalKey(Schema.Boolean),
+  meter_interval: Schema.optionalKey(IntervalUnit),
+  meter_interval_count: Schema.optionalKey(
+    Schema.Int.check(
+      Schema.isGreaterThanOrEqualTo(1),
+      Schema.isLessThanOrEqualTo(999),
+    ),
+  ),
+  prices: Schema.Array(PriceConfig).check(Schema.isMinLength(1)),
+  benefits: Schema.Array(Schema.String),
+  custom_fields: Schema.optionalKey(
+    Schema.Array(
+      Schema.Struct({
+        field: Slug,
+        required: Schema.optionalKey(Schema.Boolean),
+      }),
+    ),
+  ),
+  metadata: Schema.optionalKey(Metadata),
+  description: Schema.optionalKey(Schema.String),
+  visibility: Schema.optionalKey(Visibility),
+  deprecated: Schema.optionalKey(Schema.Literal(true)),
+}).check(
+  Schema.makeFilter(({ prices }) =>
+    compositionIssues(prices).map((issue) => ({ path: ['prices'], issue })),
+  ),
+  Schema.makeFilter((product) => {
+    const issue = meterCycleIssue(product)
+    return issue === undefined ? [] : [issue]
+  }),
+)
+
+export type ProductConfig = typeof ProductConfig.Type
+
+type Interval = IntervalUnit | `${IntervalUnit}s`
+
+const cadences = {
+  daily: 'day',
+  weekly: 'week',
+  monthly: 'month',
+  yearly: 'year',
+} as const satisfies Record<string, IntervalUnit>
+
+const unitOf = (interval: Interval): IntervalUnit =>
+  interval.endsWith('s')
+    ? (interval.slice(0, -1) as IntervalUnit)
+    : (interval as IntervalUnit)
+
+type Recurring = {
+  readonly recurring_interval: IntervalUnit
+  readonly recurring_interval_count: number
+}
+
+type OneTime = {
+  readonly recurring_interval: null
+  readonly recurring_interval_count: null
+}
+
+type Trial = {
+  readonly trial_interval: IntervalUnit
+  readonly trial_interval_count: number
+  readonly trial_payment_setup_required?: boolean
+}
+
+type MeterCycle = {
+  readonly meter_interval: IntervalUnit
+  readonly meter_interval_count: number
+}
+
+type Cycle =
+  | [cadence: keyof typeof cadences]
+  | [count: number, interval: Interval]
+
+const cycleOf = (args: Cycle): [IntervalUnit, number] =>
+  args.length === 1 ? [cadences[args[0]], 1] : [unitOf(args[1]), args[0]]
+
+type Prices<Meter extends string> = readonly [
+  PriceDefinition<Meter>,
+  ...PriceDefinition<Meter>[],
+]
+
+// `undefined` until `.prices()` is called, then the meters the prices charge by.
+type PriceList<Priced> = [Priced] extends [string] ? Prices<Priced> : undefined
+
+type AskedFields<Asked extends string> = ReadonlyArray<
+  Asked | OptionalField<Asked>
+>
+
+class ProductBuilder<
+  Meter extends string,
+  Benefit extends string,
+  Priced extends Meter | undefined,
+  Billing extends Recurring | OneTime | undefined,
+  Granted extends Benefit = never,
+  Deprecated extends boolean = boolean,
+  Field extends string = string,
+> extends withDeprecation(withMetadata(withVisibility(Builder))) {
+  declare readonly [deprecatedKey]: Deprecated
+  readonly trialPeriod: Trial | undefined = undefined
+  readonly meterPeriod: MeterCycle | undefined = undefined
+  readonly benefits: ReadonlyArray<Granted> = []
+  readonly fieldList: ReadonlyArray<{
+    readonly field: string
+    readonly required: boolean
+  }> = []
+  readonly descriptionText: string | undefined = undefined
+
+  constructor(
+    readonly name: string | undefined,
+    readonly priceList: PriceList<Priced>,
+    readonly billing: Billing,
+  ) {
+    super()
+  }
+
+  /** The product's prices. Metered prices stack on top of the others. Every price must use the same currencies. */
+  prices<Charged extends Meter = never>(
+    price: PriceDefinition<Charged>,
+    ...prices: PriceDefinition<Charged>[]
+  ): ProductBuilder<
+    Meter,
+    Benefit,
+    Charged,
+    Billing,
+    Granted,
+    this[typeof deprecatedKey],
+    Field
+  > {
+    return this.with({ priceList: [price, ...prices] })
+  }
+
+  /** Bills every day, week, month or year. */
+  recurring(
+    cadence: keyof typeof cadences,
+  ): ProductBuilder<
+    Meter,
+    Benefit,
+    Priced,
+    Recurring,
+    Granted,
+    this[typeof deprecatedKey],
+    Field
+  >
+  /** Bills every `count` intervals, like `.recurring(3, 'months')`. */
+  recurring(
+    count: number,
+    interval: Interval,
+  ): ProductBuilder<
+    Meter,
+    Benefit,
+    Priced,
+    Recurring,
+    Granted,
+    this[typeof deprecatedKey],
+    Field
+  >
+  recurring(
+    ...args: Cycle
+  ): ProductBuilder<
+    Meter,
+    Benefit,
+    Priced,
+    Recurring,
+    Granted,
+    this[typeof deprecatedKey],
+    Field
+  > {
+    const [interval, count] = cycleOf(args)
+    const billing: Recurring = {
+      recurring_interval: interval,
+      recurring_interval_count: count,
+    }
+    return this.with({ billing })
+  }
+
+  /** Charges once, as a one-time purchase, and grants access forever. */
+  once(): ProductBuilder<
+    Meter,
+    Benefit,
+    Priced,
+    OneTime,
+    Granted,
+    this[typeof deprecatedKey],
+    Field
+  > {
+    const billing: OneTime = {
+      recurring_interval: null,
+      recurring_interval_count: null,
+    }
+    return this.with({
+      billing,
+      trialPeriod: undefined,
+      meterPeriod: undefined,
+    })
+  }
+
+  /**
+   * A free trial before the first charge, like `.trial(14, 'days')`. Pass
+   * `{ requirePaymentMethod: false }` to let customers start it without one.
+   */
+  trial(
+    this: ProductBuilder<Meter, Benefit, Priced, Recurring, Granted>,
+    count: number,
+    interval: Interval,
+    options: { readonly requirePaymentMethod?: boolean } = {},
+  ): this {
+    return this.with({
+      trialPeriod: {
+        trial_interval: unitOf(interval),
+        trial_interval_count: count,
+        ...(options.requirePaymentMethod !== undefined && {
+          trial_payment_setup_required: options.requirePaymentMethod,
+        }),
+      },
+    })
+  }
+
+  /**
+   * Invoices usage, resets meters and grants credits every day, week, month or
+   * year, separately from billing. Must divide the billing interval evenly.
+   */
+  meterCycle(
+    this: ProductBuilder<Meter, Benefit, Priced, Recurring, Granted>,
+    cadence: keyof typeof cadences,
+  ): this
+  /**
+   * Invoices usage, resets meters and grants credits every `count` intervals,
+   * separately from billing. Must divide the billing interval evenly.
+   */
+  meterCycle(
+    this: ProductBuilder<Meter, Benefit, Priced, Recurring, Granted>,
+    count: number,
+    interval: Interval,
+  ): this
+  meterCycle(
+    this: ProductBuilder<Meter, Benefit, Priced, Recurring, Granted>,
+    ...args: Cycle
+  ): this {
+    const [interval, count] = cycleOf(args)
+    return this.with({
+      meterPeriod: { meter_interval: interval, meter_interval_count: count },
+    })
+  }
+
+  /** The benefits customers get with this product. Polar grants and revokes them automatically. */
+  grants<const Grant extends Benefit>(
+    benefits: ReadonlyArray<Grant>,
+  ): ProductBuilder<
+    Meter,
+    Benefit,
+    Priced,
+    Billing,
+    Grant,
+    this[typeof deprecatedKey],
+    Field
+  > {
+    return this.with({ benefits })
+  }
+
+  /**
+   * The custom fields checkout asks for, in this order. They're required
+   * unless marked optional: `(optional) => ['terms', optional('company')]`.
+   */
+  customFields<const Asked extends Field>(
+    fields:
+      | AskedFields<Asked>
+      | ((
+          optional: <const Skippable extends Field>(
+            field: Skippable,
+          ) => OptionalField<Skippable>,
+        ) => AskedFields<Asked>),
+  ): this {
+    return this.with({
+      fieldList: (typeof fields === 'function' ? fields(optional) : fields).map(
+        (field) =>
+          typeof field === 'string' ? { field, required: true } : field,
+      ),
+    })
+  }
+
+  /** Shown on the checkout page. Supports Markdown. */
+  description(description: string): this {
+    return this.with({ descriptionText: description })
+  }
+}
+
+/** A product with prices and a billing cycle (`.recurring()` or `.once()`). */
+export type ProductDefinition<
+  Meter extends string = string,
+  Benefit extends string = string,
+  Granted extends Benefit = Benefit,
+  Field extends string = string,
+> = ProductBuilder<
+  Meter,
+  Benefit,
+  Meter,
+  Recurring | OneTime,
+  Granted,
+  boolean,
+  Field
+>
+
+/** A product customers can buy. The name defaults to its key in `products`. */
+export const product = <
+  Meter extends string = string,
+  Benefit extends string = string,
+  Field extends string = string,
+>(
+  name?: string,
+): ProductBuilder<
+  Meter,
+  Benefit,
+  undefined,
+  undefined,
+  never,
+  boolean,
+  Field
+> =>
+  new ProductBuilder<
+    Meter,
+    Benefit,
+    undefined,
+    undefined,
+    never,
+    boolean,
+    Field
+  >(name, undefined, undefined)
+
+/**
+ * Every price in a product must be set in the same currencies, so each
+ * currency gets the same pricing structure.
+ */
+export const productPrices = (
+  external_id: string,
+  { priceList, billing }: ProductDefinition,
+  defaultCurrency: Currency = 'usd',
+): ReadonlyArray<PriceConfig> => {
+  const where = (index: number) =>
+    `Price ${index + 1} of product "${external_id}"`
+  if (
+    billing.recurring_interval === null &&
+    priceList.some((price) => price.kind === 'metered')
+  ) {
+    throw new Error(
+      `Product "${external_id}" is a one-time purchase, so it can't have metered prices.`,
+    )
+  }
+  let currencies: ReadonlyArray<Currency> | undefined
+  priceList.forEach((price, index) => {
+    const own = priceCurrencies(price, where(index))
+    if (own === undefined) return
+    if (currencies === undefined) {
+      currencies = own
+    } else if (!sameCurrencies(own, currencies)) {
+      throw new Error(
+        `${where(index)} must have amounts in the same currencies as the product's other prices (${currencies.join(', ')}).`,
+      )
+    }
+  })
+  return priceList.flatMap((price, index) =>
+    priceConfigs(price, currencies ?? [defaultCurrency], where(index)),
+  )
+}
+
+export type ProductHelpers<
+  Meter extends string,
+  Benefit extends string,
+  Field extends string = string,
+> = {
+  /** A product customers can buy. The name defaults to its key in `products`. */
+  readonly product: (
+    name?: string,
+  ) => ProductBuilder<
+    Meter,
+    Benefit,
+    undefined,
+    undefined,
+    never,
+    boolean,
+    Field
+  >
+  /** A fixed price of 0 in each currency the product's other prices use (USD when there are none). */
+  readonly free: typeof free
+  /** Charges one set amount. */
+  readonly fixed: typeof fixed
+  /** Charges per seat. The buyer assigns seats to team members, who each get the product's benefits. */
+  readonly seats: typeof seats
+  /** Charges per unit, paid up front. Customers pick a quantity and get each benefit once. */
+  readonly units: typeof units
+  /** A tier is unbounded unless you set `.max()`. Only the last tier may be unbounded. */
+  readonly tier: typeof tier
+  /** Charges for what a meter records, billed at the end of each period. */
+  readonly meter: <const Priced extends Meter>(
+    meter: Priced,
+  ) => ReturnType<typeof metered<Priced>>
+}

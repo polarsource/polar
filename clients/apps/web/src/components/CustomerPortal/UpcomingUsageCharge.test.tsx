@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { UpcomingUsageCharge } from './UpcomingUsageCharge'
 
 vi.mock('@/hooks/queries/customerPortal', () => ({
-  useCustomerSubscriptionMeterChargePreview: vi.fn(),
+  useCustomerSubscriptionMeterChargePreview: vi.fn(() => ({ data: undefined })),
 }))
 
 const subscription = (amount: number) =>
@@ -43,10 +43,10 @@ describe('UpcomingUsageCharge', () => {
     )
 
     const text = container.textContent ?? ''
-    expect(text).toContain('Upcoming Usage Charge')
+    expect(text).toContain('Upcoming usage charge')
     expect(text).toContain('API requests')
     expect(text).toMatch(/Discount\s*-\$4\.60/)
-    expect(text).toMatch(/Estimated Total\s*\$13\.80/)
+    expect(text).toMatch(/Estimated total\s*\$13\.80/)
   })
 
   it('renders nothing without overage', () => {

@@ -1,18 +1,28 @@
 import contextlib
 import datetime
 import os
+import sys
 import types
 import typing
 
-from polar import PolarError
+import anyio
+
 from polar.base import AsyncClientBase, parse_response_json
-from polar.logging import get_logger
 from polar.metering.buffered import (
     BufferedMeteringOptions,
     BufferedMeteringStrategy,
     DropReason,
 )
 from polar.metering.client import PolarClient
+from polar.metering.errors import (
+    DeliveryFailure,
+    InvalidActorError,
+    MeteringDeliveryError,
+    MeteringError,
+    MeteringTimeoutError,
+    UnknownMeterError,
+    validate_timeout,
+)
 from polar.metering.events import (
     ContextualEventInput,
     EventCustomerInput,
@@ -21,31 +31,25 @@ from polar.metering.events import (
 )
 from polar.metering.meter import CustomerMeter, CustomerMeterList, MeterProtocol
 
-if typing.TYPE_CHECKING:
-    from polar.outpost import Outpost
-
-log = get_logger(__name__)
-
-
-class MeteringError(PolarError):
-    """Base error for metering configuration and operations."""
-
-
-class InvalidActorError(MeteringError):
-    """Raised when customer or member identifiers are inconsistent."""
-
 
 class MeteringOutpostOptions(typing.TypedDict, total=False):
-    """Configure the optional Outpost strategy.
+    """Configure the optional Outpost strategy, which delivers the events itself.
 
     Attributes:
         redis_url: Redis connection URL. Defaults to the REDIS_URL environment variable.
         telemetry: Send Outpost metrics and traces to Polar. Defaults to True;
             POLAR_OUTPOST_TELEMETRY=0 disables it regardless of this option.
+        snapshot_timeout: Seconds a read of a cold customer waits for its first
+            snapshot. Defaults to 5.
+        on_delivered: Called with each batch Polar accepted.
+        on_dropped: Called with each batch Polar refused, and why.
     """
 
     redis_url: str
     telemetry: bool
+    snapshot_timeout: float
+    on_delivered: typing.Callable[[list[EventInput]], typing.Awaitable[None]]
+    on_dropped: typing.Callable[[list[EventInput], DropReason], typing.Awaitable[None]]
 
 
 class MeteringStrategyProtocol(
@@ -79,8 +83,8 @@ class ValidateProtocol(typing.Protocol):
 class FlushProtocol(typing.Protocol):
     """Optional strategy capability for explicit draining."""
 
-    async def flush(self) -> None:
-        """Wait until earlier events are delivered or reported as dropped."""
+    async def flush(self, *, timeout: float = 30.0) -> None:
+        """Confirm earlier events within the given timeout in seconds."""
         ...
 
 
@@ -175,8 +179,9 @@ class Metering:
     """Dispatch events, actor warmup, and meter reads to metering strategies.
 
     Create with polar.metering() and use as an async context manager. By
-    default, events are buffered for HTTP delivery, with Outpost added when
-    outpost is set. Accepting an event does not confirm delivery.
+    default, events are buffered for HTTP delivery; with the outpost option,
+    Outpost delivers them itself instead. Accepting an event does not confirm
+    delivery.
     """
 
     def __init__(
@@ -211,10 +216,18 @@ class Metering:
         exc_value: BaseException | None,
         traceback: types.TracebackType | None,
     ) -> bool | None:
-        await self._close()
+        """Drain strategies and preserve both body and delivery failures."""
+        try:
+            await self._close()
+        except BaseException as error:
+            if exc_value is not None:
+                raise BaseExceptionGroup(
+                    "Metering body and delivery failed", [exc_value, error]
+                ) from None
+            raise
 
     async def _close(self) -> None:
-        # In start order: a strategy drains into the ones after it, the buffer into Outpost.
+        # In start order: a strategy drains into the ones after it.
         errors: list[Exception] = []
         for strategy in self._running:
             try:
@@ -227,25 +240,40 @@ class Metering:
         if errors:
             raise ExceptionGroup("Metering close failed", errors)
 
-    async def flush(self) -> None:
-        """Flush every capable strategy without closing the helper.
+    async def flush(self, *, timeout: float = 30.0) -> None:
+        """Wait for earlier events without closing the shared helper.
 
-        Call this explicitly in serverless environments before returning the
-        response so pending events are processed while the request is active.
-        Earlier buffered events are delivered or reported to on_dropped before
-        returning. Later events are outside this flush. A successful flush does
-        not guarantee delivery or immediate visibility in Polar's meter reads.
+        Await this before returning a serverless response. A successful flush
+        confirms delivery of earlier buffered events, but not immediate visibility
+        in meter reads. Later events remain outside this caller's boundary.
+
+        Args:
+            timeout: Maximum wait in seconds across all strategies. Defaults to 30.
 
         Raises:
-            ExceptionGroup: One or more strategy flushes failed.
+            MeteringDeliveryError: Earlier events could not be confirmed.
+            MeteringTimeoutError: The caller's wait expired; delivery continues.
+            ExceptionGroup: Multiple strategies failed.
         """
+        validate_timeout(timeout)
+        deadline = anyio.current_time() + timeout
         errors: list[Exception] = []
         for strategy in self.strategies:
             if isinstance(strategy, FlushProtocol):
+                remaining = max(0.0, deadline - anyio.current_time())
                 try:
-                    await strategy.flush()
+                    with anyio.fail_after(remaining):
+                        await strategy.flush(timeout=remaining)
+                except MeteringTimeoutError as error:
+                    errors.append(error)
+                except TimeoutError as error:
+                    failure = MeteringTimeoutError(timeout)
+                    failure.__cause__ = error
+                    errors.append(failure)
                 except Exception as error:  # noqa: BLE001
                     errors.append(error)
+        if len(errors) == 1:
+            raise errors[0]
         if errors:
             raise ExceptionGroup("Metering flush failed", errors)
 
@@ -369,11 +397,14 @@ class Metering:
         _validate_actor(customer_id, None, external_customer_id, None)
         for strategy in self.strategies:
             if isinstance(strategy, MeterProtocol):
-                return await strategy.meter(
-                    meter_id=meter_id,
-                    customer_id=customer_id,
-                    external_customer_id=external_customer_id,
-                )
+                try:
+                    return await strategy.meter(
+                        meter_id=meter_id,
+                        customer_id=customer_id,
+                        external_customer_id=external_customer_id,
+                    )
+                except UnknownMeterError:
+                    pass
         request = self._client.build_request(
             method="GET",
             url="/v1/customer-meters/",
@@ -403,9 +434,10 @@ class Metering:
             polar: Async Polar client used for event delivery and meter reads.
             buffered: Buffer options; omitted fields use BufferedMeteringOptions defaults.
             outpost: True or Outpost options to enable Outpost, which then requires
-                redis_url or REDIS_URL. Disabled by default.
+                redis_url or REDIS_URL and delivers the events instead of the buffer.
+                Disabled by default.
             strategies: Replace all default strategies. Cannot be combined with
-                buffered or outpost options.
+                buffered or outpost options, nor hold both a buffer and an Outpost.
 
         Returns:
             A helper to enter with async with before use.
@@ -418,58 +450,51 @@ class Metering:
                 raise MeteringError(
                     "Cannot combine strategies with buffered or outpost options"
                 )
+            # An Outpost exists only once its module is loaded: Redis stays optional.
+            outpost_module = sys.modules.get("polar.outpost.client")
+            if (
+                outpost_module is not None
+                and any(isinstance(s, BufferedMeteringStrategy) for s in strategies)
+                and any(isinstance(s, outpost_module.Outpost) for s in strategies)
+            ):
+                raise MeteringError(
+                    "Outpost delivers its events itself: the buffer would send them twice"
+                )
             return cls(strategies=strategies, client=polar._client)
-        buffered = buffered or BufferedMeteringOptions()
-        strategies = []
-        if outpost is not None and outpost is not False:
-            outpost_options = MeteringOutpostOptions() if outpost is True else outpost
-            redis_url = outpost_options.get("redis_url", os.environ.get("REDIS_URL"))
-            if not redis_url:
-                raise MeteringError("Outpost requires redis_url or REDIS_URL")
-            from polar.outpost import Outpost
-
-            outpost_strategy = Outpost.create(
-                polar, redis_url, telemetry=outpost_options.get("telemetry", True)
+        if outpost is None or outpost is False:
+            return cls(
+                strategies=[
+                    BufferedMeteringStrategy(
+                        polar, **(buffered or BufferedMeteringOptions())
+                    )
+                ],
+                client=polar._client,
             )
-            strategies.append(outpost_strategy)
-            buffered = _confirming(buffered, outpost_strategy)
+        if buffered is not None:
+            raise MeteringError(
+                "Outpost delivers its events itself: pass buffered or outpost, not both"
+            )
+        outpost_options = MeteringOutpostOptions() if outpost is True else outpost
+        redis_url = outpost_options.get("redis_url", os.environ.get("REDIS_URL"))
+        if not redis_url:
+            raise MeteringError("Outpost requires redis_url or REDIS_URL")
+        from polar.outpost.client import SNAPSHOT_TIMEOUT, Outpost
+
         return cls(
-            strategies=[BufferedMeteringStrategy(polar, **buffered), *strategies],
+            strategies=[
+                Outpost.create(
+                    polar,
+                    redis_url,
+                    telemetry=outpost_options.get("telemetry", True),
+                    snapshot_timeout=outpost_options.get(
+                        "snapshot_timeout", SNAPSHOT_TIMEOUT
+                    ),
+                    on_delivered=outpost_options.get("on_delivered"),
+                    on_dropped=outpost_options.get("on_dropped"),
+                )
+            ],
             client=polar._client,
         )
-
-
-def _confirming(
-    buffered: BufferedMeteringOptions, outpost: "Outpost"
-) -> BufferedMeteringOptions:
-    """Settle in Outpost the events the buffer delivered or dropped, before the user's
-    callbacks. Polar received the delivered events: they settle where their bucket is hot.
-    It will never count the dropped ones: they settle everywhere."""
-    user_delivered = buffered.get("on_delivered")
-    user_dropped = buffered.get("on_dropped")
-
-    async def settle(events: list[EventInput], *, dropped: bool) -> None:
-        try:
-            if dropped:
-                await outpost.confirm(events)
-            else:
-                await outpost.acknowledge(events)
-        except Exception:
-            log.warning(
-                "Could not settle %s events in Outpost", len(events), exc_info=True
-            )
-
-    async def on_delivered(events: list[EventInput]) -> None:
-        await settle(events, dropped=False)
-        if user_delivered is not None:
-            await user_delivered(events)
-
-    async def on_dropped(events: list[EventInput], reason: DropReason) -> None:
-        await settle(events, dropped=True)
-        if user_dropped is not None:
-            await user_dropped(events, reason)
-
-    return {**buffered, "on_delivered": on_delivered, "on_dropped": on_dropped}
 
 
 def _validate_actor(
@@ -493,11 +518,15 @@ __all__ = [
     "BufferedMeteringOptions",
     "ContextualEventInput",
     "CustomerMeter",
+    "DeliveryFailure",
     "DropReason",
     "EventInput",
     "InvalidActorError",
     "Metering",
+    "MeteringDeliveryError",
     "MeteringError",
     "MeteringOutpostOptions",
     "MeteringStrategyProtocol",
+    "MeteringTimeoutError",
+    "UnknownMeterError",
 ]

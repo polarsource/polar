@@ -1,5 +1,7 @@
 locals {
   backend_config = {
+    database_statement_cache_size             = 0
+    database_prepared_statement_cache_size    = 0
     linear_team_id                            = var.linear_team_id
     linear_payout_amount_mismatch_template_id = var.linear_payout_amount_mismatch_template_id
 
@@ -57,41 +59,47 @@ locals {
       CA = "720474766 RT9999"
       AU = "300038975137"
     })
-    tax_processors                                   = "[\"stripe\"]"
-    tax_record_processor                             = "stripe"
+    tax_processors                                   = "[\"numeral\",\"stripe\"]"
+    tax_record_processor                             = "numeral"
     customer_portal_url_overrides                    = var.customer_portal_url_overrides
+    protected_oauth2_client_ids                      = var.protected_oauth2_client_ids
     plain_default_tier_external_id                   = var.plain_default_tier_external_id
     merchant_migration_destination_stripe_account_id = var.merchant_migration_destination_stripe_account_id
   }
 
   backend_secrets = {
-    linear_api_key                 = var.linear_api_key
-    stripe_publishable_key         = var.stripe_publishable_key_production
-    discord_bot_token              = var.backend_discord_bot_token_production
-    discord_client_id              = var.backend_discord_client_id_production
-    discord_client_secret          = var.backend_discord_client_secret_production
-    discord_proxy_url              = var.backend_discord_proxy_url
-    posthog_project_api_key        = var.backend_posthog_project_api_key_production
-    resend_api_key                 = var.backend_resend_api_key_production
-    resend_active_users_segment_id = var.resend_active_users_segment_id
-    resend_webhook_secret          = var.backend_resend_webhook_secret
-    firecrawl_api_key              = var.firecrawl_api_key
-    logo_dev_publishable_key       = var.backend_logo_dev_publishable_key_production
-    sentry_dsn                     = var.backend_sentry_dsn_production
-    plain_request_signing_secret   = var.backend_plain_request_signing_secret_production
-    plain_token                    = var.backend_plain_token_production
-    plain_chat_secret              = var.backend_plain_chat_secret_production
-    app_review_email               = var.backend_app_review_email
-    app_review_otp_code            = var.backend_app_review_otp_code
-    chargeback_stop_webhook_secret = var.backend_chargebackstop_webhook_secret_production
-    numeral_api_key                = var.numeral_api_key_production
-    turnstile_secret               = var.turnstile_secret
+    linear_api_key                     = var.linear_api_key
+    stripe_publishable_key             = var.stripe_publishable_key_production
+    discord_bot_token                  = var.backend_discord_bot_token_production
+    discord_client_id                  = var.backend_discord_client_id_production
+    discord_client_secret              = var.backend_discord_client_secret_production
+    discord_proxy_url                  = var.backend_discord_proxy_url
+    posthog_project_api_key            = var.backend_posthog_project_api_key_production
+    resend_api_key                     = var.backend_resend_api_key_production
+    resend_active_users_segment_id     = var.resend_active_users_segment_id
+    resend_webhook_secret              = var.backend_resend_webhook_secret
+    payment_retry_alert_api_key        = var.payment_retry_alert_api_key
+    payment_retry_alert_webhook_secret = var.payment_retry_alert_webhook_secret
+    firecrawl_api_key                  = var.firecrawl_api_key
+    logo_dev_publishable_key           = var.backend_logo_dev_publishable_key_production
+    sentry_dsn                         = var.backend_sentry_dsn_production
+    plain_request_signing_secret       = var.backend_plain_request_signing_secret_production
+    plain_token                        = var.backend_plain_token_production
+    plain_chat_secret                  = var.backend_plain_chat_secret_production
+    app_review_email                   = var.backend_app_review_email
+    app_review_otp_code                = var.backend_app_review_otp_code
+    chargeback_stop_webhook_secret     = var.backend_chargebackstop_webhook_secret_production
+    numeral_api_key                    = var.numeral_api_key_production
+    turnstile_secret                   = var.turnstile_secret
   }
 
   google_secrets = {
-    client_id            = var.google_client_id_production
-    client_secret        = var.google_client_secret_production
-    service_account_json = var.google_service_account_json
+    backoffice_client_id     = var.backoffice_google_client_id
+    backoffice_client_secret = var.backoffice_google_client_secret
+    backoffice_hosted_domain = var.backoffice_google_hosted_domain
+    client_id                = var.google_client_id_production
+    client_secret            = var.google_client_secret_production
+    service_account_json     = var.google_service_account_json
   }
 
   pydantic_ai_gateway_secrets = { api_key = var.pydantic_ai_gateway_api_key_production }

@@ -24,9 +24,9 @@ type Stage =
 const STAGES: Record<Stage, { label: string; color?: StatusColor }> = {
   switched: { label: 'Switched', color: 'gray' },
   failed: { label: 'Failed', color: 'red' },
-  stays: { label: 'Stays on Stripe', color: 'red' },
+  stays: { label: 'Not moving', color: 'red' },
   needs_info: { label: 'Needs info', color: 'yellow' },
-  ready: { label: 'Ready' },
+  ready: { label: 'Ready', color: 'green' },
   to_prepare: { label: 'To prepare' },
 }
 
@@ -70,8 +70,7 @@ export function reviewStatus(row: ReviewRow): ReviewStatus {
   if (paymentMethod.kind !== 'card') {
     return { label: 'Needs a card', color: 'yellow', paymentMethod }
   }
-  return {
-    label: stage === 'ready' ? 'Prepared' : 'Ready',
-    paymentMethod,
-  }
+  return stage === 'ready'
+    ? { label: 'Prepared', paymentMethod }
+    : { label: 'Ready to prepare', color: 'green', paymentMethod }
 }

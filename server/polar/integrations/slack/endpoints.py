@@ -16,7 +16,6 @@ from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
 from polar.models import SlackApp
 from polar.openapi import APITag
 from polar.organization.repository import OrganizationRepository
-from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -31,10 +30,12 @@ from .repository import SlackAppRepository
 from .schemas import (
     SlackIntegration,
     SlackIntegrationCredentialsUpdate,
+    SlackIntegrationListParams,
     SlackIntegrationManifest,
     SlackIntegrationManifestRequest,
     SlackIntegrationsResponse,
     SlackWorkspaceUser,
+    SlackWorkspaceUserListParams,
     SlackWorkspaceUsersResponse,
 )
 from .service import (
@@ -90,20 +91,20 @@ async def _assert_slack_benefit_enabled(
     },
 )
 async def list_integrations(
-    organization_id: Annotated[OrganizationID, Query()],
+    filters: Annotated[SlackIntegrationListParams, Query()],
     auth_subject: SlackIntegrationRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> SlackIntegrationsResponse:
     await assert_organization_permission(
         session,
         auth_subject,
-        organization_id,
+        filters.organization_id,
         OrganizationPermission.organization_manage,
     )
-    await _assert_slack_benefit_enabled(session, organization_id)
+    await _assert_slack_benefit_enabled(session, filters.organization_id)
 
     repository = SlackAppRepository.from_session(session)
-    integrations = await repository.list_by_organization_id(organization_id)
+    integrations = await repository.list_by_organization_id(filters.organization_id)
     return SlackIntegrationsResponse.model_validate({"integrations": integrations})
 
 
@@ -113,11 +114,13 @@ async def list_integrations(
     responses={404: {"description": "No Slack integration configured."}},
 )
 async def list_workspace_users(
-    integration_id: Annotated[UUID4, Query()],
+    filters: Annotated[SlackWorkspaceUserListParams, Query()],
     auth_subject: SlackIntegrationRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> SlackWorkspaceUsersResponse:
-    integration = await _get_writable_integration(session, auth_subject, integration_id)
+    integration = await _get_writable_integration(
+        session, auth_subject, filters.integration_id
+    )
     if await integration.get_bot_token() is None:
         raise ResourceNotFound()
     users = await slack_app_service.list_workspace_users(integration)

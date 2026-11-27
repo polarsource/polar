@@ -2,7 +2,7 @@ from typing import Annotated, Literal
 
 from annotated_types import MaxLen
 from fastapi import Path
-from pydantic import UUID4, Field
+from pydantic import MISSING, UUID4, Field
 
 from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import (
@@ -11,6 +11,7 @@ from polar.kit.schemas import (
     Schema,
     TimestampedSchema,
 )
+from polar.kit.versioning import Omissible
 from polar.models.member import MemberRole
 
 ExternalMemberID = Annotated[str, Path(description="The member external ID.")]
@@ -84,10 +85,10 @@ class MemberCreate(MemberCreateFromCustomer):
 class MemberUpdate(Schema):
     """Schema for updating a member."""
 
-    name: MemberNameInput | None = None
-    email: EmailStrDNS | None = None
-    role: MemberRole | None = Field(
-        default=None,
+    name: Omissible[MemberNameInput] = MISSING
+    email: Omissible[EmailStrDNS] = MISSING
+    role: Omissible[MemberRole] = Field(
+        default=MISSING,
         description="The role of the member within the customer.",
         examples=[MemberRole.member],
     )

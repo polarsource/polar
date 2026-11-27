@@ -1,5 +1,5 @@
 import { estimateMeteredCost } from '@/components/Products/ProductForm/Pricing/utils'
-import { MeteredPrice } from '@/utils/product'
+import { isMeteredPrice, MeteredPrice } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 
 export interface MeterCreditOption {
@@ -7,6 +7,53 @@ export interface MeterCreditOption {
   balance: number
   unitPrice: MeteredPrice | null
   productName: string | null
+}
+
+/**
+ * Live meters, plus older versions the customer is billed on, plus the
+ * preselected meter. Not every version: credits only count on a billed one.
+ */
+export const getMeterCreditOptions = (
+  liveMeters: schemas['Meter'][],
+  subscriptions: schemas['Subscription'][],
+  customerMeters: schemas['CustomerMeter'][],
+  selectedMeterId?: string,
+): MeterCreditOption[] => {
+  const meteredPrices = subscriptions.flatMap((subscription) =>
+    subscription.prices
+      .filter(isMeteredPrice)
+      .map((price) => ({ price, subscription })),
+  )
+
+  // subscription.meters keeps meters from earlier products
+  const billedMeters = subscriptions
+    .flatMap((subscription) => subscription.meters.map((m) => m.meter))
+    .filter((meter) =>
+      meteredPrices.some(({ price }) => price.meter_id === meter.id),
+    )
+  const selectedMeter = customerMeters.find(
+    (cm) => cm.meter_id === selectedMeterId,
+  )?.meter
+
+  const meters = new Map<string, schemas['Meter']>()
+  for (const meter of [...liveMeters, ...billedMeters, selectedMeter]) {
+    if (meter && !meter.archived_at) meters.set(meter.id, meter)
+  }
+
+  return [...meters.values()]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((meter) => {
+      const billing = meteredPrices.find(
+        ({ price }) => price.meter_id === meter.id,
+      )
+      return {
+        meter,
+        balance:
+          customerMeters.find((cm) => cm.meter_id === meter.id)?.balance ?? 0,
+        unitPrice: billing?.price ?? null,
+        productName: billing?.subscription.product.name ?? null,
+      }
+    })
 }
 
 export interface CreditPreview {

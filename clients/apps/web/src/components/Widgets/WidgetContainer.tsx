@@ -1,29 +1,43 @@
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { PropsWithChildren, ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface WidgetContainerProps {
   title: string
+  headline?: ReactNode
   action?: ReactNode
   className?: string
 }
 
 export const WidgetContainer = ({
   title,
+  headline,
   action,
   className,
   children,
 }: PropsWithChildren<WidgetContainerProps>) => {
   return (
     <div
-      className={twMerge(
-        'flex max-h-96 flex-col gap-6 overflow-hidden',
-        className,
-      )}
+      className={twMerge('flex h-82 flex-col gap-6 overflow-hidden', className)}
     >
-      <div className="flex shrink-0 items-center justify-between px-6 pt-6">
-        <h3 className="text-lg">{title}</h3>
-        {action && <div>{action}</div>}
-      </div>
+      <Box
+        flexShrink={0}
+        flexDirection="column"
+        rowGap="s"
+        paddingHorizontal="xl"
+        paddingTop="xl"
+      >
+        <Box alignItems="center" justifyContent="between" columnGap="m">
+          <Box minWidth={0}>
+            <Text as="h3" truncate>
+              {title}
+            </Text>
+          </Box>
+          <Box flexShrink={0}>{action}</Box>
+        </Box>
+        {headline}
+      </Box>
       <div className="flex flex-1 flex-col overflow-y-auto px-6">
         {children}
       </div>

@@ -1,8 +1,16 @@
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
+from typing import cast
 from uuid import UUID
 
-from sqlalchemy import Select, and_, case, func, select
-from sqlalchemy.orm import contains_eager, joinedload, selectinload, undefer
+from sqlalchemy import Select, Uuid, and_, case, func, or_, select, union
+from sqlalchemy.orm import (
+    aliased,
+    contains_eager,
+    joinedload,
+    selectinload,
+    undefer,
+    with_polymorphic,
+)
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.currency import PresentmentCurrency
@@ -18,12 +26,24 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.models import (
+    Benefit,
+    Catalog,
+    CatalogProduct,
     CheckoutProduct,
+    Meter,
     Product,
+    ProductBenefit,
+    ProductCustomField,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
+    ProductPriceMeteredTiers,
+    ProductPriceMeteredUnit,
+    Subscription,
+    SubscriptionUpdate,
 )
+from polar.models.benefit import BenefitType
+from polar.models.catalog import CatalogStatus
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSource
 from polar.postgres import sql
 
@@ -54,18 +74,20 @@ class ProductRepository(
         return await self.get_one_or_none(statement)
 
     async def get_by_external_id_and_organization(
-        self, external_id: str, organization_id: UUID
+        self, external_id: str, organization_id: UUID, *, options: Options = ()
     ) -> Product | None:
-        statement = self.get_base_statement().where(
-            Product.external_id == external_id,
-            Product.organization_id == organization_id,
-            Product.is_current,
+        statement = (
+            self.get_base_statement()
+            .where(
+                Product.external_id == external_id,
+                Product.organization_id == organization_id,
+                Product.is_current,
+            )
+            .options(*options)
         )
         return await self.get_one_or_none(statement)
 
-    def get_catalog_baseline_statement(
-        self, organization_id: UUID
-    ) -> Select[tuple[Product]]:
+    def get_catalog_baseline_statement(self, organization_id: UUID) -> Select[Product]:
         return self.get_base_statement().where(
             Product.organization_id == organization_id,
             Product.external_id.is_not(None),
@@ -78,6 +100,79 @@ class ProductRepository(
             undefer(Product.external_id)
         )
         return await self.get_all(statement)
+
+    async def get_current_by_benefits(
+        self, organization_id: UUID, benefit_ids: Sequence[UUID]
+    ) -> Sequence[Product]:
+        statement = (
+            self.get_base_statement()
+            .join(ProductBenefit, ProductBenefit.product_id == Product.id)
+            .where(
+                Product.organization_id == organization_id,
+                ProductBenefit.benefit_id.in_(benefit_ids),
+                Product.is_current,
+                ~Product.is_archived,
+            )
+            .options(undefer(Product.external_id))
+        )
+        return await self.get_all(statement)
+
+    async def get_current_by_meters(
+        self, organization_id: UUID, meter_ids: Sequence[UUID]
+    ) -> Sequence[tuple[Product, UUID]]:
+        """Current products with a metered price on one of the meters, with
+        that meter."""
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
+        meter_id = price.ProductPriceMeteredUnit.meter_id
+        statement = (
+            select(Product, meter_id)
+            .join(price, price.product_id == Product.id)
+            .where(
+                Product.organization_id == organization_id,
+                Product.is_current,
+                ~Product.is_archived,
+                Product.deleted_at.is_(None),
+                price.is_metered,
+                ~price.is_archived,
+                ~price.is_deleted,
+                meter_id.in_(meter_ids),
+            )
+            .options(undefer(Product.external_id))
+        )
+        result = await self.session.execute(statement)
+        return list(dict.fromkeys((product, id) for product, id in result.tuples()))
+
+    async def get_current_by_custom_fields(
+        self, organization_id: UUID, custom_field_ids: Sequence[UUID]
+    ) -> Sequence[Product]:
+        statement = (
+            self.get_base_statement()
+            .join(ProductCustomField, ProductCustomField.product_id == Product.id)
+            .where(
+                Product.organization_id == organization_id,
+                ProductCustomField.custom_field_id.in_(custom_field_ids),
+                Product.is_current,
+                ~Product.is_archived,
+            )
+            .options(
+                undefer(Product.external_id),
+                selectinload(Product.attached_custom_fields),
+            )
+        )
+        return await self.get_all(statement)
+
+    async def get_names_by_ids(
+        self, organization_id: UUID, ids: Collection[UUID]
+    ) -> dict[UUID, str]:
+        statement = select(Product.id, Product.name).where(
+            Product.organization_id == organization_id,
+            Product.id.in_(ids),
+            Product.deleted_at.is_(None),
+        )
+        result = await self.session.execute(statement)
+        return {id: name for id, name in result.all()}
 
     async def get_all_by_external_ids(
         self,
@@ -99,9 +194,184 @@ class ProductRepository(
             statement = statement.with_for_update(of=Product, key_share=True)
         return await self.get_all(statement)
 
-    def get_organization_statement(
-        self, organization_id: UUID
-    ) -> Select[tuple[Product]]:
+    async def get_retired_by_external_ids(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> Sequence[Product]:
+        """The latest published version of each product that is no longer current."""
+        if not external_ids:
+            return []
+        drafts = select(Catalog.id).where(
+            Catalog.organization_id == organization_id,
+            Catalog.status == CatalogStatus.draft,
+        )
+        statement = (
+            self.get_base_statement()
+            .where(
+                Product.organization_id == organization_id,
+                Product.external_id.in_(external_ids),
+                Product.is_current.is_(False),
+                or_(Product.catalog_id.is_(None), Product.catalog_id.not_in(drafts)),
+            )
+            .distinct(Product.external_id)
+            .order_by(Product.external_id, Product.created_at.desc(), Product.id.desc())
+            .options(undefer(Product.external_id), *self.get_eager_options())
+        )
+        return await self.get_all(statement)
+
+    async def get_other_published_versions(
+        self, product: Product, *, options: Options = ()
+    ) -> Sequence[Product]:
+        """The other published versions of `product`, the current one first, then
+        the newest first."""
+        requested = aliased(Product)
+        drafts = select(Catalog.id).where(
+            Catalog.organization_id == product.organization_id,
+            Catalog.status == CatalogStatus.draft,
+        )
+        statement = (
+            self.get_base_statement()
+            .join(
+                requested,
+                and_(
+                    requested.organization_id == Product.organization_id,
+                    requested.external_id == Product.external_id,
+                ),
+            )
+            .where(
+                requested.id == product.id,
+                Product.id != product.id,
+                or_(
+                    Product.is_current,
+                    Product.catalog_id.is_(None),
+                    Product.catalog_id.not_in(drafts),
+                ),
+            )
+            .order_by(
+                Product.is_current.desc(), Product.created_at.desc(), Product.id.desc()
+            )
+            .options(*options)
+        )
+        return await self.get_all(statement)
+
+    async def get_meters(
+        self, product_ids: Sequence[UUID]
+    ) -> dict[UUID, dict[str, UUID]]:
+        """The meters each product bills or credits, by meter `external_id`."""
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
+        billed = select(price.product_id, price.ProductPriceMeteredUnit.meter_id).where(
+            price.product_id.in_(product_ids),
+            price.is_metered,
+            price.source == ProductPriceSource.catalog,
+            ~price.is_archived,
+            ~price.is_deleted,
+        )
+        credited = (
+            select(
+                ProductBenefit.product_id,
+                Benefit.properties["meter_id"].as_string().cast(Uuid),
+            )
+            .join(Benefit, Benefit.id == ProductBenefit.benefit_id)
+            .where(
+                ProductBenefit.product_id.in_(product_ids),
+                Benefit.type == BenefitType.meter_credit,
+                ~Benefit.is_deleted,
+            )
+        )
+        meters = union(billed, credited).subquery()
+        statement = select(meters.c.product_id, Meter.external_id, Meter.id).join(
+            Meter, Meter.id == meters.c.meter_id
+        )
+        result: dict[UUID, dict[str, UUID]] = {}
+        for product_id, external_id, meter_id in await self.session.execute(statement):
+            if external_id is not None:
+                result.setdefault(product_id, {})[external_id] = meter_id
+        return result
+
+    async def get_version_ids_by_external_ids(
+        self,
+        organization_ids: Sequence[UUID],
+        external_ids: Sequence[str],
+    ) -> list[UUID]:
+        statement = select(Product.id).where(
+            Product.organization_id.in_(organization_ids),
+            Product.external_id.in_(external_ids),
+        )
+        return list(await self.session.scalars(statement))
+
+    async def get_external_ids_in_use(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> set[str]:
+        return set(
+            await self.count_customers_by_external_ids(organization_id, external_ids)
+        )
+
+    async def count_customers_by_external_ids(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> dict[str, int]:
+        """Count the customers with a billable subscription on, or scheduled to
+        change to, any version of each external ID."""
+        if not external_ids:
+            return {}
+        products = (
+            Product.organization_id == organization_id,
+            Product.external_id.in_(external_ids),
+        )
+        subscribed = (
+            select(Product.external_id, Subscription.customer_id)
+            .join(Subscription, Subscription.product_id == Product.id)
+            .where(*products, Subscription.billable, ~Subscription.is_deleted)
+        )
+        scheduled = (
+            select(Product.external_id, Subscription.customer_id)
+            .join(SubscriptionUpdate, SubscriptionUpdate.product_id == Product.id)
+            .join(Subscription, Subscription.id == SubscriptionUpdate.subscription_id)
+            .where(
+                *products,
+                SubscriptionUpdate.applied_at.is_(None),
+                ~SubscriptionUpdate.is_deleted,
+                Subscription.billable,
+                ~Subscription.is_deleted,
+            )
+        )
+        # The union keeps each (external ID, customer) pair once
+        customers = union(subscribed, scheduled).subquery()
+        statement = select(customers.c.external_id, func.count()).group_by(
+            customers.c.external_id
+        )
+        result = await self.session.execute(statement)
+        return {cast(str, external_id): count for external_id, count in result.tuples()}
+
+    async def get_external_ids(
+        self, organization_id: UUID, *, current: bool = False
+    ) -> set[str]:
+        statement = select(Product.external_id).where(
+            Product.organization_id == organization_id,
+            Product.external_id.is_not(None),
+            ~Product.is_deleted,
+        )
+        if current:
+            statement = statement.where(Product.is_current)
+        result = await self.session.execute(statement.distinct())
+        return set(cast(Sequence[str], result.scalars().all()))
+
+    def get_latest_by_external_ids_statement(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> Select[Product]:
+        """Select the most recent version of each product, current or not."""
+        return (
+            self.get_base_statement()
+            .where(
+                Product.organization_id == organization_id,
+                Product.external_id.in_(external_ids),
+            )
+            .distinct(Product.external_id)
+            .order_by(Product.external_id, Product.created_at.desc(), Product.id.desc())
+            .options(undefer(Product.external_id))
+        )
+
+    def get_organization_statement(self, organization_id: UUID) -> Select[Product]:
         return (
             self.get_base_statement()
             .where(
@@ -209,9 +479,40 @@ class ProductRepository(
             selectinload(Product.all_prices),
         )
 
+    def apply_catalog_filter(
+        self,
+        statement: Select[Product],
+        org_ids: set[AccessibleOrganizationID],
+        catalog_id: Sequence[UUID] | None,
+        catalog_status: Sequence[CatalogStatus] | None,
+    ) -> Select[Product]:
+        catalog_members = (
+            select(CatalogProduct.product_id)
+            .join(CatalogProduct.catalog)
+            .where(
+                Catalog.organization_id.in_(org_ids),
+                CatalogProduct.deleted_at.is_(None),
+                Catalog.deleted_at.is_(None),
+            )
+        )
+        if catalog_id is not None:
+            statement = statement.where(
+                Product.id.in_(catalog_members.where(Catalog.id.in_(catalog_id)))
+            )
+        if catalog_status is not None:
+            in_status = Product.id.in_(
+                catalog_members.where(Catalog.status.in_(catalog_status))
+            )
+            statement = statement.where(
+                or_(Product.is_current, in_status)
+                if CatalogStatus.live in catalog_status
+                else in_status
+            )
+        return statement
+
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Product]]:
+    ) -> Select[Product]:
         statement = self.get_base_statement()
         statement = statement.where(Product.organization_id.in_(org_ids))
         return statement
@@ -311,22 +612,12 @@ class ProductPriceRepository(
         )
         return await self.get_one_or_none(statement)
 
-    async def get_by_stripe_price_id(
-        self, stripe_price_id: str, *, options: Options = ()
-    ) -> ProductPrice | None:
-        statement = (
-            self.get_base_statement()
-            .where(ProductPrice.__table__.c["stripe_price_id"] == stripe_price_id)
-            .options(*options)
-        )
-        return await self.get_one_or_none(statement)
-
     def get_eager_options(self) -> Options:
         return (joinedload(ProductPrice.product),)
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[ProductPrice]]:
+    ) -> Select[ProductPrice]:
         return (
             self.get_base_statement()
             .join(Product, Product.id == ProductPrice.product_id)

@@ -16,7 +16,12 @@ jobs:
     outputs:
       version: ${{ steps.extract.outputs.version }}
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -44,7 +49,12 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -62,13 +72,18 @@ jobs:
     runs-on: ubuntu-latest
     environment: sdk-release
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: "sdk/${{ needs.detect-release.outputs.version }}"
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
 
       - name: Build Python SDK
         working-directory: sdk/python
@@ -85,17 +100,22 @@ jobs:
     runs-on: ubuntu-latest
     environment: sdk-release
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: "sdk/${{ needs.detect-release.outputs.version }}"
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v6.1.0
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           package_json_file: sdk/typescript/package.json
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7.1.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           registry-url: "https://registry.npmjs.org"
@@ -140,16 +160,21 @@ jobs:
       run:
         working-directory: clients
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
 
-      - uses: pnpm/action-setup@v6.1.0
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           package_json_file: clients/package.json
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7.1.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: "pnpm"
@@ -164,17 +189,21 @@ jobs:
         env:
           RELEASE_VERSION: ${{ needs.detect-release.outputs.version }}
         run: |
-          delay=5
-          for attempt in $(seq 1 5); do
+          deadline=$((SECONDS + 300))
+          attempt=1
+          while true; do
             if npm view "@polar-sh/sdk@$RELEASE_VERSION" version >/dev/null 2>&1; then
               echo "@polar-sh/sdk@$RELEASE_VERSION is available on npm"
               exit 0
             fi
-            echo "Attempt $attempt: @polar-sh/sdk@$RELEASE_VERSION not yet available, retrying in ${delay}s"
-            sleep "$delay"
-            delay=$((delay * 2))
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              break
+            fi
+            echo "Attempt $attempt: @polar-sh/sdk@$RELEASE_VERSION not yet available, retrying in 15s"
+            sleep 15
+            attempt=$((attempt + 1))
           done
-          echo "::error::@polar-sh/sdk@$RELEASE_VERSION did not appear on npm in time"
+          echo "::error::@polar-sh/sdk@$RELEASE_VERSION did not appear on npm within 5 minutes"
           exit 1
 
       - name: Update lockfile
@@ -221,12 +250,17 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: "sdk/${{ needs.detect-release.outputs.version }}"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
 
       - name: Extract release notes
         working-directory: sdk/generator
@@ -235,7 +269,7 @@ jobs:
         run: uv run --locked keepachangelog show "$RELEASE_VERSION" ../CHANGELOG.md > "$RUNNER_TEMP/sdk-release-notes.md"
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3.0.3
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: "sdk/${{ needs.detect-release.outputs.version }}"
           name: "SDK ${{ needs.detect-release.outputs.version }}"

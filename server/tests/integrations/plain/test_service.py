@@ -1,9 +1,11 @@
 import contextlib
+import json
 import uuid
 from datetime import UTC, datetime
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
+import httpx2
 import pytest
 from plain_client import (
     ComponentTextInput,
@@ -37,6 +39,12 @@ _DATETIME = {
 def _customer_dict(
     *, plain_customer_id: str = "c_123", external_id: str | None
 ) -> dict[str, Any]:
+    actor = {
+        "__typename": "SystemActor",
+        "systemId": "system",
+        "workflowExecutionId": None,
+        "workflow": None,
+    }
     return {
         "__typename": "Customer",
         "id": plain_customer_id,
@@ -50,10 +58,21 @@ def _customer_dict(
             "verifiedAt": None,
         },
         "company": None,
+        "avatarUrl": None,
+        "assignedToUser": None,
+        "assignedAt": None,
+        "isAnonymous": False,
+        "isTestCustomer": False,
         "updatedAt": _DATETIME,
         "createdAt": _DATETIME,
-        "createdBy": {"__typename": "SystemActor", "systemId": "system"},
+        "createdBy": actor,
+        "updatedBy": actor,
         "markedAsSpamAt": None,
+        "markedAsSpamBy": None,
+        "identities": [],
+        "status": "ACTIVE",
+        "statusChangedAt": _DATETIME,
+        "lastIdleAt": None,
     }
 
 
@@ -371,3 +390,25 @@ class TestOrganizationCard:
 
         assert value is not None
         assert value.text == status.get_display_name()
+
+
+@pytest.mark.anyio
+class TestGetCustomerEmail:
+    @pytest.mark.parametrize("exists", [True, False])
+    async def test_lookup(
+        self,
+        plain_service: PlainService,
+        http_mocks: dict[tuple[str, str], Mock],
+        exists: bool,
+    ) -> None:
+        customer = _customer_dict(external_id=None) if exists else None
+        handler = http_mocks["POST", "https://core-api.uk.plain.com/graphql/v1"] = Mock(
+            return_value=httpx2.Response(200, json={"data": {"customer": customer}})
+        )
+
+        email = await plain_service.get_customer_email("c_123")
+
+        assert email == ("user@example.com" if exists else None)
+        assert json.loads(handler.call_args.args[0].content)["variables"] == {
+            "customerId": "c_123"
+        }

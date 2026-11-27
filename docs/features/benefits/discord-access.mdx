@@ -1,51 +1,95 @@
 ---
-title: "Automate Discord Invites & Roles"
-sidebarTitle: "Discord Access"
-description: "Sell Discord access & roles with ease"
+title: "Discord Invite benefit"
+sidebarTitle: "Discord Invite"
+description: "Add customers to your Discord server with a role when they buy, and remove the role or the member when access ends."
 ---
 
-<img src="/assets/features/benefits/discord/hero.png" />
+A **Discord Invite benefit** adds a customer to your Discord server and gives them a role. Polar's bot handles the invitation and removes access again when the benefit is revoked.
 
-Automating Discord server invites and roles for customers or subscribers is super easy and powerful with Polar.
+## What the customer gets
 
-* Fully automated Discord server invitations
-* You can even setup multiple Discord servers, or...
-* Offer different roles for different subscription tiers or products
+Membership of your Discord server with the role you chose. Use one benefit per server and role. To offer different roles per plan, create a benefit for each role and attach each to its product.
 
-Create Discord Benefit
------------------------------
+## Create it
 
-<img className="block dark:hidden" src="/assets/features/benefits/discord/create.light.png" />
-<img className="hidden dark:block" src="/assets/features/benefits/discord/create.dark.png" />
+Connecting the server happens in the dashboard. Once it's connected, you can also create benefits for it from the CLI or your agent.
 
-Click on `Connect your Discord server`. You'll be redirected to Discord where you can grant the Polar App for your desired server.
+### Connect your Discord server
 
-Next, you'll be prompted to approve the permissions our app requires to function. It needs all of them.
+- Open **Catalog** → **Benefits**
+- Click **Create Benefit** and choose **Discord Invite** as the **Type**
+- Click **Connect your Discord server**
+- In Discord, pick the server and approve the bot's permissions: **Manage Roles**, **Kick Members** and **Create Invite**
 
-### **Manage Roles**
+You're sent back to the form with the server connected. A benefit's server can't be changed later. Create another benefit to use another server.
 
-Access to your Discord roles. You'll be able to select which ones to grant to your customers later.
+### Create the benefit
 
-### **Kick Members**
+<Tabs>
+  <Tab title="Dashboard">
+    - Choose the **Granted role**
+    - Optionally check **Kick member on revocation**
+    - Click **Create**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar benefits create --data '{
+      "type": "discord",
+      "description": "Members Discord",
+      "properties": {
+        "guild_id": "<discord_server_id>",
+        "role_id": "<discord_role_id>",
+        "kick_member": false
+      }
+    }'
+    ```
 
-Ability to kick members who have this benefit and connected Discord with Polar.
+    See [`polar benefits`](/integrate/cli/reference/benefits).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Create a Discord Invite benefit called "Members Discord" for my connected Discord server, granting the Member role, in my Polar sandbox organization.
+    ```
 
-### **Create Invite**
+    Uses the `benefits_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
 
-Ability to invite members who purchase a product or subscribes to a tier with this benefit.
+<Warning>
+  Discord only lets the bot grant roles below its own. In Discord, open **Server Settings** → **Roles** and drag the Polar bot's role above every role you want to grant. Roles above it can't be selected.
+</Warning>
 
-You're now redirected back to Polar and can finish setting up the Discord benefit on our end.
+## Options
 
-### **Connected Discord server**
+| Dashboard | API property | Default |
+| --- | --- | --- |
+| **Connected Discord server** | `properties.guild_id` | Required |
+| **Granted role** | `properties.role_id` | Required |
+| **Kick member on revocation** | `properties.kick_member` | `false` in the dashboard, required in the API |
 
-The Discord server you connected cannot be changed. However, you can create multiple benefits and connect more Discord servers if you want.
+The API rejects a `guild_id` your organization hasn't connected, and a `role_id` that doesn't exist on that server.
 
-### **Granted role**
+## Customer experience
 
-Which Discord role do you want to grant as part of this benefit?
+After paying, on the checkout confirmation page or in the [Customer Portal](/features/customer-portal/introduction), the customer:
 
-Adding Benefit to Product
---------------------------------
+1. Clicks **Connect Discord account** and authorizes Discord
+2. Clicks **Request my invite**
 
-Head over to the product you want to associate this new Discord benefit with. You should be able to toggle the benefit in the bottom of the Edit Product form.
+Polar adds them to the server with the role. **Open Discord** takes them there. If they connected the wrong account, **Request new invite** lets them pick another one.
 
+## Revocation
+
+When the benefit is revoked, Polar removes the role. With `kick_member` enabled, it removes the member from the server instead.
+
+## Visibility
+
+Always visible. The customer has to connect their Discord account in the portal, so this benefit can't be hidden.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Manage benefits](/features/benefits/introduction) | Attach, update, delete and grant benefits |
+| [Benefits](/concepts/benefits) | How grants and revocation work |
+| [Create Benefit API](/api-reference/current/benefits/create-benefit) | Request schema for `discord` |

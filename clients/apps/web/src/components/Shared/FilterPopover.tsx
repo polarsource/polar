@@ -27,6 +27,8 @@ import { twMerge } from 'tailwind-merge'
 export interface FilterOption {
   value: string
   label: string
+  // Shown ahead of the label in the toolbar's filter menu.
+  icon?: React.ReactNode
 }
 
 interface FilterBase {
@@ -35,9 +37,21 @@ interface FilterBase {
   icon?: React.ReactNode
   options: FilterOption[]
   searchPlaceholder?: string
+  // Said in place of the options when there are none.
+  emptyLabel?: string
   searchQuery?: string
   onSearchQueryChange?: (query: string) => void
   loading?: boolean
+  // For options that load page by page: called when the end of the list comes
+  // into view, and whether the next page is on its way.
+  onEndReached?: () => void
+  loadingMore?: boolean
+  // The next page failed. It is not asked for again until someone retries.
+  loadMoreFailed?: boolean
+  // Names a value that is not one of the options, where the value is shown.
+  valueLabel?: string
+  // Shown under the options in the toolbar's filter menu.
+  extra?: React.ReactNode
 }
 
 export interface SingleFilter extends FilterBase {
@@ -45,6 +59,9 @@ export interface SingleFilter extends FilterBase {
   value: string | null
   defaultValue?: string | null
   onChange: (value: string | null) => void
+  // False for options that are things to do, not a value to hold: the
+  // toolbar's filter menu then keeps no room for a mark of the one picked.
+  selectable?: boolean
 }
 
 export interface MultiFilter extends FilterBase {
@@ -388,6 +405,12 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
       </PopoverContent>
     </Popover>
   )
+}
+
+export {
+  clearFilter,
+  isActive as isFilterActive,
+  isDefaulted as isFilterDefaulted,
 }
 
 export default FilterPopover

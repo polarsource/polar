@@ -19,9 +19,9 @@ import {
   writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { BunFileSystem } from '@effect/platform-bun'
-import { Effect, FileSystem, Layer, PlatformError } from 'effect'
+import { Cause, Effect, Exit, FileSystem, Layer, PlatformError } from 'effect'
 import type { CLIRelease } from '@/services/github-releases'
 import {
   binaryNameFor,
@@ -163,39 +163,23 @@ describe('replaceBinary on macOS and Linux', () => {
     await expect(tempFiles()).resolves.toHaveLength(0)
   })
 
-  test('does not throw when PermissionDenied triggers sudo fallback', async () => {
+  test('asks to run the install script again when the folder is not writable', async () => {
     writeError = PlatformError.systemError({
       _tag: 'PermissionDenied',
       module: 'FileSystem',
       method: 'writeFile',
     })
-    const spawn = vi
-      .spyOn(Bun, 'spawn')
-      .mockImplementationOnce(
-        () => ({ exited: Promise.resolve(0) }) as ReturnType<typeof Bun.spawn>,
-      )
+    const spawn = vi.spyOn(Bun, 'spawn')
 
-    await Effect.runPromise(runReplace())
+    const exit = await Effect.runPromiseExit(runReplace())
 
-    expect(spawn).toHaveBeenCalledWith(
-      ['sudo', 'mv', newBinaryPath, binaryPath],
-      expect.objectContaining({ stdin: 'inherit' }),
-    )
-  })
-
-  test('throws when sudo mv exits non-zero', async () => {
-    writeError = PlatformError.systemError({
-      _tag: 'PermissionDenied',
-      module: 'FileSystem',
-      method: 'writeFile',
+    expect(spawn).not.toHaveBeenCalled()
+    expect(Exit.isFailure(exit) && Cause.squash(exit.cause)).toMatchObject({
+      message: `Cannot update polar in ${dirname(binaryPath)}`,
+      hint: expect.stringContaining(
+        'curl -fsSL https://polar.sh/install.sh | bash',
+      ),
     })
-    vi.spyOn(Bun, 'spawn').mockImplementationOnce(
-      () => ({ exited: Promise.resolve(1) }) as ReturnType<typeof Bun.spawn>,
-    )
-
-    await expect(Effect.runPromise(runReplace())).rejects.toThrow(
-      'sudo mv failed',
-    )
   })
 })
 

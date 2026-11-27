@@ -3,7 +3,13 @@ import pytest
 from polar.email.billing_migration import previous_billing_provider_for_notice
 from polar.email.schemas import EmailTemplate
 from polar.merchant_migration.repository import MerchantMigrationRepository
-from polar.models import Customer, Organization, Product, Subscription
+from polar.models import (
+    Customer,
+    MerchantMigrationSourcePlatform,
+    Organization,
+    Product,
+    Subscription,
+)
 from polar.models.merchant_migration_record import MerchantMigrationCutoverStatus
 from polar.models.order import OrderBillingReasonInternal
 from polar.postgres import AsyncSession
@@ -68,6 +74,35 @@ class TestPreviousBillingProviderForNotice:
                 EmailTemplate.subscription_renewal_reminder,
             )
             == "Stripe"
+        )
+
+    async def test_moved_from_lemon_squeezy(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
+        await save_fixture(migration)
+        await stage_subscription_record(
+            save_fixture,
+            migration,
+            organization,
+            subscription,
+            cutover_status=MerchantMigrationCutoverStatus.moved,
+        )
+
+        assert (
+            await previous_billing_provider_for_notice(
+                session, subscription, EmailTemplate.subscription_renewal_reminder
+            )
+            == "Lemon Squeezy"
         )
 
     async def test_later_cycle(

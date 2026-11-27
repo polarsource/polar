@@ -1,6 +1,6 @@
 ---
 name: adr-check
-description: Check a code change against the repo's Accepted Architecture Decision Records (ADRs) in handbook/engineering/decisions/ and report violations with citations. Use before opening a PR, when reviewing a diff, or when the user asks to check ADR compliance, whether changes follow the architecture decisions, or to verify a change against the ADRs.
+description: Check a code change against the repo's Accepted Architecture Decision Records (ADRs) in adr/ and report violations with citations. Use before opening a PR, when reviewing a diff, or when the user asks to check ADR compliance, whether changes follow the architecture decisions, or to verify a change against the ADRs.
 license: MIT
 metadata:
   author: polar
@@ -14,7 +14,7 @@ the change touches and where it breaks them**. This is the ADR analogue of
 [`verifier-web`](../verifier-web/SKILL.md): that skill replays UI changes, this one
 reviews a change against the recorded architecture decisions.
 
-ADRs live in `handbook/engineering/decisions/`. Treat every ADR whose Status is
+ADRs live in `adr/`. Treat every ADR whose Status is
 **Accepted** as binding.
 
 ## When to use
@@ -44,7 +44,7 @@ Then read the actual hunks for the changed files (`git diff main...HEAD -- <file
 ### 2. Load the ADRs (dynamically, never hardcode the list)
 
 ```bash
-ls handbook/engineering/decisions/[0-9]*.mdx
+ls adr/[0-9]*.md
 ```
 
 Read each one. For every ADR with **Status: Accepted**, extract its **Decision**

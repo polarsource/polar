@@ -61,7 +61,7 @@ class LicenseKeysSync(SyncServiceBase):
             status: Filter by license key status.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -117,7 +117,7 @@ class LicenseKeysSync(SyncServiceBase):
             status: Filter by license key status.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -161,7 +161,7 @@ class LicenseKeysSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -206,13 +206,14 @@ class LicenseKeysSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
 
         Raises:
             Unauthorized: Not authorized to manage license key.
+            NotPermitted: Cannot reactivate a license key for a manually revoked benefit grant.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -233,6 +234,7 @@ class LicenseKeysSync(SyncServiceBase):
         response = self.client.send_request(request)
         method_errors = {
             401: Unauthorized,
+            403: NotPermitted,
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
@@ -256,7 +258,7 @@ class LicenseKeysSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -304,7 +306,7 @@ class LicenseKeysSync(SyncServiceBase):
         Args:
             id:
             activation_id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -348,7 +350,7 @@ class LicenseKeysSync(SyncServiceBase):
         **Scopes**: `license_keys:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -391,7 +393,7 @@ class LicenseKeysSync(SyncServiceBase):
         **Scopes**: `license_keys:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -434,7 +436,7 @@ class LicenseKeysSync(SyncServiceBase):
         **Scopes**: `license_keys:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -486,7 +488,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             status: Filter by license key status.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -542,7 +544,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             status: Filter by license key status.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -587,7 +589,7 @@ class LicenseKeysAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -632,13 +634,14 @@ class LicenseKeysAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
 
         Raises:
             Unauthorized: Not authorized to manage license key.
+            NotPermitted: Cannot reactivate a license key for a manually revoked benefit grant.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -659,6 +662,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         response = await self.client.send_request(request)
         method_errors = {
             401: Unauthorized,
+            403: NotPermitted,
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
@@ -682,7 +686,7 @@ class LicenseKeysAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -730,7 +734,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         Args:
             id:
             activation_id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -774,7 +778,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         **Scopes**: `license_keys:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -817,7 +821,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         **Scopes**: `license_keys:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -860,7 +864,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         **Scopes**: `license_keys:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters

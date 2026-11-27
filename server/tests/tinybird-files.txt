@@ -1,0 +1,8 @@
+tests/event/test_endpoints.py
+tests/event/test_service.py
+tests/event_type/test_endpoints.py
+tests/integrations/tinybird/test_service.py
+tests/meter/test_archive.py
+tests/metrics/test_service.py
+tests/metrics/test_tinybird_metrics.py
+tests/scripts/test_reingest_missing_events.py

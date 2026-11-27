@@ -1,11 +1,11 @@
 import base64
-from collections.abc import Mapping
+from collections import OrderedDict
 from datetime import datetime
 from ssl import SSLError
 from typing import Annotated
 from uuid import UUID
 
-import httpx
+import httpx2
 import idna
 import sentry_sdk
 import structlog
@@ -16,12 +16,17 @@ from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.config import Environment, settings
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
+from polar.kit.http import SSRFBlockedError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.webhook_delivery import WebhookDelivery
+from polar.models.webhook_endpoint import WebhookEndpoint, WebhookFormat
 from polar.observability.task_logging import LoggableField
-from polar.webhook.repository import WebhookDeliveryRepository, WebhookEventRepository
+from polar.webhook.repository import (
+    WebhookDeliveryRepository,
+    WebhookEndpointRepository,
+    WebhookEventRepository,
+)
 from polar.worker import (
     AsyncSessionMaker,
     HTTPXMiddleware,
@@ -31,10 +36,27 @@ from polar.worker import (
     enqueue_job,
 )
 
-from .constants import uses_standard_webhook_signature
+from .constants import MCP_WEBHOOK_MAX_DELIVERIES, uses_standard_webhook_signature
 from .service import webhook as webhook_service
 
 log: Logger = structlog.get_logger()
+
+_signing_secrets: OrderedDict[str, str] = OrderedDict()
+_SIGNING_SECRETS_MAX_SIZE = 4096
+
+
+async def get_cached_signing_secret(endpoint: WebhookEndpoint) -> str:
+    if endpoint.secret_encrypted is None:
+        return await endpoint.get_secret()
+    key = endpoint.secret_encrypted.encrypted_value
+    secret = _signing_secrets.get(key)
+    if secret is not None:
+        _signing_secrets.move_to_end(key)
+        return secret
+    secret = _signing_secrets[key] = await endpoint.get_secret()
+    if len(_signing_secrets) > _SIGNING_SECRETS_MAX_SIZE:
+        _signing_secrets.popitem(last=False)
+    return secret
 
 
 def sign_webhook(
@@ -103,6 +125,8 @@ async def _webhook_event_send(
         session.add(event)
         return
 
+    is_mcp = event.webhook_endpoint.format == WebhookFormat.mcp
+
     if event.payload is None:
         bound_log.info("Archived event, skipping")
         return
@@ -135,14 +159,14 @@ async def _webhook_event_send(
 
     ts = utc_now()
     signature = sign_webhook(
-        event.webhook_endpoint.secret,
+        await get_cached_signing_secret(event.webhook_endpoint),
         str(event.id),
         ts,
         event.payload,
         secret_generated_at=event.webhook_endpoint.secret_generated_at,
     )
 
-    headers: Mapping[str, str] = {
+    headers = {
         "user-agent": "polar.sh webhooks",
         "content-type": "application/json",
         "webhook-id": str(event.id),
@@ -150,9 +174,13 @@ async def _webhook_event_send(
         "webhook-signature": signature,
         "webhook-api-version": str(event.api_version),
     }
+    if is_mcp:
+        headers["X-MCP-Subscription-Id"] = str(event.webhook_endpoint_id)
 
     delivery = WebhookDelivery(
-        webhook_event_id=webhook_event_id, webhook_endpoint_id=event.webhook_endpoint_id
+        webhook_event_id=webhook_event_id,
+        webhook_endpoint_id=event.webhook_endpoint_id,
+        organization_id=event.webhook_endpoint.organization_id,
     )
 
     client = HTTPXMiddleware.get()
@@ -163,10 +191,8 @@ async def _webhook_event_send(
             delivery.http_code = event.last_http_code = 200
             delivery.response = None
         else:
-            url = httpx.URL(event.webhook_endpoint.url)
-            await resolve_and_validate_ip(url.raw_host.decode("ascii"))
             response = await client.post(
-                url,
+                httpx2.URL(event.webhook_endpoint.url),
                 content=event.payload,
                 headers=headers,
                 timeout=10.0,
@@ -180,11 +206,11 @@ async def _webhook_event_send(
             event.last_http_code = response.status_code
             response.raise_for_status()
     # Error
-    except (httpx.HTTPError, SSLError, SSRFBlockedError) as e:
+    except (httpx2.HTTPError, SSLError, SSRFBlockedError) as e:
         bound_log.info("An error occurred while sending a webhook", error=e)
 
         if (
-            isinstance(e, httpx.HTTPStatusError)
+            isinstance(e, httpx2.HTTPStatusError)
             and e.response.status_code == 429
             and "discord" in event.webhook_endpoint.url.lower()
         ):
@@ -202,9 +228,16 @@ async def _webhook_event_send(
         # whether to retry. +1 accounts for the current attempt not yet committed.
         delivery_repository = WebhookDeliveryRepository.from_session(session)
         delivery_count = await delivery_repository.count_by_event(webhook_event_id) + 1
+        max_deliveries = (
+            MCP_WEBHOOK_MAX_DELIVERIES if is_mcp else settings.WEBHOOK_MAX_RETRIES
+        )
 
+        if is_mcp and delivery.http_code == 410:
+            event.succeeded = False
+            endpoint_repository = WebhookEndpointRepository.from_session(session)
+            await endpoint_repository.soft_delete(event.webhook_endpoint)
         # Permanent failure
-        if delivery_count >= settings.WEBHOOK_MAX_RETRIES:
+        elif delivery_count >= max_deliveries or (is_mcp and delivery.http_code == 413):
             if event.succeeded is not True:
                 event.succeeded = False
             enqueue_job(
@@ -291,15 +324,14 @@ async def webhook_event_archive() -> None:
 
 
 @actor(
-    actor_name="webhook_delivery.archive",
+    actor_name="webhook_delivery.prune",
     cron_trigger=CronTrigger(hour=0, minute=30),
     priority=TaskPriority.LOW,
 )
-async def webhook_delivery_archive() -> None:
+async def webhook_delivery_prune() -> None:
     async with AsyncSessionMaker() as session:
-        await webhook_service.archive_delivery_payloads(
-            session,
-            older_than=utc_now() - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
+        await webhook_service.delete_expired_deliveries(
+            session, older_than=utc_now() - settings.WEBHOOK_DELIVERY_RETENTION_PERIOD
         )
 
 

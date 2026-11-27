@@ -1,22 +1,24 @@
 ---
-title: "Embedded Checkout"
-sidebarTitle: "Embedded Checkout"
-description: "Embed our checkout directly on your site"
+title: "Embedded checkout"
+sidebarTitle: "Embedded checkout"
+description: "Open Polar checkout as an overlay on your own site with a script tag or the @polar-sh/checkout library, and handle its events."
 ---
 
-<img src="https://polar.sh/docs/assets/features/checkout/embed/demo.png" />
+**Embedded checkout** opens the Polar checkout as a full-screen overlay on your page, instead of redirecting the customer to Polar. It's the same hosted checkout, loaded in an iframe on top of your site, with a spinner until it's ready.
 
-You can either copy and paste our code snippet to get up and running in a second or use our JavaScript library for more advanced integrations. Our embedded checkout allows you to provide a seamless purchasing experience without redirecting users away from your site.
+Before embedding, add your site to the allowed [embed hosts](/features/checkout/embed-hosts). The checkout only opens on hosts you've listed.
 
-## Code Snippet
+## Add the snippet
 
-The code snippet can be used on any website or CMS that allows you to insert HTML.
+The snippet works on any site or CMS that accepts HTML.
 
-First, create a [Checkout Link](/features/checkout/links) as described in the previous section. The code snippet can directly be copied from there by clicking on `Copy Embed Code`.
+1. Create a [Checkout Link](/features/checkout/links).
+2. Open the link, select the **Embed** tab and click **Copy**.
+3. Paste the snippet into your page.
 
-The snippet looks like this:
+The snippet looks like this, with your link's URL in place of `__CHECKOUT_LINK__`:
 
-```typescript
+```html HTML
 <a
   href="__CHECKOUT_LINK__"
   data-polar-checkout
@@ -32,299 +34,162 @@ The snippet looks like this:
 ></script>
 ```
 
-This will display a `Purchase` link which will open an inline checkout when clicked.
-
-You can style the trigger element any way you want, as long as you keep the `data-polar-checkout` attribute.
-
-## Import Library
-
-If you have a more advanced project in JavaScript, like a React app, adding the `<script>` tag may not be an option. In this case, you can install our dedicated library.
-
-<CodeGroup>
-  ```bash npm
-  npm install @polar-sh/checkout
-  ```
-  ```bash pnpm
-  pnpm add @polar-sh/checkout
-  ```
-  ```bash yarn
-  yarn add @polar-sh/checkout
-  ```
-</CodeGroup>
-
-Then, you should import the `PolarEmbedCheckout` helper class and manually call `PolarEmbedCheckout.init()`. This will add the required handlers on elements having the `data-polar-checkout` attribute.
-
-Here is an example in React:
-
-```ts
-import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
-import { useEffect } from 'react'
-
-const PurchaseLink = () => {
-  useEffect(() => {
-    PolarEmbedCheckout.init()
-  }, [])
-
-  return (
-    <a
-      href="__CHECKOUT_LINK__"
-      data-polar-checkout
-      data-polar-checkout-theme="light"
-    >
-      Purchase
-    </a>
-  )
-}
-
-export default PurchaseLink
-```
+Clicking the element opens the checkout. Style it however you want, as long as it keeps the `data-polar-checkout` attribute. On an element without `href`, such as a `<button>`, put the URL in the attribute: `data-polar-checkout="__CHECKOUT_LINK__"`.
 
 <Tip>
-  Instead of a Checkout Link, you can also use a [Checkout Session](/features/checkout/session) URL created dynamically from the API.
-
-For this to work, make sure to set the [`embed_origin`](/api-reference/current/checkouts/create-checkout-session#body-embed-origin) parameter correctly when creating the Checkout Session. For example, if your checkout page is served on the URL `https://example.com/checkout`, you should set `embed_origin` to `https://example.com`.
-
+  The snippet loads `@latest`. Replace it with a fixed version of `@polar-sh/checkout` to control when you upgrade.
 </Tip>
 
-## Embed Hosts
+The script also exposes the embed class as `window.Polar.EmbedCheckout`, for pages without a bundler.
 
-List the hosts allowed to embed your checkout under **Settings → Preferences → Embedding**. An embedded checkout only opens on a host you've listed, and the browser refuses to frame it anywhere else.
+## Use the library
 
-After a payment, the checkout sends your page a message carrying a session token for your customer. The allowlist is how we know that page is yours.
+In a JavaScript app, install the library instead of adding a script tag:
 
-The same list also applies to the [Embedded Payment Method](/features/checkout/embed-payment-method#embed-hosts).
-
-### Writing a host
-
-Write the host on its own, without a scheme:
-
-| Entry | Matches |
-| --- | --- |
-| `example.com` | `example.com`, and nothing else |
-| `*.example.com` | any subdomain, but not `example.com` itself |
-| `example.com:8443` | that host on that port |
-| `localhost:3000` | your local development server |
-
-HTTPS is always allowed. HTTP is allowed as well when the host is local: `localhost`, any name ending in `.localhost` or `.local`, and loopback or private addresses such as `192.168.1.10` or `10.0.0.5`.
-
-An entry without a port matches the default port only, so `example.com` does not match `https://example.com:8443`. Write the port when your site uses one.
-
-Applications embedding checkout from their own origin, such as a browser extension, list that origin in full: `chrome-extension://abcdefghijklmnopqrstuvwxyzabcdef`.
-
-<Note>
-  Add every host in one go, staging and preview domains included — separate them with commas or spaces. The list takes effect as soon as you save it, so a host you leave out stops working straight away.
-</Note>
-
-### Serving over HTTP
-
-If your site is served over plain HTTP on a public domain, move it to HTTPS before listing it. A public HTTP host can't be listed, and the message we send after payment carries a customer session token — on a plain HTTP page, anyone on the network can read it.
-
-### When the embed stays blank
-
-Open your browser console on the page doing the embedding. A message naming `frame-ancestors` means the host isn't on your list. Add it under **Settings → Preferences → Embedding** — the list applies as soon as you save.
-
-When embedding a checkout link from an unsupported host, the same `frame-ancestors` error message will show up as an API error. This error is also fixed by adding the host under Settings.
-
-## Advanced Integration
-
-For users who need more control over the embedded checkout flow, the `PolarEmbedCheckout` class provides several advanced features.
-
-### Programmatically creating an embed
-
-Instead of using declarative triggers with `data-polar-checkout` attributes, you can programmatically create and control checkout instances:
-
-```ts
-import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
-
-// Open checkout programmatically when needed
-const openCheckout = async () => {
-  const checkoutLink = "__CHECKOUT_LINK__";
-  const theme = "light"; // or 'dark'
-
-  try {
-    // This creates the checkout iframe and returns a Promise
-    // that resolves when the checkout is fully loaded
-    const checkout = await PolarEmbedCheckout.create(checkoutLink, {
-      theme,
-    });
-
-    // Now you can interact with the checkout instance
-    return checkout;
-  } catch (error) {
-    console.error("Failed to open checkout", error);
-  }
-};
-
-// Example: Trigger checkout when a button is clicked
-document.getElementById("buy-button").addEventListener("click", () => {
-  openCheckout();
-});
+<CodeGroup>
+```bash npm
+npm install @polar-sh/checkout
 ```
 
-### Listening for checkout events
-
-You can listen for checkout events to respond to user interactions. For the `loaded` event, we recommend using the `onLoaded` callback in the `create` method to ensure it's always executed, even if the checkout loads very quickly.
-
-```ts
-import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
-
-const openCheckoutWithEvents = async () => {
-  const checkout = await PolarEmbedCheckout.create("__CHECKOUT_LINK__", {
-    onLoaded: (event) => {
-      console.log("Checkout loaded");
-    },
-  });
-
-  // Listen for when the checkout has been closed
-  checkout.addEventListener("close", (event) => {
-    console.log("Checkout has been closed");
-    // Call event.preventDefault() if you want to prevent the standard behavior
-    // event.preventDefault()
-  });
-
-  // Listen for when the checkout has been confirmed (payment processing)
-  checkout.addEventListener("confirmed", (event) => {
-    console.log("Order confirmed, processing payment");
-    // Call event.preventDefault() if you want to prevent the standard behavior
-    // event.preventDefault()
-    // Note: This would prevent setting the checkout as non-closable
-  });
-
-  // Listen for successful completion
-  checkout.addEventListener("success", (event) => {
-    console.log("Purchase successful!", event.detail);
-
-    // Call event.preventDefault() if you want to prevent the standard behavior
-    // event.preventDefault()
-    // Note: For success event, this prevents automatic redirection if redirect is true
-
-    // If redirect is false, you can show your own success message
-    if (!event.detail.redirect) {
-      showSuccessMessage();
-    }
-    // Otherwise, the user will be redirected to the success URL (unless prevented)
-  });
-
-  return checkout;
-};
+```bash pnpm
+pnpm add @polar-sh/checkout
 ```
 
-### React Integration with event handling
+```bash yarn
+yarn add @polar-sh/checkout
+```
 
-Here's a more complete React example that handles checkout events:
+```bash bun
+bun add @polar-sh/checkout
+```
+</CodeGroup>
 
-```ts
-import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
-import { useState, useEffect } from 'react'
+Call `PolarEmbedCheckout.init()` once to wire up every element with `data-polar-checkout`. In React:
 
-const CheckoutButton = () => {
-  const [checkoutInstance, setCheckoutInstance] = useState(null)
+```tsx React
+import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
+import { useEffect } from "react";
 
-  // Clean up checkout instance on unmount
+export function PurchaseLink() {
   useEffect(() => {
-    return () => {
-      if (checkoutInstance) {
-        checkoutInstance.close()
-      }
-    }
-  }, [checkoutInstance])
-
-  const handleCheckout = async () => {
-      try {
-        const checkout = await PolarEmbedCheckout.create(
-          '__CHECKOUT_LINK__',
-          {
-            theme: 'light',
-            onLoaded: (event) => {
-              console.log('Checkout loaded successfully');
-              // This is guaranteed to be called even if checkout loads quickly
-            }
-          }
-        )
-
-      setCheckoutInstance(checkout)
-
-      checkout.addEventListener('success', (event) => {
-        // Track successful purchase
-        analytics.track('Purchase Completed', {
-          productId: 'your-product-id',
-          // Add other analytics data
-        })
-
-        // Show success message or redirect
-        if (!event.detail.redirect) {
-          // Handle success in your app
-        }
-      })
-
-      checkout.addEventListener('close', (event) => {
-        // Clean up our reference when checkout is closed
-        setCheckoutInstance(null)
-      })
-    } catch (error) {
-      console.error('Failed to open checkout', error)
-    }
-  }
+    PolarEmbedCheckout.init();
+  }, []);
 
   return (
-    <button onClick={handleCheckout}>
-      Complete Purchase
-    </button>
-  )
+    <a href="__CHECKOUT_LINK__" data-polar-checkout data-polar-checkout-theme="light">
+      Purchase
+    </a>
+  );
 }
-
-export default CheckoutButton
 ```
 
-### Programmatically closing checkout
+## Open the checkout from code
 
-In some cases, you might need to programmatically close the checkout - for instance, if you detect that a user needs to take an action elsewhere in your application first:
+`PolarEmbedCheckout.create()` opens the checkout and resolves once it has loaded:
 
-```ts
+```ts TypeScript
 import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
 
-// Example: open checkout and store the instance
-let activeCheckout = null;
-
-async function openCheckout() {
-  const checkout = await PolarEmbedCheckout.create("__CHECKOUT_LINK__");
-  activeCheckout = checkout;
-  return checkout;
-}
-
-// Later, close it programmatically when needed
-function closeCheckout() {
-  if (activeCheckout) {
-    activeCheckout.close();
-    // The 'close' event will fire automatically
-    // Don't set activeCheckout to null here, as we'll handle that in the event listener
-  }
-}
-
-// Add a listener to update our reference when checkout is closed
-function setupCheckout(checkout) {
-  checkout.addEventListener("close", (event) => {
-    // Reset our reference when checkout is closed
-    activeCheckout = null;
-  });
-  return checkout;
-}
-
-// Example usage
-document.getElementById("open-checkout").addEventListener("click", async () => {
-  const checkout = await openCheckout();
-  setupCheckout(checkout);
+const checkout = await PolarEmbedCheckout.create("__CHECKOUT_LINK__", {
+  theme: "dark",
+  onLoaded: () => console.log("Checkout loaded"),
 });
-document
-  .getElementById("close-checkout")
-  .addEventListener("click", closeCheckout);
+
+checkout.addEventListener("success", (event) => {
+  if (!event.detail.redirect) {
+    showThankYou();
+  }
+});
+
+// Later, to close it yourself:
+checkout.close();
 ```
+
+| Option | Description |
+| --- | --- |
+| `theme` | `"light"` or `"dark"`. Defaults to `light`. |
+| `onLoaded` | Called when the checkout has loaded. Prefer it over a `loaded` listener, which can miss a fast load. |
+
+## Events
+
+Events are cancelable `CustomEvent`s on the checkout instance. Call `event.preventDefault()` to skip the default action.
+
+| Event | `event.detail` | Default action |
+| --- | --- | --- |
+| `loaded` | | Removes the loading spinner. |
+| `close` | | Removes the overlay, unless the checkout is processing a payment. |
+| `confirmed` | | Blocks closing while the payment is processed. |
+| `success` | `successURL`, `redirect` | Allows closing again. If `redirect` is `true`, sends the page to `successURL`. |
+
+Grant access from [webhooks](/integrate/webhooks/events) or the [customer state](/integrate/customer-state), not from the `success` event.
+
+## Embed a checkout session
+
+You can embed a [Checkout Session](/features/checkout/session) URL instead of a link. Set `embed_origin` when you create the session, to the origin of the page that embeds it:
+
+<CodeGroup>
+```typescript TypeScript
+const checkout = await polar.checkouts.create({
+  products: [product.id],
+  external_customer_id: "user_123",
+  embed_origin: "https://example.com",
+});
+
+// Pass checkout.url to PolarEmbedCheckout.create() in the browser
+```
+
+```python Python
+checkout = polar.checkouts.create(
+    products=[product.id],
+    external_customer_id="user_123",
+    embed_origin="https://example.com",
+)
+```
+
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/checkouts/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "products": ["'"$PRODUCT_ID"'"],
+    "external_customer_id": "user_123",
+    "embed_origin": "https://example.com"
+  }'
+```
+</CodeGroup>
+
+**Why:** the checkout sends its `close`, `confirmed` and `success` messages only to the origin stored on the session. Checkout Links don't need this: the script adds your page's origin when it opens the link. The examples use the sandbox and API version `2026-10`.
+
+## Theme and language
+
+The embedded checkout is the hosted checkout, so the same query parameters apply: `theme` and, with [localization](/features/checkout/localization) on, `locale`.
+
+AI agents in the browser can't use the [checkout tools](/features/checkout/agents) on an embedded checkout. Those are only on the hosted page.
+
+## Embed hosts
+
+The checkout opens only on hosts listed under **Settings → Embedding**. If the overlay stays blank and the browser console mentions `frame-ancestors`, the page's host isn't on the list. See [Embed hosts](/features/checkout/embed-hosts) for the format and the API field.
 
 ## Enable wallets in Embedded Checkout
 
-[Wallet payment methods](/features/checkout/payment-methods#cards-and-wallets), such as Apple Pay and Google Pay, are not enabled by default when you embed checkout on your website. For security reasons, your website domain must be validated first. This applies to Embedded Checkout only — on Polar's hosted checkout, wallets work out of the box with nothing to configure.
+[Wallets](/features/checkout/payment-methods#cards-and-wallets) such as Apple Pay and Google Pay appear in an embedded checkout only on hosts under a [verified domain](/features/domains). On Polar's hosted checkout, they work with no setup.
 
-To enable wallet payment methods, [email us](mailto:support@polar.sh) with:
+To enable them:
 
-- Your organization slug
-- The domain you wish to allow for wallet payments
+- Verify your domain under **Settings → Domains**
+- Open **Settings → Embedding**
+- Add each host that embeds the checkout, such as `shop.example.com`
+
+A wildcard entry like `*.example.com` doesn't enable wallets. Add each subdomain on its own.
+
+Each host in the list shows its wallet status. A host under a verified domain shows **Wallet payments pending** until your organization can accept payments.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Embed hosts](/features/checkout/embed-hosts) | Allow the sites that embed your checkout |
+| [Checkout Links](/features/checkout/links) | Create the link you embed |
+| [Checkout Sessions](/features/checkout/session) | Create sessions with `embed_origin` |
+| [Embedded Payment Method](/features/checkout/embed-payment-method) | Let customers add a card on your site |

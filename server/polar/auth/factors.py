@@ -160,6 +160,7 @@ class EmailOTPFactor(EmailOTPFactorBase):
             ),
             to_email_addr=email_otp.email,
             subject=subject,
+            unsuppress=True,
         )
 
         if settings.is_development():
@@ -188,12 +189,15 @@ class TOTPFactor(TOTPFactorBase):
         totp_orm = result.scalar_one_or_none()
         if totp_orm is None:
             return None
-        return totp_orm.to_dataclass()
+        return await totp_orm.to_dataclass()
 
     async def insert(self, totp: TOTPEnrollmentDataclass) -> uuid.UUID:
+        id = TOTPEnrollment.generate_id()
         totp_orm = TOTPEnrollment(
+            id=id,
             enabled=totp.enabled,
             secret=totp.secret,
+            secret_encrypted=await TOTPEnrollment.encrypt_secret(id, totp.secret),
             algorithm=totp.algorithm,
             code_length=totp.code_length,
             time_step=totp.time_step,
@@ -371,7 +375,7 @@ async def get_org_factors(
     )
 
     sso_factors: set[FactorBase[typing.Any]] = {
-        build_sso_factor(
+        await build_sso_factor(
             connection,
             organization_slug=organization.slug,
             state_service=state_service,

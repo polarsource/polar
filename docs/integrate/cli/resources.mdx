@@ -1,0 +1,119 @@
+---
+title: "Resource commands"
+sidebarTitle: "Resources"
+description: "Create, read, update and delete Polar resources from the CLI: command names, JSON input, field selection, organizations and confirmation prompts."
+---
+
+The Polar CLI has a command group for each of 22 API resources, from `polar products` to `polar webhooks`. Each command makes one API call to the active organization and prints the result as JSON.
+
+```bash Terminal
+polar products list --limit 5 --fields id,name
+polar customers get_state_external user_123
+polar checkout_links create --products '["<product_id>"]'
+```
+
+These are real API calls, including the ones that change data. Choose a sandbox organization while you experiment: `polar auth login --sandbox`, then `polar auth org`. See [Authentication](/integrate/cli/authentication).
+
+## Command names
+
+Commands are named `polar <resource> <action>`, in snake case. The names match the [MCP operations](/agents/mcp-operations) and the OpenAPI operation names:
+
+| MCP operation | CLI command |
+| --- | --- |
+| `products_create` | `polar products create` |
+| `customers_get_state_external` | `polar customers get_state_external` |
+| `customers_members_list` | `polar customers members list` |
+
+Run `polar <resource> --help` to see every command and flag of a resource, or open the [command reference](/integrate/cli/reference).
+
+## Output
+
+Commands print the API response as JSON, colored in a terminal and plain when piped. Pick fields with `--fields`, comma-separated, with dots for nested fields:
+
+```bash Terminal
+polar products list --fields id,name,prices.price_amount
+```
+
+On a `GET` command, an unknown field is an error that lists the available fields. Combine with `jq` in scripts:
+
+```bash Terminal
+export PRODUCT_ID=$(polar products create --name "Pro" --recurring-interval month \
+  --prices '[{ "amount_type": "fixed", "price_amount": 2000 }]' --fields id | jq -r .id)
+```
+
+## Input
+
+Each body or query field has its own flag, in kebab case: `external_id` is `--external-id`. Flags for objects and arrays take JSON.
+
+`--data` (`-d`) takes the whole input as one JSON object. Explicit flags replace matching top-level keys, so you can combine the two:
+
+```bash Terminal
+polar customers update <customer_id> \
+  -d '{ "name": "Jane Doe", "metadata": { "plan": "pro" } }' \
+  --name "Jane"
+```
+
+Omitted flags aren't sent. `false`, empty strings and JSON `null` are sent as given.
+
+To clear a nullable value, pass `null`:
+
+```bash Terminal
+polar subscriptions update <subscription_id> --discount-id=null
+```
+
+To send the literal string `"null"`, use `--data`.
+
+When an input is a union, such as a custom field's `type`, pass its discriminator even if it doesn't change:
+
+```bash Terminal
+polar custom_fields update <custom_field_id> --name "Company" --type text
+```
+
+## Organizations
+
+Commands use the active organization, and its environment. The CLI sends the organization in the `Polar-Organization` header, so results are scoped to it. Resource commands have no environment flag, except the `customer_seats` commands that run without a login (see below).
+
+To use another organization for one command, pass `--org`. It selects that organization's environment and credentials for the request without changing the active one:
+
+```bash Terminal
+polar products list --org <organization_id>
+```
+
+With `POLAR_ACCESS_TOKEN` set, commands use the token's organization and `POLAR_ENVIRONMENT` (`production` by default). An organization access token belongs to one organization. See [CI and headless use](/integrate/cli/authentication#ci-and-headless-use).
+
+## Destructive commands
+
+Deleting, and some updates, ask for confirmation. The CLI fetches and shows the record, then waits for you to type `yes`:
+
+- Every `delete` command.
+- Archiving a product or meter: `--is-archived=true`.
+- Revoking, canceling or pausing a subscription: `--revoke=true`, `--cancel-at-period-end=true` or `--pause-at-period-end=true`.
+- Disabling a webhook endpoint: `--enabled=false`.
+- Revoking or disabling a license key, and rotating one.
+- A refund that revokes benefits: `--revoke-benefits=true`.
+
+Pass `--confirm` (`-c`) to skip the prompt. It's required when there's no interactive terminal, for example in CI or from a coding agent:
+
+```bash Terminal
+polar products update <product_id> --is-archived=true --confirm
+```
+
+## Preview commands
+
+A few commands call API version `2027-01` because the operation doesn't exist in `2026-10` yet. Their description ends with "(preview, API 2027-01)", for example `polar customer_meters credits` and `polar meters get_external`. Their input can still change.
+
+## Without a login
+
+`polar customer_seats get_claim_info` and `polar customer_seats claim_seat` take a seat invitation token and need no login or organization. They default to production. Pass `--environment=sandbox` for sandbox invitations.
+
+## Not in the CLI
+
+Some API operations have no command, such as creating Checkout Sessions, ingesting events or creating subscriptions. Use the API or an SDK for these. [MCP operations](/agents/mcp-operations#not-available-from-the-mcp-server) lists them, and the same list applies to the CLI.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Command reference](/integrate/cli/reference) | Every command, argument and flag |
+| [Authentication](/integrate/cli/authentication) | Sessions, the active organization and access tokens |
+| [MCP operations](/agents/mcp-operations) | The same operations for your agent |

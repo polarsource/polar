@@ -2,7 +2,9 @@ import { useSubscriptionChargePreview } from '@/hooks/queries/subscriptions'
 import { schemas } from '@polar-sh/client'
 import { render } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import SubscriptionInvoicePreview from './SubscriptionInvoicePreview'
+import SubscriptionInvoicePreview, {
+  useSubscriptionUpcomingCharge,
+} from './SubscriptionInvoicePreview'
 
 vi.mock('@/hooks/queries', () => ({
   useProduct: () => ({
@@ -69,6 +71,20 @@ const chargePreview: schemas['SubscriptionChargePreview'] = {
   due_amount: 500,
 }
 
+const UpcomingCharge = ({
+  subscription,
+}: {
+  subscription: schemas['Subscription']
+}) => {
+  const charge = useSubscriptionUpcomingCharge(subscription)
+  return charge ? (
+    <>
+      {charge.title}
+      <SubscriptionInvoicePreview subscription={subscription} charge={charge} />
+    </>
+  ) : null
+}
+
 describe('SubscriptionInvoicePreview', () => {
   beforeEach(() => {
     vi.mocked(useSubscriptionChargePreview).mockReturnValue({
@@ -77,9 +93,7 @@ describe('SubscriptionInvoicePreview', () => {
   })
 
   it('passes the customer credit through to the invoice preview', () => {
-    const { container } = render(
-      <SubscriptionInvoicePreview subscription={subscription} />,
-    )
+    const { container } = render(<UpcomingCharge subscription={subscription} />)
 
     expect(container.textContent).toContain('Upcoming renewal')
     expect(container.textContent).toContain('Applied balance -500')
@@ -88,7 +102,7 @@ describe('SubscriptionInvoicePreview', () => {
 
   it('hides the final charge when usage is billed on its own meter cycle', () => {
     const { container } = render(
-      <SubscriptionInvoicePreview
+      <UpcomingCharge
         subscription={
           {
             ...subscription,
@@ -111,7 +125,7 @@ describe('SubscriptionInvoicePreview', () => {
 
   it('keeps the renewal of a free plan with a scheduled paid plan', () => {
     const { container } = render(
-      <SubscriptionInvoicePreview
+      <UpcomingCharge
         subscription={
           {
             ...subscription,

@@ -29,7 +29,7 @@ from polar.logfire import configure_logfire
 from polar.logging import Logger
 from polar.logging import configure as configure_logging
 from polar.postgres import AsyncEngine, create_async_engine
-from polar.redis import Redis
+from polar.redis import REDIS_CONNECTION_OPTIONS, Redis
 from polar.webhook.repository import WebhookEventRepository
 
 log: Logger = structlog.get_logger()
@@ -141,6 +141,7 @@ def _create_lifespan(
             client_name=f"{settings.ENV.value}.worker.health",
             socket_timeout=2,
             socket_connect_timeout=2,
+            **REDIS_CONNECTION_OPTIONS,
         )
         state: dict[str, Any] = {"redis": redis}
 
@@ -151,7 +152,7 @@ def _create_lifespan(
 
         yield state
 
-        await redis.close()
+        await redis.aclose()
         if async_engine is not None:
             await async_engine.dispose()
 

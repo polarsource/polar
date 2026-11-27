@@ -12,7 +12,7 @@ export async function generateMetadata(props: {
 }): Promise<Metadata> {
   const params = await props.params
   const api = await getServerSideAPI()
-  const organization = await getOrganizationBySlug(api, params.organization)
+  const organization = await getOrganizationBySlug(params.organization)
 
   if (!organization) {
     return {
@@ -45,7 +45,6 @@ export default async function Page(props: {
   const params = await props.params
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    api,
     params.organization,
   )
 

@@ -1,4 +1,3 @@
-from typing import Any
 from uuid import UUID
 
 from polar.benefit.strategies.feature_flag.schemas import (
@@ -11,29 +10,55 @@ from polar.benefit.strategies.meter_credit.schemas import (
     BenefitMeterCreditCreateProperties,
     BenefitMeterCreditUpdate,
 )
+from polar.benefit.strategies.slack_shared_channel.schemas import (
+    BenefitSlackSharedChannelCreate,
+    BenefitSlackSharedChannelUpdate,
+)
 
-from .schemas import ConfigBenefit, ConfigBenefitMeterCredit
-from .validation import BenefitChange
+from .schemas import (
+    ConfigBenefit,
+    ConfigBenefitMeterCredit,
+    ConfigBenefitSlackSharedChannel,
+)
+
+
+def _meter_credit_properties(
+    benefit_config: ConfigBenefitMeterCredit, meter_ids: dict[str, UUID]
+) -> BenefitMeterCreditCreateProperties:
+    properties = benefit_config.properties
+    return BenefitMeterCreditCreateProperties(
+        meter_id=meter_ids[properties.meter],
+        units=properties.units,
+        rollover=properties.rollover,
+    )
 
 
 def benefit_create(
     benefit_config: ConfigBenefit,
     organization_id: UUID | None,
     meter_ids: dict[str, UUID],
-) -> BenefitFeatureFlagCreate | BenefitMeterCreditCreate:
+) -> (
+    BenefitFeatureFlagCreate
+    | BenefitMeterCreditCreate
+    | BenefitSlackSharedChannelCreate
+):
+    if isinstance(benefit_config, ConfigBenefitSlackSharedChannel):
+        return BenefitSlackSharedChannelCreate(
+            type=benefit_config.type,
+            description=benefit_config.description,
+            metadata=benefit_config.metadata,
+            visibility=benefit_config.visibility,
+            organization_id=organization_id,
+            properties=benefit_config.properties,
+        )
     if isinstance(benefit_config, ConfigBenefitMeterCredit):
-        properties = benefit_config.properties
         return BenefitMeterCreditCreate(
             type=benefit_config.type,
             description=benefit_config.description,
             metadata=benefit_config.metadata,
             visibility=benefit_config.visibility,
             organization_id=organization_id,
-            properties=BenefitMeterCreditCreateProperties(
-                meter_id=meter_ids[properties.meter],
-                units=properties.units,
-                rollover=properties.rollover,
-            ),
+            properties=_meter_credit_properties(benefit_config, meter_ids),
         )
     return BenefitFeatureFlagCreate(
         type=benefit_config.type,
@@ -46,20 +71,24 @@ def benefit_create(
 
 
 def benefit_update(
-    change: BenefitChange, meter_ids: dict[str, UUID]
-) -> BenefitFeatureFlagUpdate | BenefitMeterCreditUpdate:
-    update: dict[str, Any] = {
-        "metadata" if name == "user_metadata" else name: value
-        for name, value in change.update_dict.items()
-        if name != "properties"
-    }
-    config = change.config
-    if isinstance(config, ConfigBenefitMeterCredit):
-        if "properties" in change.update_dict:
-            update["properties"] = BenefitMeterCreditCreateProperties(
-                meter_id=meter_ids[config.properties.meter],
-                units=config.properties.units,
-                rollover=config.properties.rollover,
-            )
-        return BenefitMeterCreditUpdate(type=config.type, **update)
-    return BenefitFeatureFlagUpdate(type=config.type, **update)
+    benefit_config: ConfigBenefit, meter_ids: dict[str, UUID]
+) -> (
+    BenefitFeatureFlagUpdate
+    | BenefitMeterCreditUpdate
+    | BenefitSlackSharedChannelUpdate
+):
+    fields = benefit_config.model_dump(
+        include={"description", "visibility"}
+        | ({"metadata"} & benefit_config.model_fields_set)
+    )
+    if isinstance(benefit_config, ConfigBenefitSlackSharedChannel):
+        return BenefitSlackSharedChannelUpdate(
+            type=benefit_config.type, **fields, properties=benefit_config.properties
+        )
+    if isinstance(benefit_config, ConfigBenefitMeterCredit):
+        return BenefitMeterCreditUpdate(
+            type=benefit_config.type,
+            **fields,
+            properties=_meter_credit_properties(benefit_config, meter_ids),
+        )
+    return BenefitFeatureFlagUpdate(type=benefit_config.type, **fields)

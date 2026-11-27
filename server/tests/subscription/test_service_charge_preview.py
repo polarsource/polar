@@ -294,6 +294,44 @@ class TestCalculateChargePreview:
         assert preview.subtotal_amount == 1500
         assert preview.total_amount == 1500
 
+    async def test_pending_product_change_keeps_current_metered_usage(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(5000, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        meter = await create_meter(save_fixture, organization=organization)
+        await save_fixture(
+            SubscriptionMeter(subscription=subscription, meter=meter, amount=500)
+        )
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=new_product,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        preview = await subscription_service.calculate_charge_preview(
+            session, subscription
+        )
+
+        assert preview.base_amount == 5000
+        assert preview.metered_amount == 500
+        assert preview.subtotal_amount == 5500
+
     async def test_prorations_surfaced_and_excluded_from_discount(
         self,
         session: AsyncSession,

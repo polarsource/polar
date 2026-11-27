@@ -4,13 +4,20 @@ import contextlib
 import json
 from collections.abc import Generator, Sequence
 from datetime import datetime
+from urllib.parse import urlparse
 
 from fastapi import Request
 from tagflow import tag, text
 
 from polar.enums import PayoutAccountStatus
-from polar.models import Organization, OrganizationReviewFeedback
+from polar.models import (
+    Organization,
+    OrganizationDomain,
+    OrganizationEmail,
+    OrganizationReviewFeedback,
+)
 from polar.models.organization_risk_signal import OrganizationRiskSignal
+from polar.organization_review.collectors.setup import is_on_verified_domain
 from polar.organization_review.report import AnyAgentReport
 from polar.organization_review.schemas import DimensionAssessment, ReviewVerdict
 from polar.organization_review.thresholds import (
@@ -56,6 +63,8 @@ class OverviewSection(ChecklistMixin):
         has_open_appeal_case: bool = False,
         risk_signals: Sequence[OrganizationRiskSignal] = (),
         shared_organizations: Sequence[Organization] = (),
+        organization_domains: Sequence[OrganizationDomain] = (),
+        support_email: OrganizationEmail | None = None,
     ) -> None:
         self.org = organization
         self.orders_count = orders_count
@@ -66,6 +75,8 @@ class OverviewSection(ChecklistMixin):
         self.has_open_appeal_case = has_open_appeal_case
         self.risk_signals = risk_signals
         self.shared_organizations = shared_organizations
+        self.organization_domains = organization_domains
+        self.support_email = support_email
 
     # ------------------------------------------------------------------
     # Full-width: Organization Review card (primary content)
@@ -730,12 +741,28 @@ class OverviewSection(ChecklistMixin):
                     "Support Email",
                     self.has_email,
                     self.org.email if self.has_email else None,
+                    self._support_email_badge() if self.has_email else None,
                 )
+                if self.has_email and not self._support_email_verified():
+                    with tag.div(classes="flex justify-end"):
+                        with button(
+                            size="xs",
+                            outline=True,
+                            hx_post=str(
+                                request.url_for(
+                                    "organizations:verify_support_email",
+                                    organization_id=self.org.id,
+                                )
+                            ),
+                            hx_confirm=f"Mark {self.org.email} as verified?",
+                        ):
+                            text("Verify support email")
 
                 render_checklist_row(
                     "Website URL",
                     self.has_website,
                     self.org.website if self.has_website else None,
+                    self._website_domain_badge() if self.has_website else None,
                 )
 
                 if self.has_socials:
@@ -784,6 +811,43 @@ class OverviewSection(ChecklistMixin):
 
                 self._render_payout_account_row()
                 self._render_shared_payout_account_row(request)
+
+    def _support_email_verified(self) -> bool:
+        current = self.support_email
+        return (
+            current is not None
+            and current.verified_at is not None
+            and current.email == self.org.email
+        )
+
+    def _support_email_badge(self) -> tuple[str, str, str | None]:
+        if self._support_email_verified():
+            return "Verified", "badge-success", None
+        return "Not verified", "badge-ghost", None
+
+    def _website_domain_badge(self) -> tuple[str, str, str | None]:
+        host = urlparse(self.org.website or "").hostname or ""
+        verified = [d.domain for d in self.organization_domains if d.verified_at]
+        pending = [d.domain for d in self.organization_domains if not d.verified_at]
+
+        lost_at = max(
+            (
+                d.verification_lost_at
+                for d in self.organization_domains
+                if d.verification_lost_at and is_on_verified_domain(host, [d.domain])
+            ),
+            default=None,
+        )
+
+        if is_on_verified_domain(host, verified):
+            return "Verified", "badge-success", None
+        if lost_at is not None:
+            return f"Lost on {lost_at.strftime('%Y-%m-%d')}", "badge-error", None
+        if is_on_verified_domain(host, pending):
+            return "Pending verification", "badge-warning", None
+        if verified:
+            return "Other domain verified", "badge-warning", ", ".join(verified)
+        return "Not verified", "badge-ghost", None
 
     def _render_payout_account_row(self) -> None:
         """Payout status with Stripe's raw `disabled_reason`.

@@ -109,6 +109,9 @@ export default {
           _mode: 'plural',
         },
         updateFailed: 'Einheiten konnten nicht aktualisiert werden',
+        range: '{min} - {max} {unitLabelPlural}',
+        minimum: 'Minimum {min} {unitLabelPlural}',
+        maximum: 'Maximum {max} {unitLabelPlural}',
       },
       meteredChargesMayApply:
         'Zusätzliche nutzungsabhängige Gebühren können anfallen',

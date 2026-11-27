@@ -2,6 +2,7 @@ import type { Client } from '@polar-sh/client'
 import type { AcceptedLocale } from '@polar-sh/i18n'
 import { render } from '@testing-library/react'
 import { useEffect } from 'react'
+import { useFormState } from 'react-hook-form'
 import { vi } from 'vitest'
 import type { ProductCheckoutPublic } from '../guards'
 import {
@@ -14,6 +15,10 @@ import {
   type CheckoutContextProps,
 } from '../providers/CheckoutProvider'
 import { createCheckout } from './makeCheckout'
+
+type CapturedContext = CheckoutFormContextProps & {
+  errors: CheckoutFormContextProps['form']['formState']['errors']
+}
 
 interface RenderWithCheckoutOptions {
   checkout?: Partial<ProductCheckoutPublic>
@@ -36,14 +41,14 @@ export const renderWithCheckout = ({
     ...checkoutOverrides,
   })
 
-  const ctxRef: { current: CheckoutFormContextProps | null } = { current: null }
+  const ctxRef: { current: CapturedContext | null } = { current: null }
 
   const Capture = () => {
     const ctx = useCheckoutForm()
+    const formState = useFormState({ control: ctx.form.control })
     useEffect(() => {
-      ctxRef.current = ctx
+      ctxRef.current = { ...ctx, errors: formState.errors }
     })
-    void ctx.form.formState.errors
     return null
   }
 

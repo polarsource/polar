@@ -3,10 +3,12 @@ from collections.abc import AsyncIterator
 from datetime import datetime, timedelta
 
 import pytest
+from dramatiq import Retry
 from pytest_mock import MockerFixture
 
 from polar.checkout.repository import CheckoutRepository
-from polar.checkout.tasks import anonymize_expired
+from polar.checkout.service import NotConfirmedCheckout
+from polar.checkout.tasks import anonymize_expired, checkout_success
 from polar.kit.utils import utc_now
 from polar.models import Checkout, Product
 from polar.models.checkout import CheckoutStatus
@@ -35,6 +37,23 @@ async def _create_checkout(
     checkout.customer_email = "john@example.com"
     await save_fixture(checkout)
     return checkout
+
+
+@pytest.mark.anyio
+class TestCheckoutSuccess:
+    @pytest.mark.parametrize("retries_remaining", [True, False])
+    async def test_not_confirmed(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        retries_remaining: bool,
+    ) -> None:
+        checkout = await create_checkout(save_fixture, products=[product])
+        mocker.patch("polar.checkout.tasks.can_retry", return_value=retries_remaining)
+
+        with pytest.raises(Retry if retries_remaining else NotConfirmedCheckout):
+            await checkout_success(checkout.id)
 
 
 @pytest.mark.anyio

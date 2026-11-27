@@ -108,6 +108,26 @@ const CheckoutUnitSelector = ({
       })
   }
 
+  const { unitLabelPlural } = unitLabels
+  const unitLimitText =
+    minimumUnits > 1 && hasMaximumLimit
+      ? t('checkout.pricing.units.range', {
+          min: minimumUnits,
+          max: maximumUnits,
+          unitLabelPlural,
+        })
+      : minimumUnits > 1
+        ? t('checkout.pricing.units.minimum', {
+            min: minimumUnits,
+            unitLabelPlural,
+          })
+        : hasMaximumLimit
+          ? t('checkout.pricing.units.maximum', {
+              max: maximumUnits,
+              unitLabelPlural,
+            })
+          : null
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-row items-center justify-between">
@@ -132,6 +152,11 @@ const CheckoutUnitSelector = ({
           />
         )}
       </div>
+      {!isFixedUnits && unitLimitText && (
+        <p className="dark:text-polar-400 text-xs text-gray-500">
+          {unitLimitText}
+        </p>
+      )}
       {error && <p className="text-destructive-foreground text-sm">{error}</p>}
     </div>
   )

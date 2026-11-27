@@ -35,7 +35,7 @@ async def trigger_subscription_cycle(
     Directly enqueue a subscription cycle — bypasses the scheduler picker.
 
     Use ``SchedulerSimulator.trigger_due_cycles()`` instead when you want to
-    exercise the full scheduler query (with freezegun time control).
+    exercise the full scheduler query (with time_machine time control).
 
     This helper is kept for cases where you need to force-cycle a specific
     subscription regardless of its period dates.

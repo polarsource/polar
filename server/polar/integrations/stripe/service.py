@@ -17,12 +17,10 @@ from stripe.params._payment_intent_create_params import (
 from stripe.params._payment_intent_modify_params import PaymentIntentModifyParams
 from stripe.params._setup_intent_confirm_params import SetupIntentConfirmParams
 from stripe.params._setup_intent_create_params import SetupIntentCreateParams
-from stripe.params._setup_intent_modify_params import SetupIntentModifyParams
 from stripe.params._setup_intent_retrieve_params import SetupIntentRetrieveParams
 from stripe.params.tax._calculation_create_params import CalculationCreateParams
 
 from polar.config import settings
-from polar.exceptions import PolarError
 from polar.integrations.stripe import stripe_lib
 from polar.kit.http import get_safe_return_url
 from polar.logfire import instrument_httpx
@@ -37,7 +35,6 @@ if TYPE_CHECKING:
     from stripe.params._transfer_create_reversal_params import (
         TransferCreateReversalParams,
     )
-    from stripe.params._transfer_modify_params import TransferModifyParams
     from stripe.params.tax._transaction_create_reversal_params import (
         TransactionCreateReversalParams,
     )
@@ -69,27 +66,10 @@ stripe_risk_client = stripe_lib.StripeClient(
 log: Logger = structlog.get_logger()
 
 
-StripeCancellationReasons = Literal[
-    "customer_service",
-    "low_quality",
-    "missing_features",
-    "other",
-    "switched_service",
-    "too_complex",
-    "too_expensive",
-    "unused",
-]
-
 StripeAccountRejectReason = Literal["fraud", "terms_of_service", "other"]
 
 
-class StripeError(PolarError): ...
-
-
 class StripeService:
-    async def retrieve_intent(self, id: str) -> stripe_lib.PaymentIntent:
-        return await stripe_lib.PaymentIntent.retrieve_async(id)
-
     async def create_account(
         self, country: str, name: str | None
     ) -> stripe_lib.Account:
@@ -109,12 +89,6 @@ class StripeService:
             create_params["tos_acceptance"] = {"service_agreement": "recipient"}
 
         return await stripe_lib.Account.create_async(**create_params)
-
-    async def update_account(self, id: str, name: str | None) -> None:
-        obj = {}
-        if name:
-            obj["business_profile"] = {"name": name}
-        await stripe_lib.Account.modify_async(id, **obj)
 
     async def update_account_website(self, id: str, url: str) -> None:
         log.info("stripe.account.update_website", account_id=id, url=url)
@@ -211,17 +185,6 @@ class StripeService:
 
         return await stripe_lib.Transfer.create_async(**create_params)
 
-    async def get_transfer(self, id: str) -> stripe_lib.Transfer:
-        return await stripe_lib.Transfer.retrieve_async(id)
-
-    async def update_transfer(
-        self, id: str, metadata: dict[str, str]
-    ) -> stripe_lib.Transfer:
-        update_params: TransferModifyParams = {
-            "metadata": metadata,
-        }
-        return await stripe_lib.Transfer.modify_async(id, **update_params)
-
     async def reverse_transfer(
         self,
         id: str,
@@ -238,16 +201,8 @@ class StripeService:
 
         return await stripe_lib.Transfer.create_reversal_async(id, **reverse_params)
 
-    async def get_customer(self, customer_id: str) -> stripe_lib.Customer:
-        return await stripe_lib.Customer.retrieve_async(customer_id)
-
     async def get_balance_transaction(self, id: str) -> stripe_lib.BalanceTransaction:
         return await stripe_lib.BalanceTransaction.retrieve_async(id)
-
-    async def get_invoice(self, id: str) -> stripe_lib.Invoice:
-        return await stripe_lib.Invoice.retrieve_async(
-            id, expand=["total_tax_amounts.tax_rate"]
-        )
 
     async def list_balance_transactions(
         self,
@@ -383,7 +338,10 @@ class StripeService:
     async def create_payment_intent(
         self, **params: Unpack[PaymentIntentCreateParams]
     ) -> stripe_lib.PaymentIntent:
-        if params.get("setup_future_usage") == "off_session":
+        if (
+            params.get("setup_future_usage") == "off_session"
+            and "payment_method_types" not in params
+        ):
             params["excluded_payment_method_types"] = [
                 *params.get("excluded_payment_method_types", []),
                 *SEPA_PAYMENT_METHOD_TYPES,
@@ -426,22 +384,17 @@ class StripeService:
     async def create_setup_intent(
         self, **params: Unpack[SetupIntentCreateParams]
     ) -> stripe_lib.SetupIntent:
-        params["excluded_payment_method_types"] = [
-            *params.get("excluded_payment_method_types", []),
-            *SEPA_PAYMENT_METHOD_TYPES,
-        ]
+        if "payment_method_types" not in params:
+            params["excluded_payment_method_types"] = [
+                *params.get("excluded_payment_method_types", []),
+                *SEPA_PAYMENT_METHOD_TYPES,
+            ]
         log.info(
             "stripe.setup_intent.create",
             customer=params.get("customer"),
             usage=params.get("usage"),
         )
         return await stripe_lib.SetupIntent.create_async(**params)
-
-    async def modify_setup_intent(
-        self, id: str, **params: Unpack[SetupIntentModifyParams]
-    ) -> stripe_lib.SetupIntent:
-        log.info("stripe.setup_intent.modify", setup_intent_id=id)
-        return await stripe_lib.SetupIntent.modify_async(id, **params)
 
     async def confirm_setup_intent(
         self, id: str, **params: Unpack[SetupIntentConfirmParams]
@@ -524,9 +477,6 @@ class StripeService:
     ) -> stripe_lib.tax.Calculation:
         return await stripe_lib.tax.Calculation.create_async(**params)
 
-    async def get_tax_calculation(self, id: str) -> stripe_lib.tax.Calculation:
-        return await stripe_lib.tax.Calculation.retrieve_async(id)
-
     async def create_tax_transaction(
         self, calculation_id: str, reference: str
     ) -> stripe_lib.tax.Transaction:
@@ -593,6 +543,14 @@ class StripeService:
         )
         return await stripe_lib.PaymentMethod.detach_async(payment_method_id)
 
+    async def get_payment_method_domain(
+        self, domain_name: str
+    ) -> stripe_lib.PaymentMethodDomain | None:
+        result = await stripe_lib.PaymentMethodDomain.list_async(
+            domain_name=domain_name, limit=1
+        )
+        return result.data[0] if result.data else None
+
     async def create_payment_method_domain(
         self, domain_name: str
     ) -> stripe_lib.PaymentMethodDomain:
@@ -600,6 +558,18 @@ class StripeService:
         return await stripe_lib.PaymentMethodDomain.create_async(
             domain_name=domain_name, enabled=True
         )
+
+    async def list_payment_method_domains(
+        self,
+    ) -> AsyncIterator[stripe_lib.PaymentMethodDomain]:
+        result = await stripe_lib.PaymentMethodDomain.list_async(limit=100)
+        return result.auto_paging_iter()
+
+    async def update_payment_method_domain(
+        self, id: str, *, enabled: bool
+    ) -> stripe_lib.PaymentMethodDomain:
+        log.info("stripe.payment_method_domain.update", id=id, enabled=enabled)
+        return await stripe_lib.PaymentMethodDomain.modify_async(id, enabled=enabled)
 
     async def get_verification_session(
         self, id: str, *, expand: list[str] | None = None
@@ -634,9 +604,6 @@ class StripeService:
     ) -> stripe_lib.identity.VerificationSession:
         log.info("stripe.identity.verification_session.redact", id=id)
         return await stripe_lib.identity.VerificationSession.redact_async(id)
-
-    async def get_tax_rate(self, id: str) -> stripe_lib.TaxRate:
-        return await stripe_lib.TaxRate.retrieve_async(id)
 
     async def create_website_risk_evaluation(self, website_url: str) -> dict[str, Any]:
         """Ask Stripe to evaluate a website for fraud.

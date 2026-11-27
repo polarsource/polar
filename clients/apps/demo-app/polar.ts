@@ -82,19 +82,28 @@ export const getTopUps = async () =>
       price: formatUsdPrice(product),
     }))
 
-export const createProCheckout = async (externalId: string, origin: string) => {
-  const pro = await findPlan('pro')
+// Matches subscriptions on any version of the product
+const findActiveSubscription = async (
+  externalCustomerId: string,
+  externalProductId?: 'free' | 'pro',
+) => {
   const { items } = await polar.sdk.subscriptions.list({
-    external_customer_id: externalId,
-    active: true,
+    external_customer_id: externalCustomerId,
+    external_product_id: externalProductId,
+    status: ['active', 'trialing'],
     limit: 1,
   })
+  return items[0]
+}
+
+export const createProCheckout = async (externalId: string, origin: string) => {
+  const subscription = await findActiveSubscription(externalId)
 
   const checkout = await polar.sdk.checkouts.create({
-    products: [pro.id],
+    external_products: ['pro'],
     external_customer_id: externalId,
     // Upgrades the free subscription instead of creating a second one
-    subscription_id: items[0]?.id,
+    subscription_id: subscription?.id,
     success_url: `${origin}/?checkout_id={CHECKOUT_ID}`,
     return_url: origin,
   })
@@ -102,14 +111,7 @@ export const createProCheckout = async (externalId: string, origin: string) => {
 }
 
 export const isPro = async (externalId: string) => {
-  const pro = await findPlan('pro')
-  const { items } = await polar.sdk.subscriptions.list({
-    external_customer_id: externalId,
-    product_id: pro.id,
-    active: true,
-    limit: 1,
-  })
-  if (items.length === 0) return false
+  if (!(await findActiveSubscription(externalId, 'pro'))) return false
 
   // Benefits are granted asynchronously after the subscription becomes active
   const { granted } = await polar
@@ -127,12 +129,7 @@ export const ensureFreePlan = async (email: string, externalId: string) => {
     await polar.sdk.customers.create({ email, external_id: externalId })
   }
 
-  const { items } = await polar.sdk.subscriptions.list({
-    external_customer_id: externalId,
-    active: true,
-    limit: 1,
-  })
-  if (items.length > 0) return
+  if (await findActiveSubscription(externalId)) return
 
   const freePlan = await findPlan('free')
 

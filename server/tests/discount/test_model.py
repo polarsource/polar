@@ -1,5 +1,9 @@
+import uuid
+from datetime import UTC, datetime
+
 import pytest
 
+from polar.models import DiscountProduct, Organization, Product
 from polar.models.discount import DiscountFixed, DiscountPercentage
 
 
@@ -100,3 +104,48 @@ class TestDiscountPercentageAllocateDiscountAmounts:
     def test_empty(self) -> None:
         discount = _percentage(1000)
         assert discount.allocate_discount_amounts([], "usd") == []
+
+
+def _product(external_id: str | None, deleted_at: datetime | None = None) -> Product:
+    return Product(id=uuid.uuid4(), external_id=external_id, deleted_at=deleted_at)
+
+
+def _restricted_to(
+    *products: Product, config_as_code: bool = True
+) -> DiscountPercentage:
+    return DiscountPercentage(
+        basis_points=1000,
+        organization=Organization(
+            feature_settings={"config_as_code_enabled": config_as_code}
+        ),
+        discount_products=[DiscountProduct(product=p) for p in products],
+    )
+
+
+class TestAppliesToProduct:
+    def test_unrestricted(self) -> None:
+        assert _percentage(1000).applies_to_product(_product("pro"))
+
+    def test_restricted_product(self) -> None:
+        product = _product("pro")
+        assert _restricted_to(product).applies_to_product(product)
+
+    def test_other_version_of_restricted_product(self) -> None:
+        discount = _restricted_to(_product("pro"))
+        assert discount.applies_to_product(_product("pro"))
+
+    def test_other_version_without_config_as_code(self) -> None:
+        discount = _restricted_to(_product("pro"), config_as_code=False)
+        assert not discount.applies_to_product(_product("pro"))
+
+    def test_other_product(self) -> None:
+        discount = _restricted_to(_product("pro"))
+        assert not discount.applies_to_product(_product("team"))
+
+    def test_products_without_external_id(self) -> None:
+        discount = _restricted_to(_product(None))
+        assert not discount.applies_to_product(_product(None))
+
+    def test_deleted_product_with_reused_external_id(self) -> None:
+        discount = _restricted_to(_product("pro", datetime.now(UTC)))
+        assert not discount.applies_to_product(_product("pro"))

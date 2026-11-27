@@ -12,9 +12,8 @@ from polar.outpost.reducer import (
     FilterClause,
     Reducer,
     ReducerMatcher,
-    get_bucket_start,
     get_matcher,
-    reduce,
+    match_event,
     with_matchers,
 )
 from tests.benchmarks import DATA
@@ -29,12 +28,10 @@ MODELS: list[str] = EVENTS["models"]
 START = datetime.datetime.fromtimestamp(DATA["cold_until"] / 1_000_000, tz=datetime.UTC)
 Operator = typing.Literal["eq", "ne", "gt", "gte", "lt", "lte"]
 OPERATORS: list[Operator] = ["eq", "ne", "gt", "gte", "lt", "lte"]
+# A count reads no property of the event; every other aggregation reads one.
 AGGREGATIONS: list[Aggregation] = [
     {"func": "count"},
     {"func": "sum", "property": "metadata.tokens"},
-    {"func": "min", "property": "metadata.tokens"},
-    {"func": "max", "property": "metadata.tokens"},
-    {"func": "avg", "property": "metadata.tokens"},
 ]
 
 
@@ -74,7 +71,6 @@ def make_events(count: int) -> list[Event]:
 
 
 events = make_events(EVENTS["count"])
-oldest_bucket_start = get_bucket_start(START)
 
 
 def clause(property: str, operator: Operator, value: str | int) -> FilterClause:
@@ -90,7 +86,7 @@ def any_of(*clauses: Filter | FilterClause) -> Filter:
 
 
 def reducer_of(id: str, filter: Filter, aggregation: Aggregation) -> Reducer:
-    return {"id": id, "filter": filter, "aggregation": aggregation}
+    return {"id": id, "kind": "usage", "filter": filter, "aggregation": aggregation}
 
 
 def match_all(filter: Filter) -> None:
@@ -99,8 +95,9 @@ def match_all(filter: Filter) -> None:
         matches(event)
 
 
-def reduce_all(matchers: list[ReducerMatcher], batch: list[Event]) -> None:
-    reduce(matchers, batch, oldest_bucket_start=oldest_bucket_start)
+def match_all_events(matchers: list[ReducerMatcher], batch: list[Event]) -> None:
+    for event in batch:
+        match_event(matchers, event)
 
 
 @pytest.mark.parametrize("operator", OPERATORS)
@@ -151,13 +148,13 @@ def test_matcher_and_of_an_or_and_a_clause(benchmark: BenchmarkFixture) -> None:
 
 
 @pytest.mark.parametrize("aggregation", AGGREGATIONS, ids=lambda a: a["func"])
-def test_reduce_one_reducer_1000_events(
+def test_match_one_reducer_1000_events(
     benchmark: BenchmarkFixture, aggregation: Aggregation
 ) -> None:
     reducers = [
         reducer_of("tokens", all_of(clause("name", "eq", "llm.call")), aggregation)
     ]
-    benchmark(reduce_all, with_matchers(reducers), events)
+    benchmark(match_all_events, with_matchers(reducers), events)
 
 
 ten_reducers = [
@@ -173,10 +170,10 @@ ten_reducers = [
 ]
 
 
-def test_reduce_sum_ten_reducers_1000_events(benchmark: BenchmarkFixture) -> None:
-    benchmark(reduce_all, with_matchers(ten_reducers), events)
+def test_match_sum_ten_reducers_1000_events(benchmark: BenchmarkFixture) -> None:
+    benchmark(match_all_events, with_matchers(ten_reducers), events)
 
 
-def test_reduce_sum_one_reducer_one_matching_event(benchmark: BenchmarkFixture) -> None:
+def test_match_sum_one_reducer_one_matching_event(benchmark: BenchmarkFixture) -> None:
     llm_call = next(event for event in events if event.name == "llm.call")
-    benchmark(reduce_all, with_matchers([ten_reducers[0]]), [llm_call])
+    benchmark(match_all_events, with_matchers([ten_reducers[0]]), [llm_call])

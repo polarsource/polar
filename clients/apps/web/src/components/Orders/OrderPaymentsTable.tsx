@@ -2,15 +2,13 @@
 
 import PaymentMethod from '@/components/PaymentMethod/PaymentMethod'
 import PaymentStatus from '@/components/PaymentStatus/PaymentStatus'
+import { paymentDeclineReasonColumns } from '@/components/PaymentStatus/paymentDeclineReasonColumns'
 import { schemas } from '@polar-sh/client'
-import {
-  DataTable,
-  type DataTableColumnDef,
-  Text,
-  Truncated,
-} from '@polar-sh/orbit'
+import { DataTable } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { OrderSection } from './OrderSection'
+
+export const ORDER_PAYMENTS_SECTION_ID = 'payment-attempts'
 
 export const OrderPaymentsTable = ({
   payments,
@@ -19,12 +17,8 @@ export const OrderPaymentsTable = ({
   payments: schemas['Payment'][]
   isLoading: boolean
 }) => {
-  const hasDeclinedPayment = payments.some(
-    (payment) => payment.status === 'failed',
-  )
-
   return (
-    <OrderSection title="Payment attempts">
+    <OrderSection id={ORDER_PAYMENTS_SECTION_ID} title="Payment attempts">
       <DataTable
         isLoading={isLoading}
         columns={[
@@ -57,25 +51,7 @@ export const OrderPaymentsTable = ({
               <PaymentStatus payment={original} />
             ),
           },
-          ...(hasDeclinedPayment
-            ? ([
-                {
-                  accessorKey: 'decline_reason',
-                  header: 'Bank Decline Reason',
-                  cell: ({ row: { original } }) => {
-                    const reason =
-                      original.decline_message || original.decline_reason
-                    return reason ? (
-                      <Truncated>
-                        <Text as="span">{reason}</Text>
-                      </Truncated>
-                    ) : (
-                      '—'
-                    )
-                  },
-                },
-              ] satisfies DataTableColumnDef<schemas['Payment']>[])
-            : []),
+          ...paymentDeclineReasonColumns(payments),
         ]}
         data={payments}
       />

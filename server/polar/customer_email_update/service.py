@@ -45,8 +45,7 @@ class CustomerEmailUpdateService:
         customer: Customer,
         new_email: str,
     ) -> tuple[CustomerEmailVerification, str]:
-        customer_type = customer.type or CustomerType.individual
-        if customer_type == CustomerType.team:
+        if customer.type == CustomerType.team:
             raise PolarRequestValidationError(
                 [
                     {
@@ -110,6 +109,7 @@ class CustomerEmailUpdateService:
             ),
             to_email_addr=record.email,
             subject="Verify your new email address",
+            unsuppress=True,
         )
 
     async def check_token(self, session: AsyncReadSession, token: str) -> bool:
@@ -154,7 +154,7 @@ class CustomerEmailUpdateService:
             customer, update_dict={"email": record.email, "email_verified": True}
         )
 
-        await member_service.sync_owner_email(session, customer)
+        await member_service.sync_owner(session, customer)
 
         if customer.stripe_customer_id is not None and customer.email is not None:
             await stripe_service.update_customer(

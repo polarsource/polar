@@ -3,7 +3,7 @@ from uuid import UUID
 
 import pytest
 from dateutil.relativedelta import relativedelta
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.auth.models import AuthSubject
 from polar.benefit.grant.repository import BenefitGrantRepository
@@ -946,6 +946,42 @@ class TestValidateLicenseKey:
         assert response.status_code == 200
         data = response.json()
         assert data["usage"] == 0
+
+    @pytest.mark.auth
+    async def test_records_each_validation(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        _, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(prefix="testing"),
+        )
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+        payload = {"key": lk.key, "organization_id": str(lk.organization_id)}
+
+        first = await client.post("/v1/license-keys/validate", json=payload)
+        second = await client.post("/v1/license-keys/validate", json=payload)
+
+        assert first.status_code == 200
+        assert second.status_code == 200
+        assert first.json()["validations"] == 1
+        assert second.json()["validations"] == 2
+        assert first.json()["last_validated_at"] is not None
+        assert second.json()["last_validated_at"] >= first.json()["last_validated_at"]
 
     @pytest.mark.api_version(V2026_04, V2026_10)
     async def test_returns_seat_member(

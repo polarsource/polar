@@ -22,6 +22,7 @@ from sqlalchemy import (
     cast,
     event,
     select,
+    text,
     type_coerce,
 )
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
@@ -36,7 +37,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.kit.utils import utc_now
-from polar.product.guard import is_metered_price
+from polar.product.guard import has_future_charges, is_metered_price
 
 from .product_price import ProductPrice
 from .subscription_meter import SubscriptionMeter
@@ -69,6 +70,7 @@ class SubscriptionStatus(StrEnum):
     canceled = "canceled"
     unpaid = "unpaid"
     paused = "paused"
+    trial_ended = "trial_ended"
 
     @classmethod
     def incomplete_statuses(cls) -> set[Self]:
@@ -83,8 +85,16 @@ class SubscriptionStatus(StrEnum):
         return {cls.canceled, cls.unpaid}  # pyright: ignore
 
     @classmethod
+    def paused_statuses(cls) -> set[Self]:
+        return {cls.paused, cls.trial_ended}  # pyright: ignore
+
+    @classmethod
     def billable_statuses(cls) -> set[Self]:
         return cls.active_statuses() | {cls.past_due}  # pyright: ignore
+
+    @classmethod
+    def cancelable_statuses(cls) -> set[Self]:
+        return cls.billable_statuses() | {cls.paused}  # pyright: ignore
 
     @classmethod
     def is_incomplete(cls, status: Self) -> bool:
@@ -125,11 +135,15 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         ),
         Index(
             "ix_subscriptions_cycle_schedule",
-            "current_period_end",
-            postgresql_where=(
+            text("LEAST(current_period_end, current_meter_period_end)"),
+            postgresql_where=text(
                 "scheduler_locked_at IS NULL "
-                "AND status IN ('trialing', 'active') "
-                "AND current_period_end IS NOT NULL"
+                "AND status IN ("
+                + ", ".join(
+                    f"'{status}'"
+                    for status in sorted(SubscriptionStatus.billable_statuses())
+                )
+                + ") AND current_period_end IS NOT NULL"
             ),
         ),
         Index(
@@ -139,6 +153,15 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
                 "scheduler_locked_at IS NULL "
                 "AND status = 'paused' "
                 "AND resumes_at IS NOT NULL"
+            ),
+        ),
+        Index(
+            "ix_subscriptions_trial_ended_schedule",
+            "ends_at",
+            postgresql_where=(
+                "scheduler_locked_at IS NULL "
+                "AND status = 'trial_ended' "
+                "AND ends_at IS NOT NULL"
             ),
         ),
     )
@@ -224,8 +247,8 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     canceled_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )
-    started_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True, default=None, index=True
+    started_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, index=True
     )
     ends_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
@@ -478,11 +501,21 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             Boolean,
         )
 
+    @property
+    def has_future_charges(self) -> bool:
+        return has_future_charges(
+            self.prices,
+            sum(spp.amount for spp in self.subscription_product_prices),
+            self.discount,
+        )
+
     @hybrid_property
     def requires_payment_method(self) -> bool:
         """Whether a payment method is still needed to bill this subscription."""
         if self.status == SubscriptionStatus.paused:
             return self.resumes_at is not None
+        if self.status == SubscriptionStatus.trial_ended:
+            return True
         if not self.billable:
             return False
         if SubscriptionStatus.is_active(self.status) and self.cancel_at_period_end:
@@ -509,6 +542,7 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         )
         return type_coerce(
             scheduled_resume
+            | (cls.status == SubscriptionStatus.trial_ended)
             | (
                 cls.status.in_(SubscriptionStatus.billable_statuses())
                 & (
@@ -539,9 +573,9 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return cast(cls.past_due_at + total_interval, TIMESTAMP(timezone=True))
 
     def can_cancel(self, immediately: bool = False) -> bool:
-        # A paused subscription isn't billable, but can still be revoked
-        # immediately instead of having to be resumed first.
-        if immediately and self.status == SubscriptionStatus.paused:
+        # A paused or trial-ended subscription isn't billable, but can still be
+        # revoked immediately instead of having to be resumed first.
+        if immediately and self.status in SubscriptionStatus.paused_statuses():
             return self.ended_at is None
 
         if not SubscriptionStatus.is_billable(self.status):

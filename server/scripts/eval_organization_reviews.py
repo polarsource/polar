@@ -33,7 +33,7 @@ from typing import Any
 
 import structlog
 import typer
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import create_async_engine  # lint-skip: dry-run
 
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.organization_review.eval.dataset import (

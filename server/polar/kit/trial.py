@@ -5,7 +5,7 @@ from typing import Self
 from dateutil.relativedelta import relativedelta
 from pydantic import BaseModel, Field, model_validator
 from pydantic_core import PydanticCustomError
-from sqlalchemy import Integer
+from sqlalchemy import Boolean, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.extensions.sqlalchemy.types import StringEnum
@@ -35,6 +35,9 @@ class TrialConfigurationMixin:
     )
     trial_interval_count: Mapped[int | None] = mapped_column(
         Integer, nullable=True, default=None
+    )
+    trial_payment_setup_required: Mapped[bool | None] = mapped_column(
+        Boolean, nullable=True, default=None
     )
 
 

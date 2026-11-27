@@ -2,18 +2,18 @@
 
 import Auth from '@/components/Auth/Auth'
 import EmailOTPVerifyForm from '@/components/Auth/EmailOTPVerifyForm'
-import { OnboardingLayout } from '@/components/Layout/OnboardingLayout'
-import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import { useAuth, useLogout } from '@/hooks/auth'
 import { useImpressionEvent } from '@/hooks/useImpressionEvent'
 import { useAgentClaim, useAgentClaimPreview } from '@/hooks/queries/agents'
 import { type LoginMethod } from '@/utils/auth'
 import { ClientResponseError, schemas } from '@polar-sh/client'
-import { Alert, Avatar, Button, Text } from '@polar-sh/orbit'
+import { Alert, Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useEffect, useState } from 'react'
 import AgentClaimCodeForm, { normalizeClaimCode } from './AgentClaimCodeForm'
+import AgentClaimLayout from './AgentClaimLayout'
 import AgentClaimReceipt from './AgentClaimReceipt'
+import AgentClaimSuccess from './AgentClaimSuccess'
 import AgentProgress, { type ProgressMessage } from './AgentProgress'
 import {
   type AgentClaimProblem,
@@ -25,19 +25,6 @@ import { useClaimAgent } from './useClaimAgent'
 
 const FORM_ID = 'agent-claim'
 
-const STEPS = [
-  {
-    id: 'account',
-    title: 'Create an account',
-    description: 'To continue the setup',
-  },
-  {
-    id: 'claim',
-    title: 'Claim',
-    description: 'Take ownership of what your agent set up.',
-  },
-] as const
-
 const ARRIVING: ProgressMessage[] = [
   { text: 'Checking your account…', ms: 1200 },
   { text: 'Finding what your agent built…', ms: 2300 },
@@ -46,8 +33,7 @@ const ARRIVING: ProgressMessage[] = [
 
 const HANDING_OVER: ProgressMessage[] = [
   { text: 'Transferring ownership…', ms: 1800 },
-  { text: 'Setting up your organization…', ms: 2000 },
-  { text: 'Opening your dashboard…', ms: 1200 },
+  { text: 'Setting up your organization…', ms: 0 },
 ]
 
 const LOADING: ProgressMessage[] = [{ text: 'Loading…', ms: 0 }]
@@ -66,12 +52,14 @@ export default function ClaimAgentPage({
   authenticationSession,
   lastLoginMethod,
   pacingMs = 5000,
+  autoClose = true,
 }: {
   linkToken: string
   resumeActionId?: string
   authenticationSession: schemas['AuthenticationSession'] | null
   lastLoginMethod?: LoginMethod | null
   pacingMs?: number
+  autoClose?: boolean
 }) {
   const { currentUser } = useAuth()
   const logout = useLogout()
@@ -85,18 +73,25 @@ export default function ClaimAgentPage({
     linkToken,
     claim,
     resumeActionId,
-    pacingMs,
   )
   const [code, setCode] = useState('')
   const [codeSentTo, setCodeSentTo] = useState<string | null>(null)
   const [arriving, setArriving] = useState(signedIn)
+  const [handedOver, setHandedOver] = useState(false)
   const normalizedCode = normalizeClaimCode(code)
+  const claimed = state.status === 'claimed'
 
   useEffect(() => {
     if (!arriving) return
     const timer = setTimeout(() => setArriving(false), pacingMs)
     return () => clearTimeout(timer)
   }, [arriving, pacingMs])
+
+  useEffect(() => {
+    if (!claimed) return
+    const timer = setTimeout(() => setHandedOver(true), pacingMs)
+    return () => clearTimeout(timer)
+  }, [claimed, pacingMs])
 
   const error = signedIn ? loadError : previewError
   const summary = signedIn ? claim : preview
@@ -123,45 +118,31 @@ export default function ClaimAgentPage({
   const problem =
     state.status === 'failed'
       ? state.problem
-      : error && state.status !== 'claimed'
+      : error && !claimed
         ? getLoadProblem(error)
         : undefined
-  const isReady =
-    signedIn && claim && !arriving && !problem && state.status !== 'claimed'
+  const isReady = signedIn && claim && !arriving && !problem && !claimed
 
   const submit = () => {
     if (normalizedCode && !isPending) void confirm(normalizedCode)
   }
 
+  if (handedOver) {
+    return (
+      <AgentClaimSuccess
+        organization={claim?.organization ?? null}
+        agentName={claim?.agent_name}
+        autoClose={autoClose}
+      />
+    )
+  }
+
   return (
-    <OnboardingLayout
-      branding={
-        <Box color="text-primary">
-          <PolarLogotype logoVariant="logotype" logoClassName="ml-0" />
-        </Box>
-      }
-      steps={STEPS}
+    <AgentClaimLayout
       currentStepIndex={signedIn ? 1 : 0}
-      footer={
-        currentUser && (
-          <Box alignItems="center" gap="s">
-            <Avatar
-              className="h-8 w-8"
-              avatar_url={currentUser.avatar_url}
-              name={currentUser.email}
-            />
-            <Box flexDirection="column">
-              <Text variant="caption" color="muted">
-                Signed in as
-              </Text>
-              <Text variant="label">{currentUser.email}</Text>
-            </Box>
-          </Box>
-        )
-      }
       title="Finish setup"
       subtitle={
-        problem ? undefined : state.status === 'claimed' ? (
+        problem ? undefined : claimed ? (
           <AgentProgress messages={HANDING_OVER} />
         ) : isReady ? (
           'Switch back to your agent and copy the code it gave\u00a0you.'
@@ -213,7 +194,7 @@ export default function ClaimAgentPage({
                 : undefined
             }
           />
-        ) : state.status === 'claimed' ? null : !signedIn && preview ? (
+        ) : claimed ? null : !signedIn && preview ? (
           codeSentTo ? (
             <Box flexDirection="column" rowGap="l">
               <EmailOTPVerifyForm intent="signup" />
@@ -245,6 +226,6 @@ export default function ClaimAgentPage({
           </div>
         ) : null}
       </Box>
-    </OnboardingLayout>
+    </AgentClaimLayout>
   )
 }

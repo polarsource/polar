@@ -3,6 +3,7 @@ import { useOptimisticSave } from '@/hooks/useOptimisticSave'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Switch } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import React from 'react'
 import { toast } from '../Toast/use-toast'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
@@ -12,84 +13,110 @@ interface OrganizationCustomerEmailSettingsProps {
   readOnly: boolean
 }
 
-const customerEmails: {
+type CustomerEmail = {
   key: keyof schemas['OrganizationCustomerEmailSettings']
   title: string
   description: string
-}[] = [
+}
+
+const customerEmailGroups: { title: string; emails: CustomerEmail[] }[] = [
   {
-    key: 'order_confirmation',
-    title: 'Order confirmation',
-    description: 'Sent when a customer completes a one-time purchase',
+    title: 'Purchases',
+    emails: [
+      {
+        key: 'order_confirmation',
+        title: 'Order confirmation',
+        description: 'Sent when a customer completes a one-time purchase',
+      },
+      {
+        key: 'subscription_confirmation',
+        title: 'Subscription confirmation',
+        description: 'Sent when a customer starts a new subscription',
+      },
+    ],
   },
   {
-    key: 'subscription_confirmation',
-    title: 'Subscription confirmation',
-    description: 'Sent when a customer starts a new subscription',
+    title: 'Trials',
+    emails: [
+      {
+        key: 'subscription_trial_conversion_reminder',
+        title: 'Trial conversion reminder',
+        description:
+          'Sent before a trial ends and converts to a paid subscription',
+      },
+      {
+        key: 'subscription_cycled_after_trial',
+        title: 'Trial converted',
+        description: 'Sent when a trial ends and the subscription becomes paid',
+      },
+    ],
   },
   {
-    key: 'subscription_cycled',
-    title: 'Subscription cycled',
-    description: 'Sent when a subscription renews or is invoiced for usage',
+    title: 'Renewals',
+    emails: [
+      {
+        key: 'subscription_renewal_reminder',
+        title: 'Renewal reminder',
+        description:
+          'Sent 7 days before a subscription with a long billing cycle renews',
+      },
+      {
+        key: 'subscription_cycled',
+        title: 'Subscription cycled',
+        description: 'Sent when a subscription renews or is invoiced for usage',
+      },
+      {
+        key: 'payment_method_expiration_reminder',
+        title: 'Card expiring',
+        description:
+          'Sent before a card backing an active subscription expires',
+      },
+      {
+        key: 'subscription_past_due',
+        title: 'Subscription past due',
+        description:
+          'Sent when a subscription payment fails and becomes overdue',
+      },
+    ],
   },
   {
-    key: 'subscription_cycled_after_trial',
-    title: 'Trial converted',
-    description: 'Sent when a trial ends and the subscription becomes paid',
-  },
-  {
-    key: 'subscription_renewal_reminder',
-    title: 'Renewal reminder',
-    description:
-      'Sent 7 days before a subscription with a long billing cycle renews',
-  },
-  {
-    key: 'subscription_trial_conversion_reminder',
-    title: 'Trial conversion reminder',
-    description: 'Sent before a trial ends and converts to a paid subscription',
-  },
-  {
-    key: 'subscription_updated',
-    title: 'Subscription updated',
-    description:
-      'Sent when a customer changes their subscription to a different product',
-  },
-  {
-    key: 'subscription_cancellation',
-    title: 'Subscription canceled',
-    description: 'Sent when a customer cancels their subscription',
-  },
-  {
-    key: 'subscription_uncanceled',
-    title: 'Subscription uncanceled',
-    description:
-      'Sent when a customer reactivates a previously canceled subscription',
-  },
-  {
-    key: 'subscription_revoked',
-    title: 'Subscription revoked',
-    description:
-      'Sent when a canceled subscription permanently ends at the end of the billing cycle',
-  },
-  {
-    key: 'payment_method_expiration_reminder',
-    title: 'Card expiring',
-    description: 'Sent before a card backing an active subscription expires',
-  },
-  {
-    key: 'subscription_past_due',
-    title: 'Subscription past due',
-    description: 'Sent when a subscription payment fails and becomes overdue',
-  },
-  {
-    key: 'subscription_paused',
-    title: 'Subscription paused',
-    description: 'Sent when a customer pauses their subscription',
-  },
-  {
-    key: 'subscription_resumed',
-    title: 'Subscription resumed',
-    description: 'Sent when a paused subscription resumes and billing restarts',
+    title: 'Subscription changes',
+    emails: [
+      {
+        key: 'subscription_updated',
+        title: 'Subscription updated',
+        description:
+          'Sent when a customer changes their subscription to a different product',
+      },
+      {
+        key: 'subscription_paused',
+        title: 'Subscription paused',
+        description: 'Sent when a customer pauses their subscription',
+      },
+      {
+        key: 'subscription_resumed',
+        title: 'Subscription resumed',
+        description:
+          'Sent when a paused subscription resumes and billing restarts',
+      },
+      {
+        key: 'subscription_cancellation',
+        title: 'Subscription canceled',
+        description: 'Sent when a customer cancels their subscription',
+      },
+      {
+        key: 'subscription_uncanceled',
+        title: 'Subscription uncanceled',
+        description:
+          'Sent when a customer reactivates a previously canceled subscription',
+      },
+      {
+        key: 'subscription_revoked',
+        title: 'Subscription revoked',
+        description:
+          'Sent when a canceled subscription permanently ends at the end of the billing cycle',
+      },
+    ],
   },
 ]
 
@@ -119,24 +146,28 @@ const OrganizationCustomerEmailSettings: React.FC<
   )
 
   return (
-    <SettingsGroup>
-      {customerEmails.map(({ key, title, description }) => (
-        <SettingsGroupItem
-          key={key}
-          layout="inline"
-          title={title}
-          description={description}
-        >
-          <Switch
-            checked={settings[key]}
-            disabled={readOnly}
-            onCheckedChange={(checked) =>
-              update((previous) => ({ ...previous, [key]: checked }))
-            }
-          />
-        </SettingsGroupItem>
+    <Box flexDirection="column" rowGap="2xl">
+      {customerEmailGroups.map((group) => (
+        <SettingsGroup key={group.title} title={group.title}>
+          {group.emails.map(({ key, title, description }) => (
+            <SettingsGroupItem
+              key={key}
+              layout="inline"
+              title={title}
+              description={description}
+            >
+              <Switch
+                checked={settings[key]}
+                disabled={readOnly}
+                onCheckedChange={(checked) =>
+                  update((previous) => ({ ...previous, [key]: checked }))
+                }
+              />
+            </SettingsGroupItem>
+          ))}
+        </SettingsGroup>
       ))}
-    </SettingsGroup>
+    </Box>
   )
 }
 

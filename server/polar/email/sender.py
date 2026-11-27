@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, TypedDict
+from urllib.parse import quote
 
-import httpx
+import httpx2
 import structlog
 from email_validator import validate_email
 
@@ -68,8 +69,16 @@ class EmailSender(ABC):
     ) -> str | None:
         pass
 
+    @abstractmethod
+    async def remove_suppression(self, email: str) -> bool:
+        pass
+
 
 class LoggingEmailSender(EmailSender):
+    async def remove_suppression(self, email: str) -> bool:
+        log.info("Removing email suppression")
+        return True
+
     async def send(
         self,
         *,
@@ -87,7 +96,6 @@ class LoggingEmailSender(EmailSender):
         log.info(
             "Sending an email",
             to_email_addr=to_ascii_email(to_email_addr),
-            subject=subject,
             from_name=from_name,
             from_email_addr=to_ascii_email(from_email_addr),
             tags=tags,
@@ -97,7 +105,7 @@ class LoggingEmailSender(EmailSender):
 
 class ResendEmailSender(EmailSender):
     def __init__(self) -> None:
-        self.client = httpx.AsyncClient(
+        self.client = httpx2.AsyncClient(
             base_url=settings.RESEND_API_BASE_URL,
             headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}"},
         )
@@ -145,7 +153,7 @@ class ResendEmailSender(EmailSender):
             response = await self.client.post("/emails", json=payload)
             response.raise_for_status()
             email = response.json()
-        except httpx.RequestError as e:
+        except httpx2.RequestError as e:
             log.warning(
                 "resend.send_network_error",
                 template=tags.get("category") if tags else None,
@@ -154,7 +162,7 @@ class ResendEmailSender(EmailSender):
                 error_type=type(e).__name__,
             )
             raise EmailSenderOperationalError(str(e)) from e
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             log.warning(
                 "resend.send_error",
                 template=tags.get("category") if tags else None,
@@ -162,7 +170,7 @@ class ResendEmailSender(EmailSender):
                 attachment_count=len(payload["attachments"]),
                 error_type=type(e).__name__,
                 status_code=e.response.status_code
-                if isinstance(e, httpx.HTTPStatusError)
+                if isinstance(e, httpx2.HTTPStatusError)
                 else None,
             )
             raise SendEmailError(str(e)) from e
@@ -176,6 +184,22 @@ class ResendEmailSender(EmailSender):
         )
 
         return email["id"]
+
+    async def remove_suppression(self, email: str) -> bool:
+        path = f"/suppressions/{quote(to_ascii_email(email), safe='')}"
+        try:
+            response = await self.client.delete(path)
+        except httpx2.RequestError as e:
+            raise EmailSenderOperationalError(str(e)) from e
+
+        # 404 means the address isn't suppressed
+        if response.status_code != 404 and not response.is_success:
+            raise EmailSenderError(
+                f"Resend suppression removal failed with status {response.status_code}"
+            )
+
+        log.info("resend.remove_suppression", removed=response.is_success)
+        return response.is_success
 
 
 class EmailFromReply(TypedDict):
@@ -197,6 +221,7 @@ def enqueue_email_template(
     reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
     attachments: Iterable[Attachment] | None = None,
     deduplication_key: str | None = None,
+    unsuppress: bool = False,
 ) -> None:
     enqueue_job(
         "email.send",
@@ -212,6 +237,7 @@ def enqueue_email_template(
         reply_to_email_addr=reply_to_email_addr,
         attachments=attachments,
         deduplication_key=deduplication_key,
+        unsuppress=unsuppress,
     )
 
 

@@ -18,5 +18,5 @@ variable "scan_on_push" {
 variable "max_image_count" {
   description = "Number of recent images to retain."
   type        = number
-  default     = 50
+  default     = 5
 }

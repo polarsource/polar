@@ -1,49 +1,155 @@
 ---
-title: "Manage Refunds"
-sidebarTitle: "Refunds"
-description: "You can easily refund orders on Polar — both in full or in parts."
+title: "Refunds"
+description: "Refund an order in full or in part, choose a reason, decide whether to revoke benefits, and know when a refund is blocked."
 ---
 
-No matter what refund policy you offer to customers, Polar makes it easy to issue both full and partial refunds, so you can deliver the customer experience and refund policy you want.
+A **refund** returns money from a paid order to the customer. You can refund the full amount or part of it, from the dashboard, the CLI, your agent or the API. Each refund is its own object linked to the order.
 
-<Note>
-**Polar can issue refunds on your behalf**
+The code examples use API version `2026-10` and the sandbox.
 
-Polar reserves the right to issue refunds within 60 days of purchase, at its own discretion, in order to prevent chargebacks. We integrate with credit card networks to receive early chargeback signals before a dispute is officially filed, and for lower-value transactions we'll automatically refund the order on your behalf to head off the chargeback — cancelling any related subscription and revoking the customer's benefits at the same time.
+## What you can refund
 
-This applies even if you have a "no refunds" policy: keeping chargebacks low protects your account, so Polar may still refund proactively. See [Chargeback Management](/merchant-of-record/account-reviews#chargeback-management) for the wider context.
-</Note>
-
-## What's refundable
-
-The maximum refundable amount on an order is the **net amount** (excluding tax) minus anything that's already been refunded, with any customer balance applied to the order taken into account. The corresponding **tax** is refunded automatically alongside it — fully on a full refund, prorated on a partial one.
+You refund the **net amount**, excluding tax. The maximum is the order's net amount minus earlier refunds, taking any customer balance applied to the order into account (`refundable_amount` on the order). Polar refunds the matching tax automatically: all of it on a full refund, a proportional share on a partial one.
 
 <Warning>
-**Payment fees are not refunded**
-
-Credit card networks and payment processors charge us for the underlying transaction regardless of whether it's later refunded (industry standard). We therefore can't return our fees, since the cost remains.
-
-Example: an order of \$30 costs ~\$1.60 in fees to Polar. You can still refund the customer \$30, but the ~\$1.60 fee stays deducted from your balance.
+  **Payment fees aren't returned.** Card networks and payment processors charge for the transaction whether or not it's refunded later. You can refund the customer the full amount, but the fees stay deducted from your balance. See [Fees](/merchant-of-record/fees).
 </Warning>
 
-## Issuing a refund
+## Issue a refund
 
-1. Go to the order details page for the specific order you want to refund.
-2. Scroll down to the "Refunds" section.
-3. Click "Refund order".
+<Tabs>
+  <Tab title="Dashboard">
+    - Open the order under **Sales → Orders**
+    - In the **Refunds** section, click **Refund order**
+    - Set **Amount (excl. tax)**. It defaults to the maximum
+    - Pick a **Reason**
+    - For a one-time purchase, choose whether to **Revoke Benefits**
+    - Click **Refund Order**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar refunds create --order-id <order_id> --reason customer_request \
+      --amount 1500
+    ```
 
-### Amount
+    See [`polar refunds`](/integrate/cli/reference/refunds).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Refund $15 of order <order_id> in my Polar sandbox because the customer asked.
+    ```
 
-Specify the **net amount** to refund — i.e. the amount excluding tax. It defaults to the maximum refundable amount, but you can lower it to issue a partial refund.
+    Uses the `refunds_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
 
-Polar **automatically calculates the corresponding tax** to refund based on the order's tax rate. For partial refunds, tax is prorated against the refunded portion; for a full refund, the entire remaining tax is returned.
+<CodeGroup>
+```typescript TypeScript
+const refund = await polar.refunds.create({
+  order_id: orderId,
+  reason: "customer_request",
+  amount: 1500,
+  comment: "Customer asked within the trial week",
+});
+```
 
-### Reason
+```python Python
+refund = polar.refunds.create(
+    order_id=order_id,
+    reason="customer_request",
+    amount=1500,
+    comment="Customer asked within the trial week",
+)
+```
 
-Select the reason for the refund — helpful for future reference.
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/refunds/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "order_id": "'"$ORDER_ID"'",
+    "reason": "customer_request",
+    "amount": 1500,
+    "comment": "Customer asked within the trial week"
+  }'
+```
+</CodeGroup>
 
-### Revoking benefits
+| Dashboard | API field | Description |
+| --- | --- | --- |
+| | `order_id` | The order to refund |
+| **Amount (excl. tax)** | `amount` | Net amount in cents, excluding tax. At least 1 |
+| **Reason** | `reason` | See [Reasons](#reasons) |
+| | `comment` | An internal note. The customer doesn't see it |
+| **Revoke Benefits** | `revoke_benefits` | Revoke the order's benefits. Defaults to `false` in the API. The dashboard preselects it for one-time purchases |
+| | `metadata` | Your own key-value data |
 
-**One-time purchases.** You can revoke the customer's access to product benefits — e.g. file downloads, license keys, or Discord/GitHub invites. This is selected by default, since we default to a full refund, but it can be disabled.
+Refunds on an order are listed in its **Refunds** section, with amount, status and reason.
 
-**Subscriptions.** You can't revoke access by refunding an order tied to a subscription — refunding the order returns the money but does not end the relationship. To end access, [cancel the subscription](/features/subscriptions/manage) instead. Polar revokes the associated benefits automatically once the subscription itself is revoked.
+## Reasons
+
+| Dashboard | API `reason` |
+| --- | --- |
+| **Duplicate** | `duplicate` |
+| **Fraudulent** | `fraudulent` |
+| **Customer Request** | `customer_request` |
+| **Service Disruption** | `service_disruption` |
+| **Satisfaction Guarantee** | `satisfaction_guarantee` |
+| **Other** | `other` |
+
+Refunds Polar issues itself use other reasons, such as `dispute_prevention`. You can't pick those.
+
+## Revoking benefits
+
+**One-time purchases.** Set `revoke_benefits` to remove the customer's access, such as license keys, file downloads or Discord and GitHub access.
+
+**Subscriptions.** A refund can't revoke subscription benefits. The API returns an error if you try. Refunding returns money but doesn't end the subscription. To end access, [cancel or revoke the subscription](/features/subscriptions/manage). Polar revokes the benefits when it ends.
+
+## Customer balance
+
+A refund also reduces any positive balance the customer holds, by up to the refunded amount including tax. This is how you return a subscription [downgrade credit](/features/subscriptions/proration) to the card: downgrade credits go to the customer's balance, so refund the order they paid before the downgrade. That order can still be refunded after the downgrade.
+
+Credit that isn't on the balance, such as a `prorate` credit waiting for the next invoice or balance already used by a later order, isn't taken back. Lower the refund by that amount so you don't pay it twice.
+
+## When a refund is blocked
+
+The API rejects a refund when:
+
+- The order is already fully refunded.
+- The order's payment is [disputed](/features/disputes). Handle the dispute instead.
+- Refunds are blocked on the order or for your organization.
+- You ask to revoke benefits on a subscription order.
+- The payment processor already refunded the payment.
+
+## Refunds issued by Polar
+
+As your [Merchant of Record](/merchant-of-record/introduction), Polar can refund an order on your behalf to prevent a chargeback, even if your policy is "no refunds". Polar receives early warnings from the card networks before a dispute is filed and refunds some lower-value orders to stop it. The related subscription is canceled and the customer's benefits are revoked.
+
+These refunds use the reason `dispute_prevention`. The matching [dispute](/features/disputes) shows as `prevented`. Keeping chargebacks low protects your account. See [Account reviews](/merchant-of-record/account-reviews).
+
+## Webhooks
+
+| Event | When |
+| --- | --- |
+| `refund.created` | A refund is created |
+| `refund.updated` | A refund's status changes, for example to `succeeded` or `failed` |
+| `order.refunded` | An order is refunded, fully or partially |
+
+See [Webhook events](/integrate/webhooks/events).
+
+## From the CLI or your agent
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| Refund an order | `polar refunds create --order-id <id> --reason <reason> --amount <cents>` | `refunds_create` |
+| List refunds | `polar refunds list --order-id <id>` | `refunds_list` |
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Orders](/features/orders) | Invoices, receipts and payment attempts |
+| [Disputes](/features/disputes) | Chargebacks and how to respond |
+| [Fees](/merchant-of-record/fees) | What Polar and the processor charge |
+| [Refunds API](/api-reference/current/refunds/create-refund) | Create and list refunds |

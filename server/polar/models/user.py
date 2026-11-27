@@ -24,6 +24,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.schema import Index, UniqueConstraint
 
+from polar.kit.concurrency import create_task_group
 from polar.kit.db.models import RecordModel
 from polar.kit.encryption import EncryptedString, EncryptedStringType
 from polar.kit.extensions.sqlalchemy.types import StringEnum
@@ -75,15 +76,11 @@ class OAuthAccount(RecordModel):
     )
 
     platform: Mapped[OAuthPlatform] = mapped_column(String(32), nullable=False)
-    access_token: Mapped[str] = mapped_column(String(1024), nullable=False)
     access_token_encrypted: Mapped[EncryptedString] = mapped_column(
         EncryptedStringType(OAUTH_ACCOUNT_ACCESS_TOKEN_CONTEXT),
         nullable=False,
     )
     expires_at: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
-    refresh_token: Mapped[str | None] = mapped_column(
-        String(1024), nullable=True, default=None
-    )
     refresh_token_encrypted: Mapped[EncryptedString | None] = mapped_column(
         EncryptedStringType(OAUTH_ACCOUNT_REFRESH_TOKEN_CONTEXT),
         nullable=True,
@@ -127,13 +124,16 @@ class OAuthAccount(RecordModel):
         return await self.refresh_token_encrypted.decrypt(id=str(self.id))
 
     async def to_dataclass(self, scope: list[str]) -> OAuth2EnrollmentDataclass:
+        async with create_task_group() as tg:
+            access_token = tg.create_task(self.get_access_token())
+            refresh_token = tg.create_task(self.get_refresh_token())
         return OAuth2EnrollmentDataclass(
             id=self.id,
             provider=self.platform,
             scope=scope,
-            access_token=await self.get_access_token(),
+            access_token=access_token.return_value,
             expires_at=self.expires_at,
-            refresh_token=await self.get_refresh_token(),
+            refresh_token=refresh_token.return_value,
             refresh_token_expires_at=self.refresh_token_expires_at,
             account_id=self.account_id,
             identity_id=self.user_id,
@@ -160,14 +160,15 @@ class OAuthAccount(RecordModel):
     async def set_tokens(self, *, access_token: str, refresh_token: str | None) -> None:
         if self.id is None:
             self.id = self.generate_id()
-        self.access_token = access_token
-        self.refresh_token = refresh_token
-        self.access_token_encrypted = await self.encrypt_access_token(
-            self.id, access_token
-        )
-        self.refresh_token_encrypted = await self.encrypt_refresh_token(
-            self.id, refresh_token
-        )
+        async with create_task_group() as tg:
+            access_token_encrypted = tg.create_task(
+                self.encrypt_access_token(self.id, access_token)
+            )
+            refresh_token_encrypted = tg.create_task(
+                self.encrypt_refresh_token(self.id, refresh_token)
+            )
+        self.access_token_encrypted = access_token_encrypted.return_value
+        self.refresh_token_encrypted = refresh_token_encrypted.return_value
 
 
 class User(RecordModel):
@@ -177,8 +178,6 @@ class User(RecordModel):
             "ix_users_email_case_insensitive", func.lower(Column("email")), unique=True
         ),
     )
-
-    is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

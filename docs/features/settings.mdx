@@ -1,0 +1,163 @@
+---
+title: "Settings"
+description: "Find any organization setting: where it is in the dashboard, what it does, its API field, and which page covers it in detail."
+---
+
+This page maps every section of **Settings** in the dashboard, in the same order as the sidebar. Each section lists its settings, the matching field on the [organization](/api-reference/current/organizations/update-organization) where there is one, and the page that covers it. To change a setting from code, see [Change settings from the API](#change-settings-from-the-api).
+
+Only Admins and the Owner can change organization settings. Other members see them read-only. See [Team management](/features/team-management#permissions).
+
+## Organization
+
+### General
+
+| Setting | API field | Notes |
+| --- | --- | --- |
+| **Organization ID** | `id` | Read-only. Copy it for API calls. |
+| **Organization Slug** | `slug` | Read-only. Used in your Customer Portal URL and on transaction statements. |
+| **Organization Name** | `name` | |
+| **Country** | `country` | |
+| **Website** | `website` | Must start with `https://`. Checked in your [account review](/merchant-of-record/review-checklist#add-your-product-website). |
+| **Support Email** | `email` | Shown to customers. Must be [verified](/merchant-of-record/review-checklist#add-a-support-email) before you submit for review or withdraw. |
+| **Social Media** | `socials` | Used for identity verification. Never shown publicly. |
+| **Delete Organization** | | Under **Danger Zone**. An organization with orders or active subscriptions can't be deleted right away: Polar opens a support ticket and processes the request. |
+
+### Members
+
+Invite members, change roles and remove members. See [Team management](/features/team-management).
+
+### Notifications
+
+Your personal email notifications for this organization: new purchases, subscriptions, trials, renewals, cancellations and prevented chargebacks. See [Notifications](/features/notifications#team-notifications).
+
+### Billing
+
+Your Polar plan, payment methods, billing address and order history. Click **Change plan** to switch plans. See [Fees](/merchant-of-record/fees#change-your-plan).
+
+In the sandbox, Billing instead offers preview access to the features that paid plans include. See [Preview features](/merchant-of-record/fees#preview-features).
+
+### Single Sign-On
+
+Shown on the Scale plan. Connect your identity provider and enforce SSO. See [Single Sign-On](/features/sso).
+
+### Domains
+
+Verify domains with a DNS TXT record, for SSO, embedded checkout and account reviews. Dashboard only. See [Domains](/features/domains).
+
+### Preview Features
+
+| Setting | API field | Notes |
+| --- | --- | --- |
+| **Localized Checkout** | `feature_settings.checkout_localization_enabled` | Show checkout in your customer's language. See [Localization](/features/checkout/localization). |
+
+## Payments
+
+### Payments
+
+| Setting | API field | Notes |
+| --- | --- | --- |
+| **Default payment currency** | `default_presentment_currency` | Default currency for products and checkout, used when the customer's local currency isn't available on a product. |
+| **Default tax behavior** | `default_tax_behavior` | **Location based** (`location`), **Inclusive** (`inclusive`) or **Exclusive** (`exclusive`). See [Tax-inclusive pricing](/features/tax-inclusive-pricing). |
+
+### Subscriptions
+
+| Setting | API field | Notes |
+| --- | --- | --- |
+| **Allow multiple subscriptions** | `subscription_settings.allow_multiple_subscriptions` | Customers can have several active subscriptions at once. |
+| **Prevent trial abuse** | `subscription_settings.prevent_trial_abuse` | Customers who had a trial on any of your products don't get another. See [Trials](/features/subscriptions/trials). |
+| **Proration** | `subscription_settings.proration_behavior` | How to bill a plan change. See [Proration](/features/subscriptions/proration). |
+| **Grace period for benefit revocation** | `subscription_settings.benefit_revocation_grace_period` | How long benefits stay while a failed payment is retried: **Immediately**, or after 2, 7, 14 or 21 days. See [Failed payments](/features/subscriptions/failed-payments). |
+
+### Disputes
+
+Shown only when the disputes preview is enabled for your organization.
+
+| Setting | API field | Notes |
+| --- | --- | --- |
+| **Accept small disputes** and **Up to** | `dispute_settings.auto_accept_below_amount` | Polar concedes disputes below this amount for you, a day after they open, unless you reply first. In US cents in the API, from `1` to `10000` (`1000` is $10). The dashboard takes whole dollars. See [Disputes](/features/disputes). |
+
+### Customer Portal
+
+| Setting | API field | Notes |
+| --- | --- | --- |
+| **Enable subscription plan changes** | `customer_portal_settings.subscription.update_plan` | |
+| **Enable subscription unit changes** | `customer_portal_settings.subscription.update_units` | |
+| **Enable subscription seat management** | `customer_portal_settings.subscription.update_seats` | |
+| **Enable subscription pausing** | `customer_portal_settings.subscription.pause` | |
+| **Allow email address changes** | `customer_portal_settings.customer.allow_email_change` | |
+| **Show metered usage** | `customer_portal_settings.usage.show` | The Customer Portal API returns usage either way. |
+
+See [Customer Portal settings](/features/customer-portal/settings).
+
+### Customer Notifications
+
+Turn off individual emails Polar sends your customers, such as order confirmations and renewal reminders. API field: `customer_email_settings`. See [Notifications](/features/notifications#customer-notifications).
+
+## Developers
+
+### Access Tokens
+
+Create and revoke organization access tokens. Dashboard only, or `polar auth token` for a token from the CLI. See [Access tokens](/integrate/oat).
+
+### Webhooks
+
+Add webhook endpoints and inspect deliveries. Also available as `polar webhooks` in the CLI and the `webhooks_` MCP operations. See [Webhook endpoints](/integrate/webhooks/endpoints).
+
+### Embedding
+
+| Setting | API field | Notes |
+| --- | --- | --- |
+| **Embed hosts** | `embed_hosts` | Only these hosts can embed your checkout. Verified [domains](/features/domains) are added automatically. See [Embed hosts](/features/checkout/embed-hosts). |
+
+### Migrations
+
+Move customers and subscriptions to Polar from another provider. See [Migrate from Stripe](/migrate).
+
+## Account
+
+These sections belong to your personal Polar account, not the organization:
+
+- **Profile:** personal information, identity verification, appearance, and deleting your account.
+- **Security:** sign-in methods and two-factor authentication.
+- **OAuth Apps:** OAuth applications you've registered. See [OAuth](/integrate/oauth2/introduction).
+
+## Change settings from the API
+
+Organization settings are fields on the organization. Update them with [Update Organization](/api-reference/current/organizations/update-organization), using a token with the `organizations:write` scope. Settings have no CLI command or MCP operation: `polar organizations` and the MCP server can read your organization but not update it.
+
+<CodeGroup>
+```typescript TypeScript
+await polar.organizations.update(process.env.POLAR_ORGANIZATION_ID!, {
+  default_tax_behavior: "inclusive",
+});
+```
+
+```python Python
+polar.organizations.update(
+    os.environ["POLAR_ORGANIZATION_ID"],
+    default_tax_behavior="inclusive",
+)
+```
+
+```bash cURL
+curl -X PATCH https://sandbox-api.polar.sh/v1/organizations/$POLAR_ORGANIZATION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "default_tax_behavior": "inclusive" }'
+```
+</CodeGroup>
+
+The examples use the sandbox client from the [quickstart overview](/quickstart/overview#prerequisites), on API version `2026-10`. Nested settings objects, such as `subscription_settings` or `customer_email_settings`, require all their fields: read the current values first and send the full object.
+
+<Visibility for="agents">
+  Read the organization first with `GET /v1/organizations/{id}`, change only the fields the user asked for, and send nested settings objects back in full. Use the sandbox until the user says otherwise. Settings marked "Dashboard only" below have no API field.
+</Visibility>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Team management](/features/team-management) | Who can change settings |
+| [Update Organization](/api-reference/current/organizations/update-organization) | Every organization field in the API reference |
+| [Notifications](/features/notifications) | Team and customer email settings |

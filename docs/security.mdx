@@ -1,22 +1,25 @@
 ---
-title: "Security and Vulnerability Reporting"
-sidebarTitle: "Security"
+title: "Report a vulnerability"
+sidebarTitle: "Report a vulnerability"
+description: "Report a security vulnerability in Polar, and check what's in scope before you test."
 ---
 
-At Polar, we care deeply about the safety and security of our customers' data and our systems. We welcome security and vulnerability reports as part of our commitment to providing the most secure product possible.
+Polar welcomes reports of security vulnerabilities in its products and systems. This page explains how to report one, what's in scope, and how to test responsibly.
 
 ## Making a report
 
-If you've read this document and discovered an issue that you believe is in-scope, Please report it using [GitHub Security Advisory](https://github.com/polarsource/polar/security/advisories/new) tool. It should include:
+If you've found an issue you believe is in scope, report it through a [GitHub Security Advisory](https://github.com/polarsource/polar/security/advisories/new). Include:
 
 - A clear summary of the issue and its potential impact.
 - Detailed steps to reproduce the issue.
 - Relevant environmental details (browser, OS, version numbers, etc.).
 - Any proof-of-concept code that demonstrates the vulnerability, if available.
 
+Please submit findings you've personally investigated and verified. We discourage entirely AI-generated reports, which will likely receive lower priority during triage.
+
 Our security team will review your report and keep you updated on our progress, requesting additional information or clarification when needed.
 
-We believe that vulnerability reporting creates a safer, better product for our customers. As such, we might offer compensation for reports that lead to a confirmed vulnerability, at our discretion.
+We may offer compensation, at our discretion, for reports that lead to a confirmed vulnerability.
 
 ## Timeline
 
@@ -35,6 +38,7 @@ We'll get back to you within a few days to acknowledge your report.
 
 ## Out of scope
 
+- Race conditions, including time-of-check to time-of-use (TOCTOU) findings.
 - Automated scanning.
 - Social engineering.
 - Denial of Service attacks.
@@ -44,7 +48,7 @@ We'll get back to you within a few days to acknowledge your report.
 - Clickjacking or UI redress attacks.
 - CSV injection.
 - HTML injection.
-- Missing security headers, weak TLS cipher suites, or DNS setup issues. We might find these informative, but they probably won't earn a bounty.
+- Missing security headers, weak TLS cipher suites, or DNS setup issues. We might find these informative, but they're unlikely to qualify for compensation.
 
 ## Please be considerate while investigating
 

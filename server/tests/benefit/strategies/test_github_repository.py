@@ -32,7 +32,7 @@ def _make_benefit(organization: Organization) -> Benefit:
     )
 
 
-def _make_member(organization: Organization, customer: Customer) -> Member:
+async def _make_member(organization: Organization, customer: Customer) -> Member:
     member = Member(
         customer_id=customer.id,
         organization_id=organization.id,
@@ -43,7 +43,7 @@ def _make_member(organization: Organization, customer: Customer) -> Member:
     member._oauth_accounts = {}
     # The member connected their own GitHub account (distinct from the
     # customer's). granted_account_id at grant time stored this ID.
-    member.set_oauth_account(
+    await member.set_oauth_account(
         CustomerOAuthAccount(
             access_token="member-token",
             account_id="11111",
@@ -54,14 +54,14 @@ def _make_member(organization: Organization, customer: Customer) -> Member:
     return member
 
 
-def _make_customer(organization: Organization) -> Customer:
+async def _make_customer(organization: Organization) -> Customer:
     customer = Customer(
         organization=organization,
         email="customer@example.com",
     )
     customer._oauth_accounts = {}
     # The customer connected a DIFFERENT GitHub account than the member.
-    customer.set_oauth_account(
+    await customer.set_oauth_account(
         CustomerOAuthAccount(
             access_token="customer-token",
             account_id="99999",
@@ -138,9 +138,9 @@ class TestGitHubRepositoryRevoke:
 
         service = BenefitGitHubRepositoryService(session, redis)
 
-        customer = _make_customer(organization)
+        customer = await _make_customer(organization)
         await save_fixture(customer)
-        member = _make_member(organization, customer)
+        member = await _make_member(organization, customer)
         await save_fixture(member)
 
         # Soft-delete the member (mirrors MemberService.delete)
@@ -195,9 +195,9 @@ class TestGitHubRepositoryRevoke:
         """
         service = BenefitGitHubRepositoryService(session, redis)
 
-        customer = _make_customer(organization)
+        customer = await _make_customer(organization)
         await save_fixture(customer)
-        member = _make_member(organization, customer)
+        member = await _make_member(organization, customer)
         await save_fixture(member)
 
         benefit = _make_benefit(organization)
@@ -237,9 +237,9 @@ class TestGitHubRepositoryGrantUpdate:
     ) -> None:
         service = BenefitGitHubRepositoryService(session, redis)
 
-        customer = _make_customer(organization)
+        customer = await _make_customer(organization)
         await save_fixture(customer)
-        member = _make_member(organization, customer)
+        member = await _make_member(organization, customer)
         await save_fixture(member)
 
         benefit = _make_benefit(organization)
@@ -313,7 +313,7 @@ class TestGitHubRepositoryGrantExpiredInvitation:
     ) -> None:
         service = BenefitGitHubRepositoryService(session, redis)
 
-        customer = _make_customer(organization)
+        customer = await _make_customer(organization)
         await save_fixture(customer)
 
         benefit = _make_benefit(organization)

@@ -37,6 +37,7 @@ from polar.v2027_01.inputs import (
 from polar.v2027_01.literals import (
     BenefitSortProperty,
     BenefitType,
+    CatalogStatus,
 )
 from polar.v2027_01.outputs import (
     Benefit,
@@ -57,6 +58,8 @@ class BenefitsSync(SyncServiceBase):
         id: str | builtins.list[str] | None = None,
         external_id: str | builtins.list[str] | None = None,
         exclude_id: str | builtins.list[str] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         query: str | None = None,
         page: int = 1,
         limit: int = 10,
@@ -76,12 +79,14 @@ class BenefitsSync(SyncServiceBase):
             id: Filter by benefit IDs.
             external_id: Filter by benefit external ID.
             exclude_id: Exclude benefits with these IDs.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             query: Filter by description.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -101,6 +106,8 @@ class BenefitsSync(SyncServiceBase):
                 "id": id,
                 "external_id": external_id,
                 "exclude_id": exclude_id,
+                "catalog_id": catalog_id,
+                "catalog_status": catalog_status,
                 "query": query,
                 "page": page,
                 "limit": limit,
@@ -124,6 +131,8 @@ class BenefitsSync(SyncServiceBase):
         id: str | builtins.list[str] | None = None,
         external_id: str | builtins.list[str] | None = None,
         exclude_id: str | builtins.list[str] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         query: str | None = None,
         page: int = 1,
         limit: int = 10,
@@ -143,12 +152,14 @@ class BenefitsSync(SyncServiceBase):
             id: Filter by benefit IDs.
             external_id: Filter by benefit external ID.
             exclude_id: Exclude benefits with these IDs.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             query: Filter by description.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -168,6 +179,8 @@ class BenefitsSync(SyncServiceBase):
                 id=id,
                 external_id=external_id,
                 exclude_id=exclude_id,
+                catalog_id=catalog_id,
+                catalog_status=catalog_status,
                 query=query,
                 page=page,
                 limit=limit,
@@ -266,12 +279,13 @@ class BenefitsSync(SyncServiceBase):
         **Scopes**: `benefits:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
 
         Raises:
+            NotPermitted: Organization benefit limit reached.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -288,6 +302,7 @@ class BenefitsSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
+            403: NotPermitted,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Benefit, method_errors)
@@ -306,7 +321,7 @@ class BenefitsSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -352,7 +367,7 @@ class BenefitsSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -477,7 +492,7 @@ class BenefitsSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -525,7 +540,7 @@ class BenefitsSync(SyncServiceBase):
             id:
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -576,7 +591,7 @@ class BenefitsSync(SyncServiceBase):
             id:
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -629,7 +644,7 @@ class BenefitsSync(SyncServiceBase):
             member_id: Filter by member.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -689,7 +704,7 @@ class BenefitsSync(SyncServiceBase):
             member_id: Filter by member.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -729,6 +744,8 @@ class BenefitsAsync(AsyncServiceBase):
         id: str | builtins.list[str] | None = None,
         external_id: str | builtins.list[str] | None = None,
         exclude_id: str | builtins.list[str] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         query: str | None = None,
         page: int = 1,
         limit: int = 10,
@@ -748,12 +765,14 @@ class BenefitsAsync(AsyncServiceBase):
             id: Filter by benefit IDs.
             external_id: Filter by benefit external ID.
             exclude_id: Exclude benefits with these IDs.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             query: Filter by description.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -773,6 +792,8 @@ class BenefitsAsync(AsyncServiceBase):
                 "id": id,
                 "external_id": external_id,
                 "exclude_id": exclude_id,
+                "catalog_id": catalog_id,
+                "catalog_status": catalog_status,
                 "query": query,
                 "page": page,
                 "limit": limit,
@@ -796,6 +817,8 @@ class BenefitsAsync(AsyncServiceBase):
         id: str | builtins.list[str] | None = None,
         external_id: str | builtins.list[str] | None = None,
         exclude_id: str | builtins.list[str] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         query: str | None = None,
         page: int = 1,
         limit: int = 10,
@@ -815,12 +838,14 @@ class BenefitsAsync(AsyncServiceBase):
             id: Filter by benefit IDs.
             external_id: Filter by benefit external ID.
             exclude_id: Exclude benefits with these IDs.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             query: Filter by description.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -840,6 +865,8 @@ class BenefitsAsync(AsyncServiceBase):
                 id=id,
                 external_id=external_id,
                 exclude_id=exclude_id,
+                catalog_id=catalog_id,
+                catalog_status=catalog_status,
                 query=query,
                 page=page,
                 limit=limit,
@@ -939,12 +966,13 @@ class BenefitsAsync(AsyncServiceBase):
         **Scopes**: `benefits:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
 
         Raises:
+            NotPermitted: Organization benefit limit reached.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -961,6 +989,7 @@ class BenefitsAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
+            403: NotPermitted,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Benefit, method_errors)
@@ -979,7 +1008,7 @@ class BenefitsAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1025,7 +1054,7 @@ class BenefitsAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1150,7 +1179,7 @@ class BenefitsAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -1198,7 +1227,7 @@ class BenefitsAsync(AsyncServiceBase):
             id:
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1249,7 +1278,7 @@ class BenefitsAsync(AsyncServiceBase):
             id:
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -1303,7 +1332,7 @@ class BenefitsAsync(AsyncServiceBase):
             member_id: Filter by member.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1363,7 +1392,7 @@ class BenefitsAsync(AsyncServiceBase):
             member_id: Filter by member.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 

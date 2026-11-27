@@ -513,3 +513,70 @@ class TestGetSubscriptionsNeedingTrialConversionReminder:
         )
 
         assert result == []
+
+    async def test_excludes_subscription_already_asked_for_payment_method(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        now = utc_now()
+        trial_end = now + timedelta(days=2)
+        subscription = await self._trialing_subscription(
+            save_fixture,
+            product,
+            customer,
+            trial_start=now - timedelta(days=10),
+            trial_end=trial_end,
+        )
+        await _create_sent_reminder_log(
+            save_fixture,
+            email_template="subscription_trial_payment_method_required",
+            deduplication_key=subscription_trial_conversion_reminder_key(
+                subscription.id, trial_end.date()
+            ),
+        )
+
+        repository = SubscriptionRepository.from_session(session)
+        result = await repository.get_subscriptions_needing_trial_conversion_reminder(
+            now
+        )
+
+        assert result == []
+
+
+@pytest.mark.anyio
+class TestExistsLiveByCustomerAndProduct:
+    @pytest.mark.parametrize(
+        ("status", "expected"),
+        [
+            (SubscriptionStatus.active, True),
+            (SubscriptionStatus.paused, True),
+            (SubscriptionStatus.trial_ended, True),
+            (SubscriptionStatus.canceled, False),
+            (SubscriptionStatus.unpaid, False),
+            (SubscriptionStatus.incomplete, False),
+        ],
+    )
+    async def test_status(
+        self,
+        status: SubscriptionStatus,
+        expected: bool,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        await create_subscription(
+            save_fixture, product=product, customer=customer, status=status
+        )
+
+        repository = SubscriptionRepository.from_session(session)
+
+        assert (
+            await repository.exists_live_by_customer_and_product(
+                customer.id, product.id
+            )
+            is expected
+        )

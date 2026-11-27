@@ -21,7 +21,7 @@ from fastapi.datastructures import FormData
 from pydantic import UUID4, BaseModel, Field, ValidationError, field_validator
 from pydantic_core import PydanticCustomError, SchemaSerializer, core_schema
 from sqlalchemy import ColumnElement, Select, and_, case, false, func, or_, select
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from sse_starlette.sse import EventSourceResponse
 from tagflow import tag, text
 
@@ -47,10 +47,12 @@ from polar.kit.sorting import Sorting
 from polar.models import (
     AccountCredit,
     Organization,
+    OrganizationRiskSignal,
     PayoutAccount,
     User,
     UserOrganization,
 )
+from polar.models.backoffice_user_session import BackofficeUserSession
 from polar.models.customer import Customer
 from polar.models.file import FileServiceTypes
 from polar.models.order import Order, OrderStatus
@@ -68,7 +70,6 @@ from polar.models.support_case import (
     SupportCaseType,
 )
 from polar.models.transaction import TransactionType
-from polar.models.user_session import UserSession
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import (
@@ -79,6 +80,11 @@ from polar.organization.service import (
     OrganizationError,
 )
 from polar.organization.service import organization as organization_service
+from polar.organization_domain.repository import OrganizationDomainRepository
+from polar.organization_email.repository import OrganizationEmailRepository
+from polar.organization_email.service import (
+    organization_email as organization_email_service,
+)
 from polar.organization_review.appeal_case import (
     AppealCaseError,
 )
@@ -86,6 +92,7 @@ from polar.organization_review.appeal_case import (
     appeal_case as appeal_case_service,
 )
 from polar.organization_review.repository import (
+    FLAGGED_PRODUCT_NAME_TYPES,
     OrganizationReviewRepository,
     OrganizationRiskSignalRepository,
 )
@@ -131,6 +138,7 @@ from .forms import (
     AddPaymentMethodDomainForm,
     OrganizationOrdersImportForm,
     UpdateAccountSettingsForm,
+    UpdateCatalogLimitsForm,
     UpdateOrganizationBasicForm,
     UpdateOrganizationDetailsForm,
     UpdateOrganizationInternalNotesForm,
@@ -528,7 +536,9 @@ def _search_rank(q: str) -> ColumnElement[int]:
     return case((_search_match(q), 0), (_search_match(f"{q}%"), 1), else_=2)
 
 
-def _apply_sql_sort(stmt: Select[Any], sort: str, direction: str) -> Select[Any]:
+def _apply_sql_sort(
+    stmt: Select[*tuple[Any, ...]], sort: str, direction: str
+) -> Select[*tuple[Any, ...]]:
     is_desc = direction == "desc"
     if sort == "name":
         return stmt.order_by(
@@ -592,6 +602,7 @@ async def list_organizations(
     days_in_status: str | None = Query(""),
     has_appeal: str | None = Query(""),
     first_reviews: str | None = Query(""),
+    flagged_names: str | None = Query(""),
     deleted: DeletedFilter | None = Query(None),
 ) -> None:
     """
@@ -727,6 +738,16 @@ async def list_organizations(
     elif first_reviews == "false":
         stmt = stmt.where(~Organization.is_first_review)
 
+    if flagged_names == "true":
+        stmt = stmt.where(
+            Organization.id.in_(
+                select(OrganizationRiskSignal.organization_id).where(
+                    OrganizationRiskSignal.type.in_(FLAGGED_PRODUCT_NAME_TYPES),
+                    OrganizationRiskSignal.deleted_at.is_(None),
+                )
+            )
+        )
+
     stmt = apply_deleted_filter(stmt, deleted_filter)
 
     is_review_tab = status_filter == OrganizationStatus.REVIEW
@@ -831,6 +852,7 @@ async def list_organizations(
                 selected_risk_level=risk_level,
                 selected_days_in_status=days_in_status,
                 selected_has_appeal=has_appeal,
+                selected_flagged_names=flagged_names,
                 selected_deleted=deleted_filter,
                 signals_by_org=signals_by_org,
                 open_case_org_ids=open_case_org_ids,
@@ -884,7 +906,7 @@ async def get_organization_detail(
     files_page: int = Query(1, ge=1),
     files_limit: int = Query(10, ge=1, le=100),
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> None:
     """
     Organization detail view with three-column layout.
@@ -967,6 +989,7 @@ async def get_organization_detail(
     risk_signal_repo = OrganizationRiskSignalRepository.from_session(session)
     risk_signals = await risk_signal_repo.list_by_organization(organization_id)
     has_risk_signals = bool(risk_signals)
+    flagged_names = await risk_signal_repo.list_flagged_product_names(organization_id)
 
     # Any open case (appeal or dispute) lights the Support Cases nav badge.
     open_case_count = await session.scalar(
@@ -987,6 +1010,7 @@ async def get_organization_detail(
         startup_program_status=startup_program_status,
         has_open_case=has_open_case,
         has_risk_signals=has_risk_signals,
+        has_flagged_names=bool(flagged_names),
     )
 
     parsed_agent_report = None
@@ -1067,6 +1091,7 @@ async def get_organization_detail(
                     organization,
                     agent_reviews=agent_reviews,
                     risk_signals=risk_signals,
+                    flagged_names=flagged_names,
                 )
                 with reviews_section.render(request):
                     pass
@@ -1249,11 +1274,19 @@ async def overview_setup_checklist(
     orders_count, unrefunded_orders_count = await count_test_sales(
         session, organization_id
     )
+    domain_repository = OrganizationDomainRepository.from_session(session)
+    email_repository = OrganizationEmailRepository.from_session(session)
     overview = OverviewSection(
         organization,
         orders_count=orders_count,
         unrefunded_orders_count=unrefunded_orders_count,
         shared_organizations=await _get_shared_organizations(session, organization),
+        organization_domains=await domain_repository.get_all(
+            domain_repository.get_statement_by_organization(organization_id)
+        ),
+        support_email=await email_repository.get_latest_by_organization(
+            organization_id
+        ),
     )
     with overview.setup_checklist_card(request, setup_data):
         pass
@@ -1314,7 +1347,7 @@ async def approve_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Approve organization dialog and action."""
     repository = OrganizationRepository(session)
@@ -1343,7 +1376,7 @@ async def approve_dialog(
 
         await review_repo.record_human_decision(
             organization_id=organization_id,
-            reviewer_id=user_session.user.id,
+            backoffice_reviewer=user_session.user,
             decision=DecisionType.APPROVE,
         )
         await organization_service.confirm_organization_reviewed(
@@ -1374,7 +1407,7 @@ async def approve_dialog(
         else:
             await review_repo.record_human_decision(
                 organization_id=organization_id,
-                reviewer_id=user_session.user.id,
+                backoffice_reviewer=user_session.user,
                 decision=DecisionType.APPROVE,
                 reason=override_reason,
             )
@@ -1477,6 +1510,31 @@ async def run_review_agent(
     )
 
 
+@router.post(
+    "/{organization_id}/support-email/verify",
+    name="organizations:verify_support_email",
+)
+async def verify_support_email(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse:
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    await organization_email_service.mark_verified(session, organization)
+    await add_toast(request, "Support email verified.", "success")
+
+    return HXRedirectResponse(
+        request,
+        str(request.url_for("organizations:detail", organization_id=organization_id))
+        + "?section=overview",
+        303,
+    )
+
+
 @router.api_route(
     "/{organization_id}/deny-dialog",
     name="organizations:deny_dialog",
@@ -1487,7 +1545,7 @@ async def deny_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Deny organization dialog and action."""
     repository = OrganizationRepository(session)
@@ -1532,7 +1590,7 @@ async def deny_dialog(
             # Record review decision before denying
             await review_repo.record_human_decision(
                 organization_id=organization_id,
-                reviewer_id=user_session.user.id,
+                backoffice_reviewer=user_session.user,
                 decision=DecisionType.DENY,
                 reason=override_reason,
                 violated_aup_section=violated_aup_section,
@@ -1641,7 +1699,7 @@ async def approve_denied_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Approve a denied organization dialog and action."""
     repository = OrganizationRepository(session)
@@ -1687,7 +1745,7 @@ async def approve_denied_dialog(
             # Record review decision before approving denied org
             await review_repo.record_human_decision(
                 organization_id=organization_id,
-                reviewer_id=user_session.user.id,
+                backoffice_reviewer=user_session.user,
                 decision=DecisionType.APPROVE,
                 reason=override_reason,
             )
@@ -1800,7 +1858,7 @@ async def deny_appeal_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Deny an organization's appeal dialog and action."""
     repository = OrganizationRepository(session)
@@ -1836,7 +1894,7 @@ async def deny_appeal_dialog(
             # Record review decision
             await review_repo.record_human_decision(
                 organization_id=organization_id,
-                reviewer_id=user_session.user.id,
+                backoffice_reviewer=user_session.user,
                 decision=DecisionType.DENY,
                 review_context=ReviewContext.APPEAL,
                 reason=reason,
@@ -1964,7 +2022,7 @@ async def appeal_case_approve_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Approve the appeal: reactivate the organization and close the case."""
     organization, case = await _load_org_with_appeal_case(session, organization_id)
@@ -1994,7 +2052,7 @@ async def appeal_case_approve_dialog(
             try:
                 await review_repo.record_human_decision(
                     organization_id=organization_id,
-                    reviewer_id=user_session.user.id,
+                    backoffice_reviewer=user_session.user,
                     decision=DecisionType.APPROVE,
                     review_context=ReviewContext.APPEAL,
                     reason=internal_note,
@@ -2092,7 +2150,7 @@ async def appeal_case_deny_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Deny the appeal: keep the organization denied and close the case.
 
@@ -2122,7 +2180,7 @@ async def appeal_case_deny_dialog(
             try:
                 await review_repo.record_human_decision(
                     organization_id=organization_id,
-                    reviewer_id=user_session.user.id,
+                    backoffice_reviewer=user_session.user,
                     decision=DecisionType.DENY,
                     review_context=ReviewContext.APPEAL,
                     reason=reason,
@@ -2197,7 +2255,7 @@ async def unblock_approve_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Unblock and approve organization dialog and action."""
     repository = OrganizationRepository(session)
@@ -2229,7 +2287,7 @@ async def unblock_approve_dialog(
             # Record review decision before unblocking
             await review_repo.record_human_decision(
                 organization_id=organization_id,
-                reviewer_id=user_session.user.id,
+                backoffice_reviewer=user_session.user,
                 decision=DecisionType.APPROVE,
                 reason=override_reason,
             )
@@ -2420,7 +2478,7 @@ async def reset_onboarding_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(organization_id, include_blocked=True)
@@ -2514,7 +2572,7 @@ async def under_review_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Set organization under review dialog and action."""
     repository = OrganizationRepository(session)
@@ -2528,7 +2586,7 @@ async def under_review_dialog(
             session,
             organization,
             actor_type=ActorType.HUMAN,
-            reviewer_id=user_session.user.id,
+            backoffice_reviewer=user_session.user,
             enqueue_review=False,
         )
 
@@ -2727,7 +2785,7 @@ async def snooze_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Snooze an organization under review."""
     repository = OrganizationRepository(session)
@@ -2749,7 +2807,7 @@ async def snooze_dialog(
         review_repo = OrganizationReviewRepository(session)
         await review_repo.record_human_decision(
             organization_id=organization_id,
-            reviewer_id=user_session.user.id,
+            backoffice_reviewer=user_session.user,
             decision=DecisionType.SNOOZE,
             reason=reason,
         )
@@ -2889,7 +2947,7 @@ async def unsnooze(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse:
     """Unsnooze an organization back to review (direct action, no modal)."""
     repository = OrganizationRepository(session)
@@ -2901,7 +2959,7 @@ async def unsnooze(
     review_repo = OrganizationReviewRepository(session)
     await review_repo.record_human_decision(
         organization_id=organization_id,
-        reviewer_id=user_session.user.id,
+        backoffice_reviewer=user_session.user,
         decision=DecisionType.ESCALATE,
     )
 
@@ -2923,7 +2981,7 @@ async def startup_program_mark_invited(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Invite the organization to the Startup Program.
 
@@ -2971,7 +3029,7 @@ async def startup_program_uninvite(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Revoke an organization's unused Startup Program discount.
 
@@ -3132,7 +3190,7 @@ async def offboard_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Set organization to offboarding status dialog and action."""
     repository = OrganizationRepository(session)
@@ -3159,7 +3217,7 @@ async def offboard_dialog(
             review_repo = OrganizationReviewRepository.from_session(session)
             await review_repo.record_human_decision(
                 organization_id=organization_id,
-                reviewer_id=user_session.user.id,
+                backoffice_reviewer=user_session.user,
                 decision=DecisionType.DENY,
                 reason=reason,
                 violated_aup_section=violated_aup_section,
@@ -3691,6 +3749,78 @@ async def edit_rate_limit_group(
             hx_post=str(
                 request.url_for(
                     "organizations:edit_rate_limit_group",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="flex flex-col",
+        ):
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(type="submit", variant="primary"):
+                    text("Save Changes")
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/edit-catalog-limits",
+    name="organizations:edit_catalog_limits",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def edit_catalog_limits(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    """Edit organization catalog limits."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    validation_error: ValidationError | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = UpdateCatalogLimitsForm.model_validate_form(data)
+            await repository.update(
+                organization,
+                update_dict=form.model_dump(),
+            )
+            return HXRedirectResponse(
+                request,
+                str(
+                    request.url_for(
+                        "organizations:detail", organization_id=organization_id
+                    )
+                )
+                + "?section=settings",
+                303,
+            )
+        except ValidationError as e:
+            validation_error = e
+
+    with modal("Edit Catalog Limits", open=True):
+        with tag.p(classes="text-sm text-base-content/60 mb-4"):
+            text(
+                "Archived products count towards these limits; deleted products and benefits do not."
+            )
+
+        with UpdateCatalogLimitsForm.render(
+            data={
+                "products_limit": organization.products_limit,
+                "benefits_limit": organization.benefits_limit,
+            },
+            validation_error=validation_error,
+            hx_post=str(
+                request.url_for(
+                    "organizations:edit_catalog_limits",
                     organization_id=organization_id,
                 )
             ),
@@ -4445,12 +4575,28 @@ async def setup_account(
     """Show modal to setup a manual payment account."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if request.method == "POST":
+        organization = await repository.get_by_id(
+            organization_id,
+            include_blocked=True,
+            options=(selectinload(Organization.payout_account),),
+            for_update=True,
+        )
+    else:
+        organization = await repository.get_by_id_with_payout_account(organization_id)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
+    current = organization.payout_account
+    if current is not None and current.type == PayoutAccountType.manual:
+        raise OrganizationError("Organization already uses manual payouts", 409)
+
     if request.method == "POST":
         data = await request.form()
+        if data.get("previous_payout_account_id") != (
+            str(current.id) if current else None
+        ):
+            raise OrganizationError("Payout account has changed", 409)
         country = str(data.get("country", "US")).upper()
 
         owner_user = await repository.get_owner_user(organization)
@@ -4479,30 +4625,44 @@ async def setup_account(
     form_action = str(
         request.url_for("organizations:setup_account", organization_id=organization_id)
     )
-    with modal("Setup Manual Account", open=True):
+    action = "Switch to Manual Payouts" if current else "Create Manual Account"
+    with modal(action, open=True):
         with tag.form(
+            id="manual-payout-account-form",
             method="post",
             hx_post=form_action,
             hx_target="#modal",
             classes="space-y-4",
         ):
-            with tag.p(classes="text-sm text-base-content/60"):
-                text("This will create a manual payout account for this organization.")
-
+            if current:
+                with tag.input(
+                    type="hidden",
+                    name="previous_payout_account_id",
+                    value=str(current.id),
+                ):
+                    pass
+                with tag.p():
+                    text(
+                        "Payouts already transferred to Stripe will continue there. "
+                        "Switching cancels held payouts. If a transfer has not "
+                        "started by the time you switch, the transfer worker "
+                        "will cancel that payout. Canceled payouts can be requested again."
+                    )
             with tag.div(classes="alert alert-warning"):
                 with tag.span(classes="text-sm"):
                     text(
-                        "Manual accounts require manual payout processing and do not integrate with Stripe."
+                        "New payouts for this organization must be processed manually in USD."
                     )
 
             with tag.div(classes="form-control w-full"):
-                with tag.label(classes="label"):
+                with tag.label(classes="label", **{"for": "manual-payout-country"}):
                     with tag.span(classes="label-text font-semibold"):
                         text("Country")
                 with tag.input(
+                    id="manual-payout-country",
                     type="text",
                     name="country",
-                    value="US",
+                    value=current.country if current else "US",
                     placeholder="2-letter country code (e.g. US, FR, GB)",
                     maxlength="2",
                     classes="input input-bordered w-full uppercase",
@@ -4510,12 +4670,14 @@ async def setup_account(
                 ):
                     pass
 
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
-                with button(variant="primary", type="submit"):
-                    text("Create Manual Account")
+        with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+            with tag.form(method="dialog"):
+                with button(ghost=True):
+                    text("Cancel")
+            with button(
+                variant="primary", type="submit", form="manual-payout-account-form"
+            ):
+                text(action)
 
     return None
 
@@ -4529,7 +4691,7 @@ async def resync_stripe_account(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse:
     repository = OrganizationRepository(session)
     organization = await repository.get_by_id_with_payout_account(organization_id)
@@ -5056,7 +5218,7 @@ async def set_capability(
     capability: str,
     value: bool,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Render the capability override modal (GET) or apply it (POST)."""
     if capability not in CAPABILITY_NAMES:

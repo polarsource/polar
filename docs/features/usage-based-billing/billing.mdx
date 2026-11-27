@@ -1,74 +1,134 @@
 ---
-title: "Billing"
-description: "How billing works with Usage Based"
+title: "Usage-based pricing"
+description: "Add a metered price to a subscription product: per-unit, volume or graduated rates, caps, meter cycles and how usage is invoiced."
 ---
 
-## Metered Pricing
+A **metered price** charges a customer for the usage a [meter](/features/usage-based-billing/meters) records, billed after the period ends. Read [Usage: events & meters](/concepts/usage) for how events become usage. This page covers adding a metered price to a product and how usage is invoiced.
 
-Metered Pricing is a pricing model where you charge your customers based on the usage of your application.
+Set up your events and meter first, then add the metered price to a recurring product. Metered prices aren't supported on one-time products.
 
-There are a few different pricing models unique to Usage Based Billing:
+The code examples use API version `2026-10` and the sandbox.
 
-- Unit Pricing
-- Volume Pricing
-- Graduated Pricing
+## Metered pricing
 
-### Unit Pricing
+Under **Pricing model**, a metered price is one of three models:
 
-Unit pricing is a simple pricing model where you charge a fixed amount for each unit of usage.
+| Dashboard | API | The customer pays |
+| --- | --- | --- |
+| **Flat price per unit** | `metered_unit` with `unit_amount` | The same rate for every unit |
+| **Volume** | `metered_tiers` with `type: "volume"` | The rate of the tier the total falls in, on every unit |
+| **Graduated** | `metered_tiers` with `type: "graduated"` | Each tier's range at its own rate, summed |
 
-For example:
-
-| Product Meter       | Price per unit |
-| ------------------- | -------------- |
-| `prompt-tokens`     | $0.10          |
-| `completion-tokens` | $0.18          |
-
-This means that every unit of `prompt-tokens` consumed by a customer will be charged at \$0.10 and every unit of `completion-tokens` will be charged at \$0.18.
-
-It's a linear pricing model, where the price per unit is fixed.
-
-### Volume Pricing
-
-Volume pricing sets the rate from the total usage over the period, and that rate applies to every unit. Crossing a threshold lowers the price on all of it.
-
-### Graduated Pricing
-
-Graduated pricing charges each range at its own rate. The total is the sum across ranges.
+Rates are in cents per single unit. `unit_amount` accepts up to 12 decimal places, so `"0.002"` is \$0.00002 per unit. How the price is displayed to customers, such as `$20 / 1M tokens`, comes from the meter's [unit](/features/usage-based-billing/meters#unit) setting.
 
 ### Defining tiers
 
-Volume and graduated take the same tiers. Define one by an upper bound and a rate. The bound is inclusive, and each tier starts where the previous one ended. The last tier is always unbounded, since usage has no ceiling. A [cap](#add-a-metered-price-to-your-product) still limits what the customer pays.
+Volume and graduated take the same tiers. A tier has an upper bound and a rate. The bound is inclusive, and each tier starts where the previous one ended. The last tier is always unbounded, since usage has no ceiling.
 
-**Example** with tiers at up to 1,000: \$0.10 per unit, and beyond: \$0.08 per unit:
+With tiers of up to 1,000 units at \$0.10 and beyond at \$0.08, 1,400 units cost:
 
-- Volume: 1,400 units = 1,400 × \$0.08 = \$112. Every unit gets the lower rate.
-- Graduated: 1,400 units = 1,000 × \$0.10 + 400 × \$0.08 = \$132. Each range keeps its own rate.
+- Volume: 1,400 × \$0.08 = \$112. Every unit gets the lower rate.
+- Graduated: 1,000 × \$0.10 + 400 × \$0.08 = \$132. Each range keeps its own rate.
 
-## Invoicing Customers for Usage
+### Cap
 
-Our Usage Based Billing infrastructure is built to work with Subscription products out of the box.
+A **Cap amount** (`cap_amount`, in cents) limits what the customer pays for the meter in a period, whatever their usage.
 
-### Add a metered price to your product
+## Add a metered price to a product
 
-To charge your customers for usage, you need to add a metered price to your product. You'll need to select the **Meter** and the **Pricing model**. A flat price per unit takes a single **amount per unit**; volume and graduated take a list of tiers.
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Catalog** and select a recurring product, or click **New Product**
+    - Under **Pricing**, add a **Metered price**
+    - Select the meter
+    - Under **Pricing model**, choose **Flat price per unit**, **Volume** or **Graduated**
+    - Enter the **Amount per unit**, or the tiers
+    - Optionally, set a **Cap amount**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar products create --name "Pro" --recurring-interval month \
+      --prices '[
+        { "amount_type": "fixed", "price_amount": 2000 },
+        { "amount_type": "metered_unit", "meter_id": "<meter_id>", "unit_amount": "0.002", "cap_amount": 10000 }
+      ]'
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Create a monthly product called Pro in my Polar sandbox with a $20 base price and a metered price of $0.00002 per unit on my AI tokens meter, capped at $100.
+    ```
 
-<Info>
-  The price is always entered as the cost per **single unit**. How it is
-  displayed to customers — for example as `$20 / 1M tokens` — is controlled by
-  the [Unit](/features/usage-based-billing/meters#unit) setting on the meter.
-</Info>
+    Uses the `products_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
 
-<img className="block dark:hidden" src="/assets/features/usage/cap.light.png" />
-<img className="hidden dark:block" src="/assets/features/usage/cap.dark.png" />
+This creates a $20 monthly plan with usage billed per token on top, capped at $100 a month:
 
-Optionally, you can set a **cap**. The customer will be charged the cap amount if they exceed it, regardless of the usage.
+<CodeGroup>
+```typescript TypeScript
+const product = await polar.products.create({
+  name: "Pro",
+  recurring_interval: "month",
+  prices: [
+    { amount_type: "fixed", price_amount: 2000 },
+    {
+      amount_type: "metered_unit",
+      meter_id: meter.id,
+      unit_amount: "0.002",
+      cap_amount: 10000,
+    },
+  ],
+});
+```
 
-### When usage is invoiced
+```python Python
+product = polar.products.create(
+    name="Pro",
+    recurring_interval="month",
+    prices=[
+        {"amount_type": "fixed", "price_amount": 2000},
+        {
+            "amount_type": "metered_unit",
+            "meter_id": meter.id,
+            "unit_amount": "0.002",
+            "cap_amount": 10000,
+        },
+    ],
+)
+```
 
-By default, usage follows the subscription's billing period. On a monthly subscription, usage is aggregated over the month and invoiced at renewal with the rest of the subscription. On a yearly subscription, it's aggregated over the year and invoiced at the yearly renewal.
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/products/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Pro",
+    "recurring_interval": "month",
+    "prices": [
+      { "amount_type": "fixed", "price_amount": 2000 },
+      { "amount_type": "metered_unit", "meter_id": "'"$METER_ID"'", "unit_amount": "0.002", "cap_amount": 10000 }
+    ]
+  }'
+```
+</CodeGroup>
+
+For tiered usage, use `amount_type: "metered_tiers"` with `tiers: { type: "graduated", tiers: [{ bound: 1000, unit_amount: "10" }, { bound: null, unit_amount: "8" }] }`.
+
+A product can have several metered prices, one per meter, to bill on more than one dimension. To give customers included usage before overage, add a [Meter Credits benefit](/features/usage-based-billing/credits).
+
+<Visibility for="agents">
+  Metered prices are `metered_unit` (with `unit_amount`, a decimal string in cents) or `metered_tiers` (with `tiers`), each with `meter_id` and optional `cap_amount` in cents. They're only valid on recurring products. Each meter can appear once per currency.
+</Visibility>
+
+## When usage is invoiced
+
+By default, usage follows the subscription's billing period. On a monthly subscription, usage is added up over the month and invoiced at renewal with the rest of the subscription. On a yearly subscription, it's invoiced at the yearly renewal.
 
 To invoice usage more often than the subscription renews, for example monthly on a yearly plan, set a [meter cycle](#meter-cycle).
+
+When a subscription is canceled at period end, usage keeps being tracked until the period ends. The final usage is invoiced then, even though the subscription doesn't renew.
 
 ## Meter cycle
 
@@ -80,7 +140,7 @@ At the end of each meter period, Polar:
 
 1. Invoices the period's usage as a separate order.
 2. Resets the customer's meters.
-3. Grants the [Credits benefit](/features/benefits/credits) again, applying rollover if it's enabled.
+3. Grants the [Meter Credits benefit](/features/usage-based-billing/credits) again, applying rollover if it's enabled.
 
 Meters are reset and credits granted even when there's no usage to invoice. If the period's usage is below the minimum chargeable amount, no payment is taken: the amount is added to the customer's balance and applied to their next order.
 
@@ -113,7 +173,7 @@ For example, a yearly plan accepts a meter cycle of 1, 2, 3, 4, 6 or 12 months, 
 
 ### Discounts
 
-A percentage [discount](/features/discounts) applies to every meter cycle order. A fixed-amount discount doesn't. It still applies to the renewal order.
+A [discount](/features/discounts) on the subscription applies to the whole renewal order, usage included. On meter cycle orders, a percentage discount applies and a fixed-amount discount doesn't.
 
 ### Failed payments
 
@@ -129,24 +189,25 @@ Each meter cycle order sends the customer a **Your {product} usage invoice** ema
 
 Each meter cycle order emits `order.created` and `order.paid` like any other order. Check `billing_reason` to tell them apart from renewals. Meter cycles don't emit `subscription.cycled`, which only fires at renewal.
 
-### Usage Charges and Subscription Cancellation
-
-When a subscription is canceled, it generally remains active until the end of the current billing period (known as the grace period). During this grace period, all accumulated usage-based charges continue to be tracked. A final invoice will be issued at the end of that period to cover the consumed usage, even if the subscription will not be renewed. This ensures no pending usage charges are lost.
-
-<Warning>
-  If a [discount](/features/discounts) is applied on the subscription, it'll be
-  applied on the **whole invoice**, including metered usage.
-</Warning>
-
 ## Customer Portal
 
-Customers can view their estimated charges for each meter in the Customer Portal.
+Customers see their estimated charges for each meter in the [Customer Portal](/features/customer-portal/introduction) while **Settings → Customer Portal → Show metered usage** is on.
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/usage/portal.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/usage/portal.dark.png"
-/>
+## From the CLI or your agent
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| Create a product with a metered price | `polar products create --prices '[…]'` | `products_create` |
+| Change a product's prices | `polar products update <id> --prices '[…]'` | `products_update` |
+| Create or list meters | `polar meters create`, `polar meters list` | `meters_create`, `meters_list` |
+| Read usage for a meter | `polar meters quantities <id>` | `meters_quantities` |
+| Read a customer's usage and balance | `polar customer_meters list` | `customer_meters_list` |
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Usage: events & meters](/concepts/usage) | How events become billable usage |
+| [Meters](/features/usage-based-billing/meters) | Filters, aggregations and units |
+| [Credits](/features/usage-based-billing/credits) | Included usage and prepaid credits |
+| [Create Product API](/api-reference/current/products/create-product) | Price fields for `metered_unit` and `metered_tiers` |

@@ -1,6 +1,9 @@
 import { CustomerPortalSettings } from '@/components/CustomerPortal/CustomerPortalSettings'
 import { getServerSideAPI } from '@/utils/client/serverside'
-import { getOrganizationOrNotFound } from '@/utils/customerPortal'
+import {
+  getOrganizationOrNotFound,
+  hasBillingPermission,
+} from '@/utils/customerPortal'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { CustomerPortalPage } from '../CustomerPortalPage'
@@ -16,10 +19,10 @@ export async function generateMetadata(props: {
   )
 
   return {
-    title: `Customer Portal | ${organization.name}`, // " | Polar is added by the template"
+    title: `Customer portal | ${organization.name}`, // " | Polar is added by the template"
     openGraph: {
-      title: `Customer Portal | ${organization.name} on Polar`,
-      description: `Customer Portal | ${organization.name} on Polar`,
+      title: `Customer portal | ${organization.name} on Polar`,
+      description: `Customer portal | ${organization.name} on Polar`,
       siteName: 'Polar',
       type: 'website',
       images: [
@@ -40,8 +43,8 @@ export async function generateMetadata(props: {
         },
       ],
       card: 'summary_large_image',
-      title: `Customer Portal | ${organization.name} on Polar`,
-      description: `Customer Portal | ${organization.name} on Polar`,
+      title: `Customer portal | ${organization.name} on Polar`,
+      description: `Customer portal | ${organization.name} on Polar`,
     },
   }
 }
@@ -75,6 +78,17 @@ export default async function Page(props: {
   if (customerResponse.status === 401) {
     redirect(
       `/${organization.slug}/portal/request?${new URLSearchParams(searchParams)}`,
+    )
+  }
+
+  const { data: authenticatedUser } = await api.GET(
+    '/v1/customer-portal/customer-session/user',
+    { cache: 'no-store' },
+  )
+
+  if (!hasBillingPermission(authenticatedUser)) {
+    redirect(
+      `/${organization.slug}/portal?${new URLSearchParams(resolvedSearchParams)}`,
     )
   }
 

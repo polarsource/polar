@@ -6,6 +6,10 @@ import { OnChangeFn, PaginationState } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
 import { CatalogEmptyPanel } from './CatalogEmptyPanel'
 import { ReviewAlerts } from './ReviewAlerts'
+import {
+  PaymentMethodCount,
+  paymentMethodSummaryText,
+} from './paymentMethodSummary'
 import { ReviewRecordModal } from './ReviewRecordModal'
 import { ReviewToolbarActions } from './ReviewToolbarActions'
 import {
@@ -53,6 +57,8 @@ interface Props {
   refreshError?: string
   attentionCount: number
   hasConnectedAccounts: boolean
+  hasBenefitsStep: boolean
+  paymentMethods: PaymentMethodCount[]
 }
 
 export function ReviewTableView({
@@ -80,6 +86,8 @@ export function ReviewTableView({
   refreshError,
   attentionCount,
   hasConnectedAccounts,
+  hasBenefitsStep,
+  paymentMethods,
 }: Props) {
   const refreshing = rerunning && !stalled
   const rowTotal = remainingSubscriptionCount(
@@ -90,6 +98,7 @@ export function ReviewTableView({
     counts.subscriptions.total,
     counts.subscriptions.imported,
     hasConnectedAccounts,
+    hasBenefitsStep,
   )
   const selectableTotal = counts.subscriptions.selectable
   const importCount = selectedCount(selection, selectableTotal)
@@ -135,6 +144,9 @@ export function ReviewTableView({
         rerunning={rerunning}
         stalled={stalled}
         readError={refreshError}
+        onContinue={onContinue}
+        continuing={importing}
+        continueError={importError}
       />
     )
   }
@@ -146,9 +158,15 @@ export function ReviewTableView({
         stalled={stalled}
         refreshError={refreshError}
         importError={importError}
+        paymentMethodSummary={paymentMethodSummaryText(paymentMethods)}
       />
 
       <Box flexDirection="column" rowGap="m">
+        <Text color="muted">
+          {primaryAction === 'continue'
+            ? 'Every subscription that can move is already prepared. Continue to switch them to Polar.'
+            : 'Preparing a subscription brings its customer and product to Polar. Polar starts billing only when you switch.'}
+        </Text>
         <Box
           alignItems="center"
           justifyContent="between"
@@ -182,12 +200,6 @@ export function ReviewTableView({
           />
         </Box>
 
-        <Text variant="caption" color="muted">
-          {primaryAction === 'continue'
-            ? 'Every subscription that can move is already prepared. Continue to switch them to Polar.'
-            : 'Preparing a subscription brings its customer and product to Polar. Polar starts billing only when you switch.'}
-        </Text>
-
         {rows.length === 0 ? (
           <Box
             borderWidth={1}
@@ -197,9 +209,7 @@ export function ReviewTableView({
             paddingVertical="2xl"
             justifyContent="center"
           >
-            <Text variant="caption" color="muted">
-              {EMPTY_MESSAGES[filter]}
-            </Text>
+            <Text color="muted">{EMPTY_MESSAGES[filter]}</Text>
           </Box>
         ) : (
           <DataTable

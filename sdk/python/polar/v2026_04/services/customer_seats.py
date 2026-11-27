@@ -59,7 +59,7 @@ class CustomerSeatsSync(SyncServiceBase):
         Args:
             subscription_id:
             order_id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -105,7 +105,7 @@ class CustomerSeatsSync(SyncServiceBase):
         **Scopes**: `customer_seats:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -153,7 +153,7 @@ class CustomerSeatsSync(SyncServiceBase):
 
         Args:
             seat_id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -199,7 +199,7 @@ class CustomerSeatsSync(SyncServiceBase):
 
         Args:
             seat_id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -245,7 +245,7 @@ class CustomerSeatsSync(SyncServiceBase):
 
         Args:
             invitation_token:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -288,7 +288,7 @@ class CustomerSeatsSync(SyncServiceBase):
         Claim a customer seat with an invitation token.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -336,7 +336,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
         Args:
             subscription_id:
             order_id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -382,7 +382,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
         **Scopes**: `customer_seats:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -430,7 +430,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
 
         Args:
             seat_id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -476,7 +476,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
 
         Args:
             seat_id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -522,7 +522,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
 
         Args:
             invitation_token:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -565,7 +565,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
         Claim a customer seat with an invitation token.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters

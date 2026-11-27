@@ -1,4 +1,4 @@
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { getAnonymousCustomerName } from '@/utils/anonymous-customer'
 import { buildCustomerDashboardPath } from '@/utils/customer'
 import { schemas } from '@polar-sh/client'
@@ -10,7 +10,6 @@ import {
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
 import Link from 'next/link'
-import { useContext } from 'react'
 
 type AnonymousCustomerEvent = schemas['Event'] & {
   customer: null
@@ -35,7 +34,7 @@ const isIdentifiedCustomerEvent = (
 }
 
 export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
 
   if (isAnonymousCustomerEvent(event)) {
     const [name] = getAnonymousCustomerName(event.external_customer_id)

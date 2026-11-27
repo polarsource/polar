@@ -7,12 +7,11 @@ import subprocess
 import tempfile
 import time
 import typing
+import uuid
 
-import httpx
+import httpx2
 import pytest
-from httpx_ws.transport import ASGIWebSocketTransport
 
-from polar.outpost import telemetry
 from polar.outpost.client import Outpost
 from polar.outpost.reducer import Reducer
 
@@ -68,29 +67,46 @@ def redis_socket() -> collections.abc.Iterator[str]:
             process.wait()
 
 
-# Polar's side of the WebSocket: the configuration, and the snapshot when given one.
+# Polar's side of Outpost: the configuration, the snapshot when given one, and no changes.
 def polar_server(
     reducers: list[Reducer], snapshot: dict[str, typing.Any] | None
 ) -> typing.Any:
+    cursor = 0
+
     async def app(scope: typing.Any, receive: typing.Any, send: typing.Any) -> None:
-        await receive()
-        await send({"type": "websocket.accept"})
+        nonlocal cursor
+        body = (await receive()).get("body", b"")
+        if scope["path"] == "/v1/outpost/configuration":
+            response: typing.Any = {"organization_id": "org", "reducers": reducers}
+        elif scope["path"] == "/v1/outpost/meter-usage":
+            response = (
+                [
+                    {"customer_exists": True, **snapshot, **identity}
+                    for identity in json.loads(body)["identities"]
+                ]
+                if snapshot is not None
+                else []
+            )
+        else:
+            cursor += 1
+            response = {
+                "changes": [],
+                "cursor": f"{cursor}-0",
+                "has_more": False,
+                "reset": False,
+                "configuration_changed": False,
+                "next_poll_in": 30,
+            }
         await send(
             {
-                "type": "websocket.send",
-                "text": json.dumps({"type": "connection", "payload": {"id": "bench"}}),
+                "type": "http.response.start",
+                "status": 200,
+                "headers": [(b"content-type", b"application/json")],
             }
         )
-        while (message := await receive())["type"] != "websocket.disconnect":
-            request = json.loads(message["text"])
-            if request["type"] == "configuration":
-                response = {"type": "configuration", "payload": {"reducers": reducers}}
-            elif request["type"] == "meter_usage" and snapshot is not None:
-                payload = {"customer_exists": True, **snapshot, **request["payload"]}
-                response = {"type": "meter_usage", "payload": payload}
-            else:
-                continue
-            await send({"type": "websocket.send", "text": json.dumps(response)})
+        await send(
+            {"type": "http.response.body", "body": json.dumps(response).encode()}
+        )
 
     return app
 
@@ -109,9 +125,12 @@ def outpost(
     reducers: list[Reducer],
     snapshot: dict[str, typing.Any] | None,
 ) -> collections.abc.Iterator[Outpost]:
-    client = httpx.AsyncClient(
+    # Each module configures its own reducers on the session's Redis: a token of its own
+    # keeps another module's stored configuration out.
+    client = httpx2.AsyncClient(
         base_url="http://polar.test",
-        transport=ASGIWebSocketTransport(polar_server(reducers, snapshot)),
+        headers={"Authorization": f"Bearer {uuid.uuid4()}"},
+        transport=httpx2.ASGITransport(polar_server(reducers, snapshot)),
     )
     outpost = Outpost(f"unix://{redis_socket}", client=client)
     stop = asyncio.Event()
@@ -122,15 +141,13 @@ def outpost(
             ready.set_result(None)
             await stop.wait()
 
-    # Telemetry records as in production; only its export to Polar stays on the machine.
-    with pytest.MonkeyPatch.context() as monkeypatch:
-        monkeypatch.setattr(telemetry._Relay, "_post", lambda self, body: True)
-        held = loop.create_task(hold())
-        loop.run_until_complete(
-            asyncio.wait({ready, held}, return_when=asyncio.FIRST_COMPLETED)
-        )
-        if held.done():
-            held.result()
-        yield outpost
-        stop.set()
-        loop.run_until_complete(held)
+    # Telemetry records as in production, into the fake Polar's Redis.
+    held = loop.create_task(hold())
+    loop.run_until_complete(
+        asyncio.wait({ready, held}, return_when=asyncio.FIRST_COMPLETED)
+    )
+    if held.done():
+        held.result()
+    yield outpost
+    stop.set()
+    loop.run_until_complete(held)

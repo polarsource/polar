@@ -28,7 +28,7 @@ that assumes it.
 ```
 polar/{subscription,order,billing_entry,billing_interval,meter,event,discount,checkout,checkout_link}/
 polar/{payment,payment_method,refund,dispute,payout,payout_account,wallet,transaction}/
-polar/{invoice,receipt,tax,product,customer_seat,account}/  ·  polar/benefit/grant/
+polar/{invoice,receipt,credit_note,tax,product,customer_seat,account}/  ·  polar/benefit/grant/
 polar/models/{subscription,order,order_item,product,product_price,discount,checkout,
               payment,billing_entry,refund,dispute,wallet,transaction}.py
 migrations/ and server/scripts/ when they touch those tables
@@ -47,6 +47,10 @@ That is how this team reviews.
 
 `BillingEntry` is the ledger tying an invoice line back to the events that caused it. Anything
 computing an amount from a summary or a recomputation loses that trace.
+
+For organizations on reducer billing (`reducer_billing_enabled`), that ledger is the reducer's
+sealed buckets instead of billing entries — sealed before the order exists, then marked as
+billed by the order. The rules below apply to both ledgers.
 
 - Invoicing metered usage reads billing entries, never the customer meter's computed balance.
   *"Billing Entries are the source of truth… Otherwise, we lose the ability to track billing

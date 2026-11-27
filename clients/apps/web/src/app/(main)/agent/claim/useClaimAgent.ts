@@ -9,6 +9,7 @@ import { schemas } from '@polar-sh/client'
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
 import {
   AGENT_CLAIM_RESUME_PARAM,
+  getAgentClaimDonePath,
   pendingAgentClaims,
 } from './claimContinuation'
 import {
@@ -28,7 +29,6 @@ export const useClaimAgent = (
   linkToken: string,
   claim: schemas['AgentClaim'] | undefined,
   resumeActionId: string | undefined,
-  handoverMs: number,
 ) => {
   const { currentUser } = useAuth()
   const posthog = usePostHog()
@@ -54,10 +54,11 @@ export const useClaimAgent = (
           organization_id: claim?.organization?.id ?? null,
           products: claim?.products.length ?? 0,
         })
-        const destination = claim?.organization
-          ? `/dashboard/${claim.organization.slug}`
-          : '/dashboard'
-        setTimeout(() => window.location.assign(destination), handoverMs)
+        window.history.replaceState(
+          window.history.state,
+          '',
+          getAgentClaimDonePath(claim?.organization?.slug),
+        )
         return { status: 'claimed' }
       }
 
@@ -83,7 +84,7 @@ export const useClaimAgent = (
       })
       return getAgentClaimError(error)
     },
-    [claim, currentUser, handoverMs, linkToken, mutateAsync, posthog],
+    [claim, currentUser, linkToken, mutateAsync, posthog],
   )
 
   const confirm = useCallback(

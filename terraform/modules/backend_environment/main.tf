@@ -7,6 +7,12 @@ locals {
     POLAR_GOOGLE_SERVICE_ACCOUNT_JSON = var.google_secrets.service_account_json
   }
 
+  backoffice_google_secrets = {
+    POLAR_BACKOFFICE_GOOGLE_CLIENT_ID     = var.google_secrets.backoffice_client_id
+    POLAR_BACKOFFICE_GOOGLE_CLIENT_SECRET = var.google_secrets.backoffice_client_secret
+    POLAR_BACKOFFICE_GOOGLE_HOSTED_DOMAIN = var.google_secrets.backoffice_hosted_domain
+  }
+
   pydantic_ai_gateway_secrets = {
     POLAR_PYDANTIC_AI_GATEWAY_API_KEY = var.pydantic_ai_gateway_secrets.api_key
   }
@@ -32,10 +38,12 @@ locals {
       POLAR_TAX_PROCESSORS                       = var.backend_config.tax_processors
       POLAR_TAX_RECORD_PROCESSOR                 = var.backend_config.tax_record_processor
       POLAR_CUSTOMER_PORTAL_URL_OVERRIDES        = var.backend_config.customer_portal_url_overrides
+      POLAR_PROTECTED_OAUTH2_CLIENT_IDS          = jsonencode(var.backend_config.protected_oauth2_client_ids)
     },
     { for name, value in {
-      POLAR_DATABASE_STATEMENT_CACHE_SIZE          = var.backend_config.database_statement_cache_size
-      POLAR_DATABASE_PREPARED_STATEMENT_CACHE_SIZE = var.backend_config.database_prepared_statement_cache_size
+      POLAR_DATABASE_STATEMENT_CACHE_SIZE               = var.backend_config.database_statement_cache_size
+      POLAR_DATABASE_PREPARED_STATEMENT_CACHE_SIZE      = var.backend_config.database_prepared_statement_cache_size
+      POLAR_ORGANIZATION_ACCESS_TOKEN_CACHE_TTL_SECONDS = var.backend_config.organization_access_token_cache_ttl_seconds
     } : name => tostring(value) if value != null },
     var.backend_config.backoffice_host != null ? {
       POLAR_BACKOFFICE_HOST = var.backend_config.backoffice_host
@@ -52,21 +60,26 @@ locals {
     var.backend_config.merchant_migration_destination_stripe_account_id != "" ? {
       POLAR_MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID = var.backend_config.merchant_migration_destination_stripe_account_id
     } : {},
+    var.backend_config.customer_meter_units_from_reducer ? {
+      POLAR_CUSTOMER_METER_UNITS_FROM_REDUCER = "true"
+    } : {},
   )
 
   backend_secrets = merge(
     {
-      POLAR_DISCORD_BOT_TOKEN     = var.backend_secrets.discord_bot_token
-      POLAR_DISCORD_CLIENT_ID     = var.backend_secrets.discord_client_id
-      POLAR_DISCORD_CLIENT_SECRET = var.backend_secrets.discord_client_secret
-      POLAR_DISCORD_PROXY_URL     = var.backend_secrets.discord_proxy_url
-      POLAR_RESEND_API_KEY        = var.backend_secrets.resend_api_key
-      POLAR_RESEND_WEBHOOK_SECRET = var.backend_secrets.resend_webhook_secret
-      POLAR_FIRECRAWL_API_KEY     = var.backend_secrets.firecrawl_api_key
-      POLAR_LINEAR_API_KEY        = var.backend_secrets.linear_api_key
-      POLAR_SENTRY_DSN            = var.backend_secrets.sentry_dsn
-      POLAR_NUMERAL_API_KEY       = var.backend_secrets.numeral_api_key
-      POLAR_TURNSTILE_SECRET      = var.backend_secrets.turnstile_secret
+      POLAR_DISCORD_BOT_TOKEN                  = var.backend_secrets.discord_bot_token
+      POLAR_DISCORD_CLIENT_ID                  = var.backend_secrets.discord_client_id
+      POLAR_DISCORD_CLIENT_SECRET              = var.backend_secrets.discord_client_secret
+      POLAR_DISCORD_PROXY_URL                  = var.backend_secrets.discord_proxy_url
+      POLAR_RESEND_API_KEY                     = var.backend_secrets.resend_api_key
+      POLAR_RESEND_WEBHOOK_SECRET              = var.backend_secrets.resend_webhook_secret
+      POLAR_PAYMENT_RETRY_ALERT_API_KEY        = var.backend_secrets.payment_retry_alert_api_key
+      POLAR_PAYMENT_RETRY_ALERT_WEBHOOK_SECRET = var.backend_secrets.payment_retry_alert_webhook_secret
+      POLAR_FIRECRAWL_API_KEY                  = var.backend_secrets.firecrawl_api_key
+      POLAR_LINEAR_API_KEY                     = var.backend_secrets.linear_api_key
+      POLAR_SENTRY_DSN                         = var.backend_secrets.sentry_dsn
+      POLAR_NUMERAL_API_KEY                    = var.backend_secrets.numeral_api_key
+      POLAR_TURNSTILE_SECRET                   = var.backend_secrets.turnstile_secret
     },
     var.backend_secrets.resend_active_users_segment_id != "" ? {
       POLAR_RESEND_ACTIVE_USERS_SEGMENT_ID = var.backend_secrets.resend_active_users_segment_id
@@ -214,6 +227,7 @@ locals {
 
   environment_groups = {
     google              = local.google_secrets
+    backoffice_google   = local.backoffice_google_secrets
     pydantic_ai_gateway = local.pydantic_ai_gateway_secrets
     backend = merge(
       local.backend_environment_variables,
@@ -247,6 +261,7 @@ locals {
 
   secret_environment_variables = merge(
     local.google_secrets,
+    local.backoffice_google_secrets,
     local.pydantic_ai_gateway_secrets,
     local.backend_secrets,
     local.backend_production_secrets,

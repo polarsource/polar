@@ -9,6 +9,8 @@ from polar.kit.address import Address, AddressInput
     [
         ("US", "NY"),
         ("CA", "QC"),
+        ("BR", "SP"),
+        ("IN", "MH"),
     ],
 )
 def test_valid_unprefixed_state(country: str, state: str) -> None:
@@ -22,6 +24,8 @@ def test_valid_unprefixed_state(country: str, state: str) -> None:
     [
         ("US", "US-NY"),
         ("CA", "CA-QC"),
+        ("BR", "BR-SP"),
+        ("IN", "IN-MH"),
     ],
 )
 def test_valid_prefixed_state(country: str, state: str) -> None:
@@ -65,6 +69,11 @@ def test_valid(input: dict[str, str], expected: dict[str, str]) -> None:
     assert address.to_dict() == expected
 
 
+def test_stored_free_text_state_is_kept() -> None:
+    address = Address.model_validate({"country": "BR", "state": "São Paulo"})
+    assert address.state == "São Paulo"
+
+
 class TestAddressInput:
     def test_lowercase_country_is_normalized_to_uppercase(self) -> None:
         address = AddressInput.model_validate({"country": "us"})
@@ -85,3 +94,12 @@ class TestAddressInput:
     def test_missing_country_raises_validation_error(self) -> None:
         with pytest.raises(ValidationError):
             AddressInput.model_validate({})
+
+    @pytest.mark.parametrize(
+        ("country", "state"), [("BR", "São Paulo"), ("IN", "Maharashtra")]
+    )
+    def test_invalid_state_raises_validation_error(
+        self, country: str, state: str
+    ) -> None:
+        with pytest.raises(ValidationError):
+            AddressInput.model_validate({"country": country, "state": state})

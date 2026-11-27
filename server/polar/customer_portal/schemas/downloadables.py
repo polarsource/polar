@@ -1,9 +1,11 @@
 from datetime import datetime
 
-from pydantic import UUID4
+from pydantic import UUID4, Field
 
+from polar.benefit.schemas import BenefitID
 from polar.file.schemas import FileDownload
-from polar.kit.schemas import Schema
+from polar.kit.schemas import MultipleQueryFilter, Schema
+from polar.kit.versioning import QuerySchema
 
 
 class DownloadableURL(Schema):
@@ -16,3 +18,9 @@ class DownloadableRead(Schema):
     benefit_id: UUID4
 
     file: FileDownload
+
+
+class CustomerPortalDownloadablesListParams(QuerySchema):
+    benefit_id: MultipleQueryFilter[BenefitID] | None = Field(
+        None, title="BenefitID Filter", description="Filter by benefit ID."
+    )

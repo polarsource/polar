@@ -62,6 +62,25 @@ vi.mock('@polar-sh/orbit', () => ({
     <div>{children}</div>
   ),
   Input: (props: InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
+  SegmentedControl: ({
+    options,
+    onChange,
+  }: {
+    options: { value: string; label: string }[]
+    onChange: (value: string) => void
+  }) => (
+    <div>
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => onChange(option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  ),
   Text: ({ children }: { children: ReactNode }) => <span>{children}</span>,
 }))
 
@@ -211,5 +230,52 @@ describe('CreateMigrationModal', () => {
     expect(
       screen.getByText('Please check the API key and try again.'),
     ).toBeTruthy()
+  })
+
+  it('offers Stripe and Lemon Squeezy, starting on Stripe', () => {
+    render(
+      <CreateMigrationModal
+        organizationId="org_1"
+        onCreated={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: 'Lemon Squeezy' })).toBeTruthy()
+    expect(screen.getByPlaceholderText('rk_test_...')).toBeTruthy()
+  })
+
+  it('creates a Lemon Squeezy migration with the store ID', async () => {
+    const onCreated = vi.fn()
+    mutateAsync.mockResolvedValue({ data: { id: 'migration_1' } })
+
+    render(
+      <CreateMigrationModal
+        organizationId="org_1"
+        onCreated={onCreated}
+        onClose={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Lemon Squeezy' }))
+    fireEvent.change(screen.getByPlaceholderText('Lemon Squeezy API key'), {
+      target: { value: 'ls_key' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Store ID (optional)'), {
+      target: { value: '42' },
+    })
+    fireEvent.click(
+      screen.getByRole('button', { name: /Validate & create migration/ }),
+    )
+
+    await waitFor(() => {
+      expect(onCreated).toHaveBeenCalledWith({ id: 'migration_1' })
+    })
+    expect(mutateAsync).toHaveBeenCalledWith({
+      organization_id: 'org_1',
+      source_platform: 'lemon_squeezy',
+      api_key: 'ls_key',
+      store_id: '42',
+    })
   })
 })

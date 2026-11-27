@@ -33,6 +33,12 @@ The `Security` OU holds the `identity` account (IAM Identity Center delegated ad
 the `security` account (IAM root access and GuardDuty delegated administrator, managed from
 `terraform/security`).
 
+## CloudTrail
+
+The `organization` trail in the management account logs management events from every account and
+region to the `polar-sh-organization-cloudtrail` bucket in the `security` account. Apply
+`terraform/security` before `terraform/organization` so the bucket and its policy exist first.
+
 ## Guardrails
 
 - Attach guardrails that apply to every application account to `Workloads`.

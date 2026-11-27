@@ -35,7 +35,6 @@ from polar.models import (
     User,
 )
 from polar.models.discount import DiscountDuration
-from polar.models.merchant_migration import MerchantMigrationSourcePlatform
 from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
@@ -66,6 +65,7 @@ from .canonical import (
     customer_country_fallbacks,
     deserialize,
     polar_discount_amounts,
+    polar_product_name,
     subscription_price_key,
 )
 from .precheck import (
@@ -902,7 +902,7 @@ class CatalogImporter:
         polar_product = await product_service.create(
             self.session,
             ProductCreateRecurring(
-                name=product.name,
+                name=polar_product_name(product.name),
                 organization_id=None,
                 recurring_interval=SubscriptionRecurringInterval(
                     product.recurring_interval
@@ -982,7 +982,7 @@ class CatalogImporter:
     async def _create_or_reuse_customer(
         self, customer: CanonicalCustomer, country_fallback: str | None
     ) -> ImportedCustomer:
-        stripe_customer_id = self._stripe_customer_id(customer)
+        stripe_customer_id = customer.copied_stripe_customer_id
         existing = await self.customer_repository.get_by_email_and_organization(
             customer.email, self.organization.id
         )
@@ -1024,13 +1024,6 @@ class CatalogImporter:
             tax_id=customer.tax_id,
         )
         return ImportedCustomer(customer=polar_customer)
-
-    def _stripe_customer_id(self, customer: CanonicalCustomer) -> str | None:
-        # PAN copy preserves the Stripe `cus_…` id; other providers have no
-        # such concept.
-        if self.migration.source_platform == MerchantMigrationSourcePlatform.stripe:
-            return customer.source_id
-        return None
 
     def _billing_address(
         self, customer: CanonicalCustomer, country_fallback: str | None

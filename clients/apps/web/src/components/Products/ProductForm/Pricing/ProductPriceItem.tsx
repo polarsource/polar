@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import React from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 import { ProductFormType } from '../ProductForm'
 import { ProductPriceCustomItem } from './ProductPriceCustomItem'
 import { ProductPriceFixedItem } from './ProductPriceFixedItem'
@@ -58,9 +58,9 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   canRemove,
   canChangeType = true,
 }) => {
-  const { register, control, watch } = useFormContext<ProductFormType>()
-  const amountType = watch(`prices.${index}.amount_type`)
-  const recurringInterval = watch('recurring_interval')
+  const { register, control } = useFormContext<ProductFormType>()
+  const amountType = useWatch({ control, name: `prices.${index}.amount_type` })
+  const recurringInterval = useWatch({ control, name: 'recurring_interval' })
 
   return (
     <div className="flex flex-col gap-y-6">

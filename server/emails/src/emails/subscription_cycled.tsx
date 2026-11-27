@@ -30,7 +30,8 @@ export function SubscriptionCycled({
         <Text as="span" weight="medium">
           {product.name}
         </Text>{' '}
-        subscription has just renewed. Your invoice is attached.
+        subscription has just renewed.
+        {order.is_invoice_generated && ' Your invoice is attached.'}
         {order.receipt_number && (
           <>
             {' '}

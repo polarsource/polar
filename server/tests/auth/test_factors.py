@@ -5,8 +5,9 @@ from reauth.factors.backup_codes import (
     AlreadyUsedBackupCodeException,
     InvalidBackupCodeException,
 )
+from sqlalchemy import select
 
-from polar.auth.factors import BackupCodesFactor, get_org_factors
+from polar.auth.factors import BackupCodesFactor, TOTPFactor, get_org_factors
 from polar.auth.oauth2.state import OAuth2StateService
 from polar.config import settings
 from polar.exceptions import ResourceNotFound
@@ -15,6 +16,7 @@ from polar.models import (
     BackupCodesEnrollment,
     Organization,
     OrganizationSSOConnection,
+    TOTPEnrollment,
     User,
 )
 from polar.models.organization_sso_connection import (
@@ -256,3 +258,22 @@ class TestBackupCodesFactorVerify:
         factor = BackupCodesFactor(session)
         with pytest.raises(AlreadyUsedBackupCodeException):
             await factor.verify(user.id, "AAAAAAAAAA")
+
+
+@pytest.mark.anyio
+class TestTOTPFactorInsert:
+    async def test_secret_round_trips_through_encryption(
+        self, session: AsyncSession, user: User
+    ) -> None:
+        factor = TOTPFactor(session)
+
+        enrollment = await factor.enroll(user.id)
+
+        totp = await session.scalar(
+            select(TOTPEnrollment).where(TOTPEnrollment.identity_id == user.id)
+        )
+        assert totp is not None
+        assert totp.secret_encrypted is not None
+        stored = await factor.get_by_identity_id(user.id)
+        assert stored is not None
+        assert stored.secret == enrollment.secret

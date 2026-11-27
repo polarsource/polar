@@ -8,6 +8,13 @@ const SANDBOX_COMPATIBILITY_DATE = '2026-10-01'
 const ERROR_NAME =
   /^(?:(?:[A-Z][A-Za-z]{0,30})?Error|string|number|boolean|object|undefined|symbol|bigint|function)$/
 
+const ENGINE_ERRORS = new Set([
+  'TypeError',
+  'ReferenceError',
+  'SyntaxError',
+  'RangeError',
+])
+
 interface SandboxCall {
   method: string
   url: string
@@ -32,6 +39,7 @@ interface SandboxOptions {
   modules?: WorkerLoaderWorkerCode['modules']
   globalOutbound: Fetcher | null
   limits?: WorkerLoaderWorkerCode['limits']
+  recordScriptErrors?: boolean
 }
 
 export class Sandbox extends Context.Service<
@@ -52,6 +60,7 @@ export class Sandbox extends Context.Service<
           modules,
           globalOutbound,
           limits,
+          recordScriptErrors,
         }: SandboxOptions) {
           const evaluation = yield* Effect.tryPromise({
             try: () => {
@@ -142,6 +151,9 @@ export default class Sandbox extends WorkerEntrypoint {
           if (error !== undefined) {
             if (errorName && ERROR_NAME.test(errorName)) {
               log.scriptError = errorName
+            }
+            if (recordScriptErrors && ENGINE_ERRORS.has(errorName ?? '')) {
+              log.scriptErrorMessage = error
             }
             return yield* new ToolError({ message: error, kind: 'script' })
           }

@@ -1,110 +1,284 @@
 ---
 title: "Credits"
-description: "Crediting customers for Usage Based Billing"
+description: "Include prepaid usage in a product with the Meter Credits benefit, grant or reverse credits by hand, and track each customer's balance."
 ---
 
-Credits is the way to pre-pay for usage in Polar. It allows you to give your customers the ability to pre-pay for usage instead of risk getting a hefty bill at the end of the month.
+**Credits** are prepaid units on a meter. Usage draws the balance down before anything is billed, so a customer can buy 1M tokens up front instead of getting a bill at the end of the month. See [Usage](/concepts/usage) for how credits and metered prices fit together.
 
-## How Credits Work
+There are two ways to credit a customer:
 
-When you ingest events into a Usage Meter, customers will be charged for the usage based on the product's pricing model.
+- The **Meter Credits** benefit, attached to a product. Credits are granted on purchase, and on every cycle for subscriptions.
+- **Manual credits**, granted to one customer from the dashboard or API, for example as a goodwill gesture.
 
-However, sometimes you may want to give your customers the ability to pre-pay for usage instead of risk getting a hefty bill at the end of the month.
+## How the balance works
 
-When you issue Credits to a customer, we first deduct the Credits from their Usage Meter balance. If the Usage Meter balance reaches 0, the customer will be charged for the overage.
+A customer's **balance** on a meter is credited units minus consumed units. Usage draws from it first. What happens when it runs out depends on the product:
 
-### Credits-only spending
+- **With a metered price** on the same meter, usage beyond the credits is billed as overage on the next invoice.
+- **Without one**, usage is never charged. The balance goes negative and you decide what to do.
 
-To avoid any overage charges, don't create any Metered price on your product. This way, billing won't be triggered at all for the meter
+<Warning>
+  Polar doesn't block usage when a balance runs out. Events are always accepted. Check the balance in your application and stop serving requests when you need to. See [Track the balance](#track-the-balance).
+</Warning>
 
-## Issuing Credits with the Credits Benefit
+## The Meter Credits benefit
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/benefits/credits/credits.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/benefits/credits/credits.dark.png"
-/>
+Attach a **Meter Credits** benefit to a product to include credits in it.
 
-The Credits benefit will credit a customer's Usage Meter balance at different points in time depending on the type of product the benefit is attached to.
+| Field | API property | Description |
+| --- | --- | --- |
+| **Meter** | `meter_id` | The meter to credit |
+| **Number of credited units** | `units` | A whole number greater than 0 |
+| **Rollover unused credits** | `rollover` | Carry unused units into the next period. Off by default. |
 
-### Subscription Products
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Catalog → Benefits**
+    - Click **Create Benefit**
+    - Set the type to **Meter Credits**
+    - Enter a **Description**, such as "1M tokens per month"
+    - Pick the **Meter** and set **Number of credited units**
+    - Check **Rollover unused credits** if unused units should carry over
+    - Save, then add the benefit to a product
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar benefits create --type meter_credit --description "1M tokens per month" \
+      --properties '{"meter_id": "<meter-id>", "units": 1000000, "rollover": false}'
+    ```
 
-The customer will be credited the amount of units specified in the benefit at the beginning of every subscription cycle period — monthly or yearly.
+    Then attach it with `polar products update_benefits`. See the [`benefits` reference](/integrate/cli/reference/benefits).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Create a Meter Credits benefit in my Polar sandbox organization that grants 1,000,000 units on the AI tokens meter each period, without rollover, and add it to the Pro product.
+    ```
 
-If the product has a [meter cycle](/features/usage-based-billing/billing#meter-cycle), credits are granted at the start of every meter period instead. For example, a yearly plan with a monthly meter cycle grants credits every month. No credits are granted while the subscription is `past_due`.
+    Uses the `benefits_create` and `products_update_benefits` operations of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
 
-### One-Time Products
+From your code:
 
-The customer will be credited the amount of units specified in the benefit once at the time of purchase.
-
-## Granting Credits Manually
-
-You can also credit a customer's Usage Meter directly, for example as a goodwill gesture or to top up a balance outside of a purchase. Manual credits are added on top of any credits granted through a Meter Credits benefit.
-
-### From the dashboard
-
-Open a customer and choose **Add Credits** from the customer menu, use **Add credits** on a meter row in the customer's **Usage** tab, or open a customer meter and click **Add credits**. Pick the meter, enter the number of credits and choose whether unused credits roll over to the next billing cycle (on by default). The panel previews the new balance and, for billed meters, how much of the current overage the credits cover.
-
-### From the API
-
-<Note>
-  Manual credits are available from API version `2027-01`.
-</Note>
-
-Use the [Credit Customer Meter](/api-reference/2027-01/customer_meters/credit-customer-meter) endpoint, `POST /v1/customer-meters/credits`. It requires the `customers:write` scope. Identify the customer and meter either with Polar IDs (`customer_id` and `meter_id`) or with external IDs (`external_customer_id` and `external_meter_id`); the two styles can't be mixed in one request.
-
-```json
-{
-  "external_customer_id": "usr_1337",
-  "external_meter_id": "tool_call",
-  "units": 100,
-  "rollover": false,
-  "external_id": "goodwill-2026-10-20"
-}
+<CodeGroup>
+```typescript TypeScript
+const benefit = await polar.benefits.create({
+  type: "meter_credit",
+  description: "1M tokens per month",
+  properties: {
+    meter_id: meter.id,
+    units: 1_000_000,
+    rollover: false,
+  },
+});
 ```
 
-- `units` is a whole number between 1 and 1,000,000,000.
-- `rollover` defaults to `false`: unused credits expire at the end of the meter period unless you set it to `true`.
+```python Python
+benefit = polar.benefits.create(
+    type="meter_credit",
+    description="1M tokens per month",
+    properties={
+        "meter_id": meter.id,
+        "units": 1_000_000,
+        "rollover": False,
+    },
+)
+```
+
+```bash cURL
+export BENEFIT_ID=$(curl -s -X POST https://sandbox-api.polar.sh/v1/benefits/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "meter_credit",
+    "description": "1M tokens per month",
+    "properties": { "meter_id": "'"$METER_ID"'", "units": 1000000, "rollover": false }
+  }' | jq -r .id)
+```
+</CodeGroup>
+
+The examples use the sandbox client on API version `2026-10`.
+
+### When credits are granted
+
+- **One-time products:** once, at purchase.
+- **Subscriptions:** at the start of every billing cycle, whatever its interval: daily, weekly, monthly or yearly.
+- **Subscriptions with a [meter cycle](/features/usage-based-billing/billing#meter-cycle):** at the start of every meter period instead. A yearly plan with a monthly meter cycle grants credits every month.
+
+No credits are granted while a subscription is `past_due`. When the benefit is revoked, for example because the subscription ended, its credits are removed.
+
+### Rollover
+
+With **Rollover unused credits** on, units left at the end of a period are added to the next one. Without it, they expire. Changing the setting only affects credits granted after the change.
+
+## Grant credits manually
+
+Manual credits are added on top of any credits from a benefit. Use them for goodwill, a top-up outside a purchase, or a correction.
+
+<Note>
+  Granting and reversing manual credits through the API is available from API version 2027-01. The dashboard works on every version.
+</Note>
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Customers** and select the customer
+    - Choose **Add Credits** from the customer menu, or click **Add credits** on a meter row in the **Usage** tab
+    - Pick the **Meter** and enter the **Credits**
+    - Leave **Rollover unused credits to the next billing cycle** checked, or uncheck it
+    - Click **Add credits**
+
+    The panel previews the new balance and, for billed meters, how much of the current overage the credits cover. Rollover is on by default here, unlike in the API.
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar customer_meters credits --customer-id <customer-id> --meter-id <meter-id> \
+      --units 100 --external-id goodwill-2026-11-25
+    ```
+
+    See the [`customer_meters` reference](/integrate/cli/reference/customer_meters).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Give customer user_123 100 extra credits on the AI tokens meter in my Polar sandbox organization, as a goodwill gesture.
+    ```
+
+    Uses the `customer_meters_credits` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+From your code, with the `2027-01` SDK:
+
+<CodeGroup>
+```typescript TypeScript
+import { createPolar } from "@polar-sh/sdk/2027-01";
+
+const polar = createPolar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
+  environment: "sandbox",
+});
+
+const credit = await polar.customerMeters.credits({
+  customer_id: customer.id,
+  meter_id: meter.id,
+  units: 100,
+  rollover: false,
+  external_id: "goodwill-2026-11-25",
+});
+```
+
+```python Python
+import os
+
+from polar.v2027_01 import Polar
+
+polar = Polar(os.environ["POLAR_ACCESS_TOKEN"], environment="sandbox")
+
+credit = polar.customer_meters.credits(
+    customer_id=customer.id,
+    meter_id=meter.id,
+    units=100,
+    rollover=False,
+    external_id="goodwill-2026-11-25",
+)
+```
+
+```bash cURL
+export CREDIT_ID=$(curl -s -X POST https://sandbox-api.polar.sh/v1/customer-meters/credits \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2027-01" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "'"$CUSTOMER_ID"'",
+    "meter_id": "'"$METER_ID"'",
+    "units": 100,
+    "rollover": false,
+    "external_id": "goodwill-2026-11-25"
+  }' | jq -r .id)
+```
+</CodeGroup>
+
+- `units` is a whole number from 1 to 1,000,000,000.
+- `rollover` defaults to `false` in the API: unused credits expire at the end of the meter period.
 - `external_id` is optional. Retrying with the same `external_id` and the same request returns the original credit instead of granting it twice. Reusing it for a different credit returns a `409`.
 - The meter must belong to the customer's organization and can't be archived.
+- The access token needs the `customers:write` scope.
 
-The response is the `meter.credited` event that was recorded. The customer meter balance is updated before the response is returned; if the meter is being updated at the same moment, the balance catches up shortly after.
+The response is the `meter.credited` event that was recorded. The balance is updated before the response returns. If the meter is being updated at the same moment, it catches up shortly after.
 
-### Reversing a manual credit
+A Meter Credits benefit can't be granted by hand through the benefit grants API. Use this endpoint instead.
 
-A manual credit added by mistake can be reversed, either with **Reverse** on the credit in the customer meter's history, or with the [Reverse Customer Meter Credit](/api-reference/2027-01/customer_meters/reverse-customer-meter-credit) endpoint, `POST /v1/customer-meters/credits/{id}/reverse`, where `id` is the ID of the `meter.credited` event returned when the credit was granted.
+### Reverse a manual credit
 
-Reversal removes only the units the customer hasn't used yet; units already consumed stay consumed. Usage draws from non-rollover credits before rollover credits. A reversal is rejected when:
+Reverse a credit added by mistake with **Reverse** on the credit in the customer meter's history, or from the API with the ID of the `meter.credited` event:
+
+<CodeGroup>
+```typescript TypeScript
+await polar.customerMeters.reverseCredit(credit.id);
+```
+
+```python Python
+polar.customer_meters.reverse_credit(credit.id)
+```
+
+```bash cURL
+curl -X POST "https://sandbox-api.polar.sh/v1/customer-meters/credits/$CREDIT_ID/reverse" \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2027-01"
+```
+</CodeGroup>
+
+Your agent can do it with the `customer_meters_reverse_credit` MCP operation. There's no CLI command for it.
+
+A reversal removes only the units the customer hasn't used. Units already consumed stay consumed. Usage draws from non-rollover credits before rollover credits. A reversal is rejected when:
 
 - The credit is older than 7 days.
-- The credit was granted during a period that has already been invoiced.
+- The credit was granted in a period that has already been invoiced.
 - The credit has already been reversed. Each credit can be reversed once.
-- All of the credited units have already been used.
+- All of its units have been used.
 
-Only manual credits can be reversed. Credits granted through the Meter Credits benefit can be removed by revoking the benefit.
+Only manual credits can be reversed. To remove credits from a Meter Credits benefit, revoke the benefit.
 
 ## Credit history
 
 Every credit, reversal and revocation is recorded as a `meter.credited` system event on the customer. Its metadata contains:
 
-- `meter_id`: the meter that was credited.
-- `units`: the number of units. Revoked benefit credits and reversals have negative units.
-- `rollover`: whether unused units carry over to the next meter period.
-- `reason`: `benefit` for credits granted through the Meter Credits benefit, including rolled-over units, or `manual` for credits granted from the dashboard or API.
+| Key | Description |
+| --- | --- |
+| `meter_id` | The credited meter |
+| `units` | The number of units. Negative for revocations and reversals. |
+| `rollover` | Whether unused units carry over to the next meter period |
+| `reason` | `benefit` for the Meter Credits benefit, including rolled-over units, or `manual` for the dashboard or API |
 
-A reversal has `parent_id` set to the ID of the credit it reverses.
+A reversal has `parent_id` set to the ID of the credit it reverses. The history is on the customer's meter page in the dashboard.
 
-## Tracking customer's balance
+## Track the balance
 
-In your application, you'll likely need to track the customer's balance for a given meter. The easiest way to do this is to use the [Customer State](/integrate/customer-state), which will give you the overview of the customer, including the balance for each of their active meters.
+To check one customer by hand, open **Customers**, select the customer and open the **Usage** tab. Each meter shows **Consumed**, **Credited**, **Balance** and **Overages**.
 
-You can also specifically query the meters balance using the [Customer Meters API](/api-reference/current/customer_meters/list-customer-meters).
+In your application, read the balance before you serve usage that needs credits:
 
-<Warning>
-  Polar doesn't block usage if the customer exceeds their balance. You're
-  responsible for implementing the logic you need to prevent usage if they
-  exceed it.
-</Warning>
+- The [customer state](/integrate/customer-state) lists every active meter with `consumed_units`, `credited_units` and `balance`.
+- The [Customer Meters API](/api-reference/current/customer_meters/list-customer-meters) returns the same per meter. From the CLI: `polar customer_meters list --external-customer-id user_123`.
+
+The `customer.state_changed` webhook fires when the state changes, so you can cache it instead of polling.
+
+## From the CLI or your agent
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| Create a Meter Credits benefit | `polar benefits create --type meter_credit` | `benefits_create` |
+| Grant credits manually | `polar customer_meters credits` | `customer_meters_credits` |
+| Reverse a manual credit | Not available | `customer_meters_reverse_credit` |
+| Read balances | `polar customer_meters list` | `customer_meters_list` |
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Usage](/concepts/usage) | How credits and metered prices combine |
+| [Meters](/features/usage-based-billing/meters) | The meter credits are granted on |
+| [Usage-based pricing](/features/usage-based-billing/billing) | Bill overage beyond the credits |
+| [Benefits](/concepts/benefits) | How benefits are granted and revoked |
+| [Credit Customer Meter API](/api-reference/next/customer_meters/credit-customer-meter) | API reference (2027-01) |
+| [Reverse Customer Meter Credit API](/api-reference/next/customer_meters/reverse-customer-meter-credit) | API reference (2027-01) |

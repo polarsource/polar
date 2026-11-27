@@ -39,6 +39,24 @@ variable "api_service_config" {
   })
 }
 
+variable "additional_api_services" {
+  description = "Extra services running the API, keyed by name, each scaled independently"
+  type = map(object({
+    image_url       = optional(string)
+    plan            = optional(string)
+    web_concurrency = optional(string)
+    start_command   = optional(string)
+    custom_domains  = optional(list(object({ name = string })), [])
+    autoscaling = object({
+      min               = number
+      max               = number
+      cpu_percentage    = optional(number, 55)
+      memory_percentage = optional(number, 85)
+    })
+  }))
+  default = {}
+}
+
 variable "workers" {
   description = "Map of worker configurations"
   type = map(object({
@@ -70,6 +88,8 @@ variable "postgres_config" {
     read_password      = string
     read_host_fallback = optional(string)
     read_port_fallback = optional(string)
+    migration_user     = optional(string)
+    migration_password = optional(string)
     sslmode            = optional(string)
     sslrootcert        = optional(string)
   })
@@ -93,6 +113,11 @@ variable "environment_groups" {
       POLAR_GOOGLE_CLIENT_SECRET        = string
       POLAR_GOOGLE_SERVICE_ACCOUNT_JSON = string
     })
+    backoffice_google = object({
+      POLAR_BACKOFFICE_GOOGLE_CLIENT_ID     = string
+      POLAR_BACKOFFICE_GOOGLE_CLIENT_SECRET = string
+      POLAR_BACKOFFICE_GOOGLE_HOSTED_DOMAIN = string
+    })
     pydantic_ai_gateway = object({
       POLAR_PYDANTIC_AI_GATEWAY_API_KEY = string
     })
@@ -100,6 +125,7 @@ variable "environment_groups" {
       POLAR_USER_SESSION_COOKIE_DOMAIN           = string
       POLAR_AUTHENTICATION_SESSION_COOKIE_DOMAIN = string
       POLAR_OAUTH2_SESSION_STATE_COOKIE_DOMAIN   = string
+      POLAR_PROTECTED_OAUTH2_CLIENT_IDS          = string
       POLAR_BASE_URL                             = string
       POLAR_BACKOFFICE_HOST                      = optional(string)
       POLAR_EMAIL_SENDER                         = string
@@ -120,6 +146,8 @@ variable "environment_groups" {
       POLAR_RESEND_API_KEY                       = string
       POLAR_RESEND_ACTIVE_USERS_SEGMENT_ID       = optional(string)
       POLAR_RESEND_WEBHOOK_SECRET                = string
+      POLAR_PAYMENT_RETRY_ALERT_API_KEY          = string
+      POLAR_PAYMENT_RETRY_ALERT_WEBHOOK_SECRET   = string
       POLAR_FIRECRAWL_API_KEY                    = string
       POLAR_LOGO_DEV_PUBLISHABLE_KEY             = string
       POLAR_SENTRY_DSN                           = string
@@ -132,14 +160,16 @@ variable "environment_groups" {
       POLAR_USER_SESSION_COOKIE_KEY              = optional(string)
       POLAR_AUTH_COOKIE_KEY                      = optional(string)
 
-      POLAR_DATABASE_STATEMENT_CACHE_SIZE          = optional(string)
-      POLAR_DATABASE_PREPARED_STATEMENT_CACHE_SIZE = optional(string)
+      POLAR_DATABASE_STATEMENT_CACHE_SIZE               = optional(string)
+      POLAR_DATABASE_PREPARED_STATEMENT_CACHE_SIZE      = optional(string)
+      POLAR_ORGANIZATION_ACCESS_TOKEN_CACHE_TTL_SECONDS = optional(string)
 
       POLAR_LINEAR_API_KEY                            = optional(string)
       POLAR_LINEAR_TEAM_ID                            = optional(string)
       POLAR_LINEAR_PAYOUT_AMOUNT_MISMATCH_TEMPLATE_ID = optional(string)
 
       POLAR_MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID = optional(string)
+      POLAR_CUSTOMER_METER_UNITS_FROM_REDUCER                = optional(string)
     })
     backend_production = object({
       POLAR_CHECKOUT_LINK_HOST             = string
@@ -245,6 +275,7 @@ variable "memory_profile_config" {
   type = object({
     s3_bucket_name = string
     interval       = optional(number, 300)
+    services       = optional(list(string))
   })
   default = null
 }

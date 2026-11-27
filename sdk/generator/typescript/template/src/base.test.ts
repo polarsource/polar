@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { ClientBase, resolveBaseUrl } from "./base";
+import { ClientBase, PolarClientError, PolarNetworkError, resolveBaseUrl } from "./base";
 
 const servers = {
   production: "https://api.polar.sh",
@@ -242,4 +242,27 @@ describe("parseResponse", () => {
 
     await expect(client.parseResponse(response, "json")).resolves.toBeUndefined();
   });
+
+  test.each([
+    ["json", 200],
+    ["text", 200],
+    ["json", 422],
+  ] as const)(
+    "raises a network error when a %s body of a %s fails to arrive",
+    async (responseType, status) => {
+      const body = new ReadableStream({
+        start(controller) {
+          controller.error(
+            new DOMException("The operation was aborted due to timeout", "TimeoutError"),
+          );
+        },
+      });
+      const response = new Response(body, { status });
+      const errors = { 422: class extends PolarClientError {} };
+
+      await expect(client.parseResponse(response, responseType, errors)).rejects.toThrow(
+        PolarNetworkError,
+      );
+    },
+  );
 });

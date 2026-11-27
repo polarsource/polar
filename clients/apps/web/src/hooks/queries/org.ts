@@ -1,4 +1,4 @@
-import revalidate from '@/app/actions'
+import { refreshOrganization, refreshUser } from '@/app/actions'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import {
@@ -7,6 +7,7 @@ import {
   schemas,
   unwrap,
 } from '@polar-sh/client'
+import * as Sentry from '@sentry/nextjs'
 import { skipToken, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -42,10 +43,12 @@ export const useLeaveOrganization = (id: string) =>
         params: { path: { id } },
       })
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      if (result.error) return
       getQueryClient().invalidateQueries({
         queryKey: ['organizations'],
       })
+      await refreshUser().catch((error) => Sentry.captureException(error))
     },
   })
 
@@ -108,8 +111,7 @@ export const useCreateOrganization = () =>
       getQueryClient().invalidateQueries({
         queryKey: ['organizations', data.id],
       })
-      await revalidate(`organizations:${data.id}`, { expire: 0 })
-      await revalidate(`organizations:${data.slug}`, { expire: 0 })
+      await refreshOrganization(data.slug)
     },
   })
 
@@ -118,14 +120,13 @@ export const useUpdateOrganization = () =>
     mutationFn: (variables: {
       id: string
       body: schemas['OrganizationUpdate']
-      userId?: string
     }) => {
       return api.PATCH('/v1/organizations/{id}', {
         params: { path: { id: variables.id } },
         body: variables.body,
       })
     },
-    onSuccess: async (result, variables) => {
+    onSuccess: async (result) => {
       const { data, error } = result
       if (error) {
         return
@@ -136,14 +137,10 @@ export const useUpdateOrganization = () =>
       await getQueryClient().invalidateQueries({
         queryKey: ['organizationReviewState', data.id],
       })
-      await revalidate(`organizations:${data.id}`, { expire: 0 })
-      await revalidate(`organizations:${data.slug}`, { expire: 0 })
-
-      if (variables.userId) {
-        await revalidate(`users:${variables.userId}:organizations`, {
-          expire: 0,
-        })
-      }
+      getQueryClient().invalidateQueries({
+        queryKey: ['organization_email', { organizationId: data.id }],
+      })
+      await refreshOrganization(data.slug)
     },
   })
 
@@ -161,8 +158,7 @@ export const useEnableOrganizationPreviewAccess = (organizationId: string) =>
       getQueryClient().invalidateQueries({
         queryKey: ['organizations', data.id],
       })
-      await revalidate(`organizations:${data.id}`, { expire: 0 })
-      await revalidate(`organizations:${data.slug}`, { expire: 0 })
+      await refreshOrganization(data.slug)
     },
   })
 
@@ -392,7 +388,7 @@ export const useSubmitOrganizationReview = (id: string) =>
       getQueryClient().invalidateQueries({
         queryKey: ['organizationReviewStatus', id],
       })
-      await revalidate(`organizations:${id}`, { expire: 0 })
+      await refreshUser()
     },
   })
 
@@ -479,9 +475,11 @@ export const useDeleteOrganization = () =>
         params: { path: { id: variables.id } },
       })
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      if (result.error) return
       getQueryClient().invalidateQueries({
         queryKey: ['organizations'],
       })
+      await refreshUser().catch((error) => Sentry.captureException(error))
     },
   })

@@ -25,9 +25,9 @@ export const MIGRATION_STEPS: MigrationStepDef[] = [
     key: 'connect',
     short: 'Connect',
     owner: 'you',
-    title: 'Connect your Stripe account',
+    title: 'Connect your billing provider',
     description:
-      'Paste a Stripe restricted API key so Polar can read your products, discounts, customers and subscriptions.',
+      'Paste an API key so Polar can read your products, discounts, customers and subscriptions.',
     steps: ['source_setup'],
   },
   {
@@ -57,10 +57,42 @@ export const MIGRATION_STEPS: MigrationStepDef[] = [
     owner: 'polar',
     title: 'Switch billing to Polar',
     description:
-      'Polar creates and activates the subscriptions you pick, then stops them on Stripe.',
+      'Polar creates and activates the subscriptions you pick, then stops them at your current provider.',
     steps: ['activate_subscriptions'],
   },
 ]
+
+// Lemon Squeezy sells license keys and files, which become Polar benefits
+// between the import and the card move.
+export const BENEFITS_STEP: MigrationStepDef = {
+  key: 'benefits',
+  short: 'Benefits',
+  owner: 'you',
+  title: 'Set up benefits',
+  description:
+    'Polar copies your license keys, files and links from Lemon Squeezy, with the same settings. You can edit them later from Benefits.',
+  steps: ['create_catalog', 'set_up_benefits'],
+}
+
+const LEMON_SQUEEZY_STEPS: MigrationStepDef[] = MIGRATION_STEPS.flatMap((def) =>
+  def.key === 'cards'
+    ? [BENEFITS_STEP, { ...def, steps: ['copy_cards'] }]
+    : [def],
+)
+
+const BENEFITS_ONLY_STEPS: MigrationStepDef[] = LEMON_SQUEEZY_STEPS.filter(
+  (def) => def.key !== 'cards' && def.key !== 'cutover',
+)
+
+export function migrationSteps(
+  source: schemas['MerchantMigration']['source_platform'],
+  benefitsOnly = false,
+): MigrationStepDef[] {
+  if (source !== 'lemon_squeezy') {
+    return MIGRATION_STEPS
+  }
+  return benefitsOnly ? BENEFITS_ONLY_STEPS : LEMON_SQUEEZY_STEPS
+}
 
 export const OWNER_LABELS: Record<StepOwner, string | null> = {
   you: null,
@@ -69,8 +101,8 @@ export const OWNER_LABELS: Record<StepOwner, string | null> = {
   stripe: 'Stripe',
 }
 
-// Where the merchant is. `cleanup` and `completed` map to no visible step, so
-// they get their own case rather than being clamped onto the last one.
+// Where the merchant is. `completed` maps to no visible step, so it gets its
+// own case rather than being clamped onto the last one.
 export type MigrationPosition =
   | { kind: 'step'; index: number }
   | { kind: 'completed' }
@@ -90,28 +122,35 @@ export function visibleMigrationStep(
   return migration.step
 }
 
-// Backend steps map to a visible step through `MIGRATION_STEPS`, with two
+// Backend steps map to a visible step through `migrationSteps`, with two
 // exceptions: `source_setup`, where connecting completes Connect even though
 // the backend still reads it, so once connected we surface Assessment; and the
-// trailing steps (`cleanup`, `completed`) that no visible step covers, which
-// fall through to `completed` below.
+// trailing steps that no visible step covers, which fall through to `completed`
+// below.
 export function currentPosition(
   migration: schemas['MerchantMigration'],
   panCurrentStepKey?: string | null,
+  benefitsOnly = false,
 ): MigrationPosition {
   if (!migration.source_connected) {
     return { kind: 'step', index: 0 }
   }
   const visible = visibleMigrationStep(migration, panCurrentStepKey)
   const step = visible === 'source_setup' ? 'pre_check' : visible
-  const index = MIGRATION_STEPS.findIndex((def) => def.steps.includes(step))
+  const index = migrationSteps(
+    migration.source_platform,
+    benefitsOnly,
+  ).findIndex((def) => def.steps.includes(step))
   return index === -1 ? { kind: 'completed' } : { kind: 'step', index }
 }
 
 export function currentStepDef(
   migration: schemas['MerchantMigration'],
   panCurrentStepKey?: string | null,
+  benefitsOnly = false,
 ): MigrationStepDef | null {
-  const position = currentPosition(migration, panCurrentStepKey)
-  return position.kind === 'completed' ? null : MIGRATION_STEPS[position.index]
+  const position = currentPosition(migration, panCurrentStepKey, benefitsOnly)
+  return position.kind === 'completed'
+    ? null
+    : migrationSteps(migration.source_platform, benefitsOnly)[position.index]
 }

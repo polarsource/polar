@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from pydantic import MISSING
 from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
@@ -20,7 +21,8 @@ from sqlalchemy import (
     tuple_,
 )
 from sqlalchemy.exc import MultipleResultsFound
-from sqlalchemy.orm import aliased, joinedload
+from sqlalchemy.orm import aliased, joinedload, with_polymorphic
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import Agent, AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
@@ -53,8 +55,12 @@ from polar.models import (
     MeterEvent,
     Product,
     ProductPrice,
+    ProductPriceMeteredTiers,
+    ProductPriceMeteredUnit,
     SubscriptionProductPrice,
 )
+from polar.models.catalog import CatalogStatus
+from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.reducer.service import reducer as reducer_service
@@ -78,6 +84,7 @@ METER_LOCKED_FIELDS = ("filter", "aggregation")
 METER_LOCKED_FIELD_MESSAGE = (
     "This field can't be updated because the meter is already aggregating events."
 )
+UNIQUE_AGGREGATION_UNSUPPORTED_MESSAGE = "Unique aggregations aren't supported."
 
 
 class AmbiguousExternalMeterID(PolarError):
@@ -99,6 +106,8 @@ class MeterService:
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         external_id: Sequence[str] | None = None,
+        catalog_id: Sequence[uuid.UUID] | None = None,
+        catalog_status: Sequence[CatalogStatus] | None = None,
         metadata: MetadataQuery | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
@@ -112,6 +121,10 @@ class MeterService:
             session, auth_subject, permission=OrganizationPermission.products_read
         )
         statement = repository.get_statement_by_org_ids(org_ids)
+        if catalog_id is not None or catalog_status is not None:
+            statement = repository.apply_catalog_filter(
+                statement, org_ids, catalog_id, catalog_status
+            )
 
         if organization_id is not None:
             statement = statement.where(Meter.organization_id.in_(organization_id))
@@ -133,7 +146,7 @@ class MeterService:
         if metadata is not None:
             statement = apply_metadata_clause(Meter, statement, metadata)
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == MeterSortProperty.created_at:
@@ -175,7 +188,7 @@ class MeterService:
         )
         statement = (
             repository.get_statement_by_org_ids(org_ids)
-            .where(Meter.external_id == external_id)
+            .where(Meter.external_id == external_id, Meter.is_current)
             .options(joinedload(Meter.last_billed_event))
         )
         try:
@@ -203,7 +216,7 @@ class MeterService:
 
         repository = MeterRepository.from_session(session)
         if (
-            meter_create.external_id is not None
+            meter_create.external_id is not MISSING
             and await repository.get_by_external_id_and_organization(
                 meter_create.external_id, organization.id
             )
@@ -226,7 +239,26 @@ class MeterService:
         session: AsyncSession,
         organization: Organization,
         meter_create: MeterCreateBase,
+        *,
+        draft: bool = False,
     ) -> Meter:
+        """Create a meter. A draft's meter isn't current and matches no events
+        until `activate` runs when the draft is published."""
+        if (
+            organization.is_reducer_billing_enabled
+            and meter_create.aggregation.func == AggregationFunction.unique
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "aggregation"),
+                        "msg": UNIQUE_AGGREGATION_UNSUPPORTED_MESSAGE,
+                        "input": meter_create.aggregation,
+                    }
+                ]
+            )
+
         repository = MeterRepository.from_session(session)
         meter = await repository.create(
             Meter(
@@ -236,12 +268,17 @@ class MeterService:
                 filter=meter_create.filter,
                 aggregation=meter_create.aggregation,
                 organization=organization,
+                is_current=not draft,
             ),
             flush=True,
         )
+        if not draft:
+            await self.activate(session, meter)
+        return meter
 
-        # Retrieve the latest matching event for the meter and set it as the last billed event
-        # This is done to ensure that the meter is billed from the last event onwards
+    async def activate(self, session: AsyncSession, meter: Meter) -> None:
+        """Start billing the meter from its latest matching event onwards."""
+        repository = MeterRepository.from_session(session)
         event_repository = EventRepository.from_session(session)
         statement = (
             event_repository.get_meter_statement(meter)
@@ -258,36 +295,38 @@ class MeterService:
         enqueue_job("reducer.invalidate_cache", meter.organization_id)
         enqueue_job("meter.backfill_events", meter.id)
 
-        return meter
-
     async def update(
         self,
         session: AsyncSession,
         meter: Meter,
         meter_update: MeterUpdate,
         auth_subject: AuthSubject[User | Organization | Agent],
+        *,
+        declarative_config: bool = False,
     ) -> Meter:
         await assert_resource_permission(
             session, auth_subject, meter, OrganizationPermission.products_manage
         )
-        await assert_catalog_editable(session, meter.organization_id)
+        if not declarative_config:
+            await assert_catalog_editable(session, meter.organization_id)
         repository = MeterRepository.from_session(session)
 
         errors: list[ValidationError] = []
         if meter.last_billed_event is not None:
             for sensitive_field in METER_LOCKED_FIELDS:
-                if sensitive_field in meter_update.model_fields_set:
+                value = getattr(meter_update, sensitive_field)
+                if value is not MISSING:
                     errors.append(
                         {
                             "type": "forbidden",
                             "loc": ("body", sensitive_field),
                             "msg": METER_LOCKED_FIELD_MESSAGE,
-                            "input": getattr(meter_update, sensitive_field),
+                            "input": value,
                         }
                     )
 
         if (
-            meter_update.external_id is not None
+            isinstance(meter_update.external_id, str)
             and meter_update.external_id != meter.external_id
             and await repository.get_by_external_id_and_organization(
                 meter_update.external_id, meter.organization_id
@@ -302,6 +341,22 @@ class MeterService:
                 }
             )
 
+        if (
+            meter_update.aggregation is not MISSING
+            and meter_update.aggregation.func == AggregationFunction.unique
+            and await OrganizationRepository.from_session(session).get_ids_with_feature(
+                {meter.organization_id}, "reducer_billing_enabled"
+            )
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "aggregation"),
+                    "msg": UNIQUE_AGGREGATION_UNSUPPORTED_MESSAGE,
+                    "input": meter_update.aggregation,
+                }
+            )
+
         if errors:
             raise PolarRequestValidationError(errors)
 
@@ -310,13 +365,13 @@ class MeterService:
             exclude_unset=True,
             exclude={"filter", "aggregation", "is_archived"},
         )
-        if meter_update.filter is not None:
+        if meter_update.filter is not MISSING:
             update_dict["filter"] = meter_update.filter
-        if meter_update.aggregation is not None:
+        if meter_update.aggregation is not MISSING:
             update_dict["aggregation"] = meter_update.aggregation
 
         # Handle archiving/unarchiving
-        if meter_update.is_archived is not None:
+        if meter_update.is_archived is not MISSING:
             if meter_update.is_archived:
                 meter = await self.archive(session, meter)
             else:
@@ -328,17 +383,19 @@ class MeterService:
         return meter
 
     async def archive(self, session: AsyncSession, meter: Meter) -> Meter:
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         # Check if meter is attached to any active metered price
         active_prices = await session.scalar(
-            select(func.count(ProductPrice.id))
+            select(func.count(price.id))
             .join(Product)
             .where(
                 ~Product.is_archived,
-                ProductPrice.is_metered,
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id == meter.id,
-                ~ProductPrice.is_archived,
-                ~ProductPrice.is_deleted,
+                price.is_metered,
+                price.ProductPriceMeteredUnit.meter_id == meter.id,
+                ~price.is_archived,
+                ~price.is_deleted,
             )
         )
 
@@ -635,11 +692,11 @@ class MeterService:
             has_events_after_last_billed,
         )
         base_statement = (
-            repository.get_base_statement()
+            repository.get_active_statement()
             .outerjoin(
                 last_billed_event, last_billed_event.id == Meter.last_billed_event_id
             )
-            .where(Meter.archived_at.is_(None), has_unbilled_events)
+            .where(has_unbilled_events)
         )
         count_result = await session.execute(
             base_statement.with_only_columns(func.count())
@@ -750,7 +807,7 @@ class MeterService:
         self,
         session: AsyncSession,
         meter: Meter,
-        events_statement: Select[tuple[Event]],
+        events_statement: Select[Event],
     ) -> float:
         statement = (
             events_statement.where(meter.aggregation.get_sql_clause(Event))
@@ -759,8 +816,7 @@ class MeterService:
             )
             .order_by(None)
         )
-        result = await session.scalar(statement)
-        return result or 0.0
+        return float(await session.scalar(statement) or 0)
 
 
 meter = MeterService()

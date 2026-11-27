@@ -30,7 +30,7 @@ function hasChanges(current: string[], original: string[]) {
   if (current.length !== original.length) {
     return true
   }
-  // Only sort/join when lengths match
+  // Only sort when lengths match
   const currentSorted = current.toSorted()
   const originalSorted = original.toSorted()
   for (let i = 0; i < currentSorted.length; i++) {
@@ -43,6 +43,7 @@ function hasChanges(current: string[], original: string[]) {
 ```
 
 This new approach is more efficient because:
+
 - It avoids the overhead of sorting and joining the arrays when lengths differ
 - It avoids consuming memory for the joined strings (especially important for large arrays)
 - It avoids mutating the original arrays

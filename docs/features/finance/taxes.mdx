@@ -1,0 +1,59 @@
+---
+title: "Taxes and income export"
+sidebarTitle: "Taxes"
+description: "See the sales tax Polar collected and remitted for you per jurisdiction, and export your income as a CSV."
+---
+
+As your [Merchant of Record](/merchant-of-record/introduction), Polar collects sales tax on every order and remits it to the tax authorities. You don't register or file anywhere for it. **Finance → Taxes** shows what Polar handled for you, and **Finance → Income** lets you export your transactions for your own bookkeeping.
+
+<Note>Dashboard only. Taxes and the income export aren't available from the CLI or MCP server. Viewing them needs the **Finance**, **Admin** or **Owner** role.</Note>
+
+## Tax remitted by Polar
+
+Open **Finance → Taxes**. The page shows, for the selected date range:
+
+- **Tax remitted by Polar:** the total tax Polar collected and pays on your behalf.
+- **Jurisdictions covered:** how many jurisdictions your customers paid tax in, and how many orders that covers.
+- **Breakdown:** one row per jurisdiction with its **Orders**, **Status** and **Tax handled**.
+
+The date range defaults to the current month. Change it with the date picker above the breakdown.
+
+| Column | Meaning |
+| --- | --- |
+| **Jurisdiction** | The country, or the state or province for the US and Canada. Everywhere else is grouped by country. |
+| **Orders** | Orders with tax in that jurisdiction |
+| **Status** | **Handled**: Polar collects and remits this tax |
+| **Tax handled** | Net tax for that jurisdiction, in the currency it was charged in |
+
+Amounts are net: tax returned on refunds and disputes is subtracted, and added back if a refund or dispute is reversed.
+
+<Warning>
+  Polar handles sales tax, such as VAT, GST and US sales tax. You're still responsible for income tax on your earnings in your own country.
+</Warning>
+
+## Export income
+
+To download your transactions as a CSV:
+
+1. Open **Finance → Income**.
+2. Click **Export**.
+3. Pick a **Date range**.
+4. Select the columns you want.
+5. Download the file.
+
+| Group | Columns |
+| --- | --- |
+| Transaction | **Created At**, **Type**, **Product**, **Status**, **Paid out at**, **Invoice number**, **Order ID** |
+| Amounts | **Gross**, **Fees**, **Tax**, **Net**, **Currency** |
+
+All columns except **Invoice number** and **Order ID** are selected by default.
+
+For the transactions included in one payout, use **Download CSV** on that payout instead. See [Payout documents](/features/finance/payouts#payout-documents).
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Merchant of Record](/merchant-of-record/introduction) | How Polar handles sales tax and VAT for you |
+| [Tax-inclusive pricing](/features/tax-inclusive-pricing) | Set whether prices include tax |
+| [Balance and payouts](/features/finance/payouts) | Your balance, fee lines, reverse invoices and 1099-K forms |

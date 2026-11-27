@@ -4,8 +4,10 @@ from collections.abc import AsyncIterator, Sequence
 from typing import Any, Literal
 
 import structlog
+from pydantic import MISSING
 from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, select
 from sqlalchemy.exc import DBAPIError, IntegrityError
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import Agent, AuthSubject, is_agent, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
@@ -14,6 +16,7 @@ from polar.authz.service import (
     assert_organization_permission,
     assert_resource_permission,
 )
+from polar.customer.repository import CustomerRepository
 from polar.discount.repository import (
     DiscountRedemptionRepository,
     DiscountRepository,
@@ -29,6 +32,7 @@ from polar.models import (
     Customer,
     Discount,
     DiscountProduct,
+    Order,
     Organization,
     Product,
     User,
@@ -36,6 +40,7 @@ from polar.models import (
 from polar.models.checkout import Checkout
 from polar.models.discount import DiscountFixed, DiscountType
 from polar.models.discount_redemption import DiscountRedemption
+from polar.models.order import OrderStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
@@ -72,7 +77,6 @@ class DiscountService(ResourceServiceReader[Discount]):
         auth_subject: AuthSubject[User | Organization | Agent],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
-        external_id: Sequence[str] | None = None,
         query: str | None = None,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[DiscountSortProperty]] = (
@@ -84,9 +88,6 @@ class DiscountService(ResourceServiceReader[Discount]):
         if organization_id is not None:
             statement = statement.where(Discount.organization_id.in_(organization_id))
 
-        if external_id is not None:
-            statement = statement.where(Discount.external_id.in_(external_id))
-
         if query is not None:
             statement = statement.where(
                 or_(
@@ -95,7 +96,7 @@ class DiscountService(ResourceServiceReader[Discount]):
                 )
             )
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == DiscountSortProperty.created_at:
@@ -151,11 +152,6 @@ class DiscountService(ResourceServiceReader[Discount]):
                 repository, discount_create.code, organization.id
             )
 
-        if discount_create.external_id is not None:
-            await self._assert_external_id_available(
-                repository, discount_create.external_id, organization.id
-            )
-
         discount_products: list[DiscountProduct] = []
         if discount_create.products:
             product_repository = ProductRepository.from_session(session)
@@ -203,10 +199,6 @@ class DiscountService(ResourceServiceReader[Discount]):
                 await self._assert_code_available(
                     repository, discount_create.code, organization.id
                 )
-            if discount_create.external_id is not None:
-                await self._assert_external_id_available(
-                    repository, discount_create.external_id, organization.id
-                )
             raise
 
         if notify:
@@ -234,26 +226,6 @@ class DiscountService(ResourceServiceReader[Discount]):
                 ]
             )
 
-    async def _assert_external_id_available(
-        self,
-        repository: DiscountRepository,
-        external_id: str,
-        organization_id: uuid.UUID,
-    ) -> None:
-        if await repository.get_by_external_id_and_organization(
-            external_id, organization_id
-        ):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "external_id"),
-                        "msg": "A discount with this external ID already exists.",
-                        "input": external_id,
-                    }
-                ]
-            )
-
     async def update(
         self,
         session: AsyncSession,
@@ -266,7 +238,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         )
 
         if (
-            "duration" in discount_update.model_fields_set
+            discount_update.duration is not MISSING
             and discount_update.duration != discount.duration
         ):
             raise PolarRequestValidationError(
@@ -280,7 +252,10 @@ class DiscountService(ResourceServiceReader[Discount]):
                 ]
             )
 
-        if discount_update.type is not None and discount_update.type != discount.type:
+        if (
+            discount_update.type is not MISSING
+            and discount_update.type != discount.type
+        ):
             raise PolarRequestValidationError(
                 [
                     {
@@ -292,7 +267,7 @@ class DiscountService(ResourceServiceReader[Discount]):
                 ]
             )
 
-        if discount_update.code is not None:
+        if discount_update.code is not MISSING and discount_update.code is not None:
             existing_discount = await self.get_by_code_and_organization(
                 session, discount_update.code, discount.organization, redeemable=False
             )
@@ -308,45 +283,22 @@ class DiscountService(ResourceServiceReader[Discount]):
                     ]
                 )
 
-        if (
-            "external_id" in discount_update.model_fields_set
-            and discount_update.external_id != discount.external_id
-        ):
-            if discount.external_id is not None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "external_id"),
-                            "msg": "Discount external ID cannot be updated.",
-                            "input": discount_update.external_id,
-                        }
-                    ]
-                )
-            if discount_update.external_id is not None:
-                await self._assert_external_id_available(
-                    DiscountRepository.from_session(session),
-                    discount_update.external_id,
-                    discount.organization_id,
-                )
-
         if discount.redemptions_count > 0:
             for field in DISCOUNT_LOCKED_FIELDS[discount.type]:
-                if field in discount_update.model_fields_set:
-                    discount_update_value = getattr(discount_update, field)
-                    if discount_update_value != getattr(discount, field, None):
-                        raise PolarRequestValidationError(
-                            [
-                                {
-                                    "type": "value_error",
-                                    "loc": ("body", field),
-                                    "msg": DISCOUNT_LOCKED_FIELD_MESSAGE,
-                                    "input": getattr(discount, field),
-                                }
-                            ]
-                        )
+                value = getattr(discount_update, field, MISSING)
+                if value is not MISSING and value != getattr(discount, field, None):
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", field),
+                                "msg": DISCOUNT_LOCKED_FIELD_MESSAGE,
+                                "input": value,
+                            }
+                        ]
+                    )
 
-        if discount_update.products is not None:
+        if discount_update.products is not MISSING:
             async with session.begin_nested():
                 discount.discount_products = []
                 await session.flush()
@@ -369,20 +321,28 @@ class DiscountService(ResourceServiceReader[Discount]):
                         )
                     discount.discount_products.append(DiscountProduct(product=product))
 
-        exclude = {"products"}
+        exclude = {"products", "amount", "currency"}
         if isinstance(discount, DiscountFixed):
             exclude.add("basis_points")
-            if (
-                isinstance(discount_update, legacy_schemas.DiscountUpdate)
-                and discount_update.amount
-                and discount_update.currency
-            ):
-                discount.amounts = {discount_update.currency: discount_update.amount}
-                exclude.add("amount")
-                exclude.add("currency")
+            if isinstance(discount_update, legacy_schemas.DiscountUpdate):
+                amount, currency = discount_update.amount, discount_update.currency
+                if amount is not MISSING and currency is not MISSING:
+                    discount.amounts = {currency: amount}
+                elif amount is not MISSING or currency is not MISSING:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "missing",
+                                "loc": (
+                                    "body",
+                                    "amount" if amount is MISSING else "currency",
+                                ),
+                                "msg": "Both amount and currency must be set together.",
+                                "input": None,
+                            }
+                        ]
+                    )
         else:
-            exclude.add("amount")
-            exclude.add("currency")
             exclude.add("amounts")
         for attr, value in discount_update.model_dump(
             exclude_unset=True, exclude=exclude, by_alias=True
@@ -442,10 +402,10 @@ class DiscountService(ResourceServiceReader[Discount]):
         ):
             return None
 
-        if products is not None and len(discount.products) > 0:
-            for product in products:
-                if product not in discount.products:
-                    return None
+        if products is not None and not all(
+            discount.applies_to_product(product) for product in products
+        ):
+            return None
 
         if redeemable and not await self.is_redeemable_discount(session, discount):
             return None
@@ -500,7 +460,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         ):
             return None
 
-        if len(discount.products) > 0 and product not in discount.products:
+        if not discount.applies_to_product(product):
             return None
 
         return discount
@@ -525,7 +485,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         session: AsyncSession,
         discount: Discount,
         *,
-        checkout: Checkout,
+        checkout: Checkout | None = None,
         customer: Customer | None = None,
         payment_method_fingerprint: str | None = None,
     ) -> bool:
@@ -542,12 +502,11 @@ class DiscountService(ResourceServiceReader[Discount]):
         if discount.max_redemptions_per_customer is None:
             return False
 
-        customer_id = customer.id if customer is not None else checkout.customer_id
-        email = (
-            customer.email
-            if customer is not None and customer.email
-            else checkout.customer_email
-        )
+        customer_id = customer.id if customer is not None else None
+        email = customer.email if customer is not None else None
+        if checkout is not None:
+            customer_id = customer_id or checkout.customer_id
+            email = email or checkout.customer_email
 
         try:
             customer_email = unalias_email(email).lower() if email else None
@@ -557,12 +516,45 @@ class DiscountService(ResourceServiceReader[Discount]):
         repository = DiscountRedemptionRepository.from_session(session)
         count = await repository.count_redemptions_by_customer(
             discount.id,
-            exclude_checkout_id=checkout.id,
+            exclude_checkout_id=checkout.id if checkout is not None else None,
             customer_id=customer_id,
             customer_email=customer_email,
             payment_method_fingerprint=payment_method_fingerprint,
         )
         return count >= discount.max_redemptions_per_customer
+
+    @contextlib.asynccontextmanager
+    async def redeem_order_discount(
+        self, session: AsyncSession, order: Order
+    ) -> AsyncIterator[None]:
+        if order.status != OrderStatus.draft or (discount := order.discount) is None:
+            yield
+            return
+
+        subscription = order.subscription
+        assert subscription is not None
+        if discount.id == subscription.discount_id:
+            yield
+            return
+
+        product = order.product
+        assert product is not None
+        if discount.is_deleted or not discount.is_applicable(product, order.currency):
+            raise DiscountNotRedeemableError(discount)
+
+        if discount.max_redemptions_per_customer is not None:
+            await CustomerRepository.from_session(session).get_by_id(
+                order.customer_id, for_update=True
+            )
+            if await self.check_per_customer_limit_reached(
+                session, discount, customer=order.customer
+            ):
+                raise DiscountNotRedeemableError(discount)
+
+        async with self.redeem_discount(session, discount) as redemption:
+            redemption.order = order
+            redemption.subscription = subscription
+            yield
 
     @contextlib.asynccontextmanager
     async def redeem_discount(
@@ -619,7 +611,7 @@ class DiscountService(ResourceServiceReader[Discount]):
 
     def _get_readable_discount_statement(
         self, auth_subject: AuthSubject[User | Organization | Agent]
-    ) -> Select[tuple[Discount]]:
+    ) -> Select[Discount]:
         statement = select(Discount).where(~Discount.is_deleted)
 
         if is_user(auth_subject) or is_agent(auth_subject):

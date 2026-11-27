@@ -8,6 +8,34 @@ variable "planetscale_organization" {
   sensitive   = true
 }
 
+variable "planetscale_app_password" {
+  description = "Password for the PlanetScale app role returned by module.planetscale.app_role_username."
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.planetscale_app_password) > 0
+    error_message = "Set planetscale_app_password before switching production to PlanetScale."
+  }
+}
+
+variable "planetscale_migrator_password" {
+  description = "Password for the PlanetScale migrator role returned by module.planetscale.migrator_role_username."
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.planetscale_migrator_password) > 0
+    error_message = "Set planetscale_migrator_password before running production migrations as the migrator role."
+  }
+}
+
+variable "planetscale_metrics_token" {
+  description = "PlanetScale service token with read_metrics_endpoints, as <token id>:<token>."
+  type        = string
+  sensitive   = true
+}
+
 variable "ghcr_auth_token" {
   description = "GitHub Container Registry auth token (Personal Access Token with read:packages scope)"
   type        = string
@@ -388,7 +416,7 @@ variable "lambda_worker_tailscale_token" {
 }
 
 variable "ec2_tailscale_oauth_client_secret" {
-  description = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:production"
+  description = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:production, and DNS write permission"
   type        = string
   sensitive   = true
 }
@@ -450,10 +478,10 @@ variable "attio_design_partner_list_id" {
   sensitive   = true
 }
 
-variable "mcp_oauth2_client_id" {
-  description = "MCP OAuth2 client ID for the Vercel frontend"
-  type        = string
-  sensitive   = true
+variable "protected_oauth2_client_ids" {
+  description = "OAuth2 client IDs excluded from stale cleanup"
+  type        = list(string)
+  nullable    = false
 }
 
 variable "mcp_oauth2_client_secret" {
@@ -554,18 +582,6 @@ variable "private_backoffice_tailscale_ip" {
   }
 }
 
-variable "render_api_key" {
-  description = "Render API key"
-  type        = string
-  sensitive   = true
-}
-
-variable "backup_alert_slack_bot_token" {
-  description = "Slack bot token for database backup copy failure alerts"
-  type        = string
-  sensitive   = true
-}
-
 variable "linear_api_key" {
   description = "Linear API key"
   type        = string
@@ -582,5 +598,35 @@ variable "linear_team_id" {
 variable "linear_payout_amount_mismatch_template_id" {
   description = "Linear payout amount mismatch issue template ID"
   type        = string
+  default     = ""
+}
+
+variable "backoffice_google_client_id" {
+  description = "Backoffice Google OAuth client ID"
+  type        = string
+}
+
+variable "backoffice_google_client_secret" {
+  description = "Backoffice Google OAuth client secret"
+  type        = string
+  sensitive   = true
+}
+
+variable "backoffice_google_hosted_domain" {
+  description = "Backoffice Google Workspace hosted domain"
+  type        = string
+}
+
+variable "payment_retry_alert_api_key" {
+  description = "PaymentRetryAlert API key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "payment_retry_alert_webhook_secret" {
+  description = "PaymentRetryAlert webhook signing secret"
+  type        = string
+  sensitive   = true
   default     = ""
 }

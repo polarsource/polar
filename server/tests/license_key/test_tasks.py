@@ -212,7 +212,8 @@ class TestSyncBenefitGrant:
         await sync_benefit_grant(license_key.id)
 
         revoke_benefit_mock.assert_called_once()
-        assert revoke_benefit_mock.call_args.kwargs["member"].id == member.id
+        assert revoke_benefit_mock.call_args.kwargs["grant"].id == grant.id
+        assert revoke_benefit_mock.call_args.kwargs["member"].id == grant.member_id
 
     async def test_deleted_customer_is_not_re_granted(
         self,

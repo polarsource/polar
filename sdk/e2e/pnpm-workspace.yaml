@@ -1,1 +1,6 @@
 minimumReleaseAge: 10080
+minimumReleaseAgeExclude:
+  - 'tinypool@2.1.2'
+
+overrides:
+  'tinypool@<2.1.2': '2.1.2'

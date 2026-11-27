@@ -2,11 +2,8 @@
 
 import { useModal } from '@/components/Modal/useModal'
 import { RefundModal } from '@/components/Refunds/RefundModal'
-import {
-  RefundReasonDisplay,
-  RefundStatusDisplayColor,
-  RefundStatusDisplayTitle,
-} from '@/components/Refunds/utils'
+import { RefundStatus } from '@/components/Refunds/RefundStatus'
+import { RefundReasonDisplay } from '@/components/Refunds/utils'
 import { useRefunds } from '@/hooks/queries/refunds'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -67,14 +64,18 @@ export const OrderRefundsSection = ({ order }: { order: schemas['Order'] }) => {
                 ),
             },
             {
+              accessorKey: 'tax_amount',
+              header: 'Tax Amount',
+              cell: ({ row }) =>
+                formatCurrency('standard')(
+                  row.original.tax_amount,
+                  row.original.currency,
+                ),
+            },
+            {
               accessorKey: 'status',
               header: 'Status',
-              cell: ({ row }) => (
-                <Status
-                  color={RefundStatusDisplayColor[row.original.status]}
-                  status={RefundStatusDisplayTitle[row.original.status]}
-                />
-              ),
+              cell: ({ row }) => <RefundStatus status={row.original.status} />,
             },
             {
               accessorKey: 'reason',

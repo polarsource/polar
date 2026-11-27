@@ -2,12 +2,12 @@
 title: "TypeScript SDK"
 sidebarTitle: "TypeScript"
 icon: js
-description: SDK for JavaScript runtimes (Node.js and Browser)
+description: "Install and configure @polar-sh/sdk: create a versioned client, switch between sandbox and production, page through lists, handle errors and batch usage events."
 ---
 
-The official TypeScript SDK provides a fully typed client for the Polar API.
+`@polar-sh/sdk` is the official TypeScript client for the Polar API. It requires Node.js 24 or later.
 
-## Installation
+## Install
 
 <Tabs>
   <Tab title="npm">
@@ -27,49 +27,115 @@ The official TypeScript SDK provides a fully typed client for the Polar API.
   </Tab>
 </Tabs>
 
-## Quickstart
+## Create a client
 
-Create an [organization access token](/integrate/oat) for server-side use, keep it out of browser bundles, store it in `POLAR_ACCESS_TOKEN`, and make your first request:
+Create an [organization access token](/integrate/oat) in **Settings → Access Tokens**, or run `polar auth token`, and store it in `POLAR_ACCESS_TOKEN`. Then make your first request:
 
-```typescript icon="square-js" index.js
+```typescript index.ts
 import { createPolar } from "@polar-sh/sdk/2026-10";
 
 const polar = createPolar({
   accessToken: process.env.POLAR_ACCESS_TOKEN!,
-});
-
-const customerState = await polar.customers.getStateExternal("customer_external_id");
-console.log(customerState);
-```
-
-The import path pins your client to the `2026-10` API version.
-
-## Sandbox environment
-
-The client uses production by default. Pass `environment: "sandbox"` to use the isolated [sandbox environment](/integrate/sandbox):
-
-```typescript
-const polar = createPolar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN!,
   environment: "sandbox",
 });
+
+const state = await polar.customers.getStateExternal("user_123");
+console.log(state.active_subscriptions);
 ```
 
-[View the source code on GitHub](https://github.com/polarsource/polar/tree/main/sdk/typescript).
+The import path pins the client to API version `2026-10`: its types and the `Polar-Version` header it sends. See [SDKs](/integrate/sdk/introduction#api-versions).
+
+Use the token on your server only. Never bundle it into browser code.
+
+### Options
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `accessToken` | Required | An organization access token, or a user's [OAuth 2.0](/integrate/oauth2/introduction) access token |
+| `environment` | `"production"` | `"sandbox"` calls `https://sandbox-api.polar.sh`. A token only works in the environment it was created in. |
+| `timeout` | `5` | Request timeout in seconds. Override it per request with `{ timeout }` as the last argument. |
+| `organizationId` | None | The organization to act on, for tokens that can access more than one |
+
+## List resources
+
+List methods return one page. `iterList` yields every item across pages:
+
+```typescript
+for await (const product of polar.products.iterList({ is_archived: false })) {
+  console.log(product.name);
+}
+```
+
+## Handle errors
+
+Every SDK error extends `PolarError`, exported from `@polar-sh/sdk`. Errors the API documents, such as `ResourceNotFound`, have their own classes under `errors`:
+
+```typescript
+import { PolarRateLimitError } from "@polar-sh/sdk";
+import { errors } from "@polar-sh/sdk/2026-10";
+
+try {
+  await polar.customers.getStateExternal("user_123");
+} catch (error) {
+  if (error instanceof errors.ResourceNotFound) {
+    // No customer with this external ID
+  } else if (error instanceof PolarRateLimitError) {
+    // Retry after error.retryAfter seconds
+  } else {
+    throw error;
+  }
+}
+```
+
+## Verify webhooks
+
+`webhooks.validateEvent` checks the signature and returns a typed event:
+
+```typescript
+import { webhooks } from "@polar-sh/sdk/2026-10";
+
+const event = await webhooks.validateEvent(body, headers, process.env.POLAR_WEBHOOK_SECRET!);
+```
+
+See [Handle deliveries](/integrate/webhooks/delivery) for a full handler.
+
+## Send usage events
+
+`polar.events.ingest` sends a list of usage events in one request:
+
+```typescript
+await polar.events.ingest({
+  events: [
+    {
+      name: "ai_usage",
+      external_customer_id: "user_123",
+      metadata: { total_tokens: 77 },
+    },
+  ],
+});
+```
+
+See [Send events](/features/usage-based-billing/event-ingestion) for batching, duplicates and limits.
 
 ## Framework adapters
 
-Implement Checkout & Webhook handlers in few lines of code.
+Adapters add checkout, Customer Portal and webhook routes in a few lines:
 
 - [Better Auth](/integrate/sdk/adapters/better-auth)
 - [Next.js](/integrate/sdk/adapters/nextjs)
 - [Nuxt](/integrate/sdk/adapters/nuxt)
 - [TanStack Start](/integrate/sdk/adapters/tanstack-start)
 
-Adapters for other frameworks are deprecated, use the SDK directly instead.
-The [`polar-integration` skill](https://github.com/polarsource/agent-toolkit/tree/main/skills/polar-integration)
-can help you integrate or migrate:
+Adapters for other frameworks are deprecated. Use the SDK directly instead. The [`polar-integration` skill](https://github.com/polarsource/agent-toolkit/tree/main/skills/polar-integration) helps your coding agent integrate or migrate:
 
 ```bash
 npx skills add https://github.com/polarsource/agent-toolkit --skill polar-integration
 ```
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Source on GitHub](https://github.com/polarsource/polar/tree/main/sdk/typescript) | The SDK's code |
+| [API reference](/api-reference/current) | Every operation, with TypeScript samples |
+| [Authentication](/integrate/authentication) | Which token to use |

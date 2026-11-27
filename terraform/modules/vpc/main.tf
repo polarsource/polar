@@ -13,11 +13,19 @@ resource "aws_internet_gateway" "this" {
 }
 
 resource "aws_subnet" "public" {
-  vpc_id            = aws_vpc.this.id
-  cidr_block        = cidrsubnet(var.cidr_block, 4, 0)
-  availability_zone = var.availability_zones[0]
+  count = length(var.availability_zones)
+
+  vpc_id = aws_vpc.this.id
+  # Netnum 0 is the original public subnet; 1..n belong to the primary private subnets.
+  cidr_block        = cidrsubnet(var.cidr_block, 4, count.index == 0 ? 0 : length(var.availability_zones) + count.index)
+  availability_zone = var.availability_zones[count.index]
 
   tags = merge(var.tags, { Name = "${var.name}-public" })
+}
+
+moved {
+  from = aws_subnet.public
+  to   = aws_subnet.public[0]
 }
 
 resource "aws_subnet" "private" {
@@ -51,7 +59,7 @@ resource "aws_subnet" "private_secondary" {
 
 resource "aws_nat_gateway" "this" {
   allocation_id = var.eip_allocation_id
-  subnet_id     = aws_subnet.public.id
+  subnet_id     = aws_subnet.public[0].id
 
   tags = merge(var.tags, { Name = var.name })
 
@@ -71,8 +79,15 @@ resource "aws_route" "public_internet" {
 }
 
 resource "aws_route_table_association" "public" {
-  subnet_id      = aws_subnet.public.id
+  count = length(aws_subnet.public)
+
+  subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
+}
+
+moved {
+  from = aws_route_table_association.public
+  to   = aws_route_table_association.public[0]
 }
 
 resource "aws_route_table" "private" {

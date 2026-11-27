@@ -4,7 +4,9 @@ from .account import Account
 from .account_credit import AccountCredit
 from .agent import Agent
 from .authentication_session import AuthenticationSession
+from .backoffice_authentication_session import BackofficeAuthenticationSession
 from .backoffice_user import BackofficeUser
+from .backoffice_user_session import BackofficeUserSession
 from .backup_codes_enrollment import BackupCodesEnrollment
 from .benefit import Benefit
 from .benefit_grant import BenefitGrant
@@ -12,13 +14,14 @@ from .billing_entry import BillingEntry
 from .billing_interval import BillingInterval
 from .campaign import Campaign
 from .catalog import Catalog
+from .catalog_benefit import CatalogBenefit
+from .catalog_custom_field import CatalogCustomField
+from .catalog_meter import CatalogMeter
 from .catalog_product import CatalogProduct
 from .checkout import Checkout
 from .checkout_link import CheckoutLink
 from .checkout_link_product import CheckoutLinkProduct
 from .checkout_product import CheckoutProduct
-from .compass_thread import CompassThread
-from .compass_thread_message import CompassThreadMessage
 from .credit_note import CreditNote
 from .credit_note_item import CreditNoteItem
 from .custom_field import CustomField
@@ -27,7 +30,10 @@ from .customer_email_verification import CustomerEmailVerification
 from .customer_meter import CustomerMeter
 from .customer_seat import CustomerSeat, SeatStatus
 from .customer_session import CustomerSession
-from .customer_session_code import CustomerSessionCode
+from .customer_session_authentication_session import (
+    CustomerSessionAuthenticationSession,
+)
+from .customer_session_email_otp import CustomerSessionEmailOTP
 from .discord_guild_connection import DiscordGuildConnection
 from .discount import Discount
 from .discount_product import DiscountProduct
@@ -74,6 +80,7 @@ from .oauth2_authorization_code import OAuth2AuthorizationCode
 from .oauth2_authorization_code_organization import OAuth2AuthorizationCodeOrganization
 from .oauth2_client import OAuth2Client
 from .oauth2_grant import OAuth2Grant
+from .oauth2_grant_organization import OAuth2GrantOrganization
 from .oauth2_state import OAuth2State
 from .oauth2_token import OAuth2Token
 from .oauth2_token_organization import OAuth2TokenOrganization
@@ -83,6 +90,7 @@ from .organization import Organization
 from .organization_access_token import OrganizationAccessToken
 from .organization_agent_review import OrganizationAgentReview
 from .organization_domain import OrganizationDomain
+from .organization_email import OrganizationEmail
 from .organization_review import OrganizationReview
 from .organization_review_feedback import OrganizationReviewFeedback
 from .organization_risk_signal import OrganizationRiskSignal
@@ -111,6 +119,7 @@ from .product_price import (
 from .reducer import Reducer
 from .reducer_bucket import ReducerBucket
 from .refund import Refund
+from .scheduled_cron import ScheduledCron
 from .slack_app import SlackApp
 from .staged_event import StagedEvent
 from .subscription import Subscription
@@ -146,7 +155,9 @@ __all__ = [
     "AccountCredit",
     "Agent",
     "AuthenticationSession",
+    "BackofficeAuthenticationSession",
     "BackofficeUser",
+    "BackofficeUserSession",
     "BackupCodesEnrollment",
     "Benefit",
     "BenefitGrant",
@@ -154,13 +165,14 @@ __all__ = [
     "BillingInterval",
     "Campaign",
     "Catalog",
+    "CatalogBenefit",
+    "CatalogCustomField",
+    "CatalogMeter",
     "CatalogProduct",
     "Checkout",
     "CheckoutLink",
     "CheckoutLinkProduct",
     "CheckoutProduct",
-    "CompassThread",
-    "CompassThreadMessage",
     "CreditNote",
     "CreditNoteItem",
     "CustomField",
@@ -169,7 +181,8 @@ __all__ = [
     "CustomerMeter",
     "CustomerSeat",
     "CustomerSession",
-    "CustomerSessionCode",
+    "CustomerSessionAuthenticationSession",
+    "CustomerSessionEmailOTP",
     "DiscordGuildConnection",
     "Discount",
     "DiscountProduct",
@@ -216,6 +229,7 @@ __all__ = [
     "OAuth2AuthorizationCodeOrganization",
     "OAuth2Client",
     "OAuth2Grant",
+    "OAuth2GrantOrganization",
     "OAuth2State",
     "OAuth2Token",
     "OAuth2TokenOrganization",
@@ -226,6 +240,7 @@ __all__ = [
     "OrganizationAccessToken",
     "OrganizationAgentReview",
     "OrganizationDomain",
+    "OrganizationEmail",
     "OrganizationReview",
     "OrganizationReviewFeedback",
     "OrganizationRiskSignal",
@@ -254,6 +269,7 @@ __all__ = [
     "ReducerBucket",
     "Refund",
     "ReviewAppealSupportCase",
+    "ScheduledCron",
     "SeatStatus",
     "SlackApp",
     "StagedEvent",

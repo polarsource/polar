@@ -1,19 +1,19 @@
 'use client'
 
+import { ManagedAsCodeHint } from '@/components/Dashboard/ManagedAsCodeBadge'
 import { Well, WellContent, WellHeader } from '@/components/Shared/Well'
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import {
   SyntaxHighlighterClient,
   SyntaxHighlighterProvider,
 } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterClient'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { Button } from '@polar-sh/orbit'
 import Link from 'next/link'
-import { useContext } from 'react'
 
 export const MeterIngestionGuide = () => {
-  const { organization } = useContext(OrganizationContext)
-  const managedAsCode = useIsManagedAsCode(organization.id)
+  const organization = useDashboardOrganization()
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
 
   return (
     <SyntaxHighlighterProvider>
@@ -37,7 +37,9 @@ export const MeterIngestionGuide = () => {
                   <code>api_call</code>.
                 </p>
               </div>
-              {!managedAsCode && (
+              {managedAsCode ? (
+                <ManagedAsCodeHint resource="meters" align="start" />
+              ) : (
                 <Link
                   href={`/dashboard/${organization.slug}/products/meters/create`}
                 >

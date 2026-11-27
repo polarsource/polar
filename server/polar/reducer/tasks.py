@@ -2,22 +2,21 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
+from apscheduler.triggers.cron import CronTrigger
+
+from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.customer.repository import CustomerRepository
-from polar.customer_meter.repository import CustomerMeterRepository
 from polar.exceptions import PolarTaskError
-from polar.meter.aggregation import AggregationFunction
 from polar.observability.task_logging import LoggableField
 from polar.worker import (
-    AsyncReadSessionMaker,
     AsyncSessionMaker,
-    CronTrigger,
     RedisMiddleware,
     TaskPriority,
     actor,
+    get_message_timestamp,
 )
 
 from . import cache
-from .redis_store import get_reducer_bucket_key
 from .service import reducer as reducer_service
 
 
@@ -34,27 +33,6 @@ async def invalidate_cache(
     await cache.invalidate(RedisMiddleware.get(), organization_id)
 
 
-@actor(
-    actor_name="reducer.compare_highest_consumed_units",
-    cron_trigger=CronTrigger.from_crontab("*/5 * * * *"),
-    priority=TaskPriority.LOW,
-    max_retries=0,
-)
-async def compare_highest_consumed_units() -> None:
-    async with AsyncReadSessionMaker() as session:
-        repository = CustomerMeterRepository.from_session(session)
-        redis = RedisMiddleware.get()
-        for aggregation_function in AggregationFunction:
-            if aggregation_function == AggregationFunction.unique:
-                continue
-            for customer_meter in await repository.get_all_by_highest_consumed_units(
-                aggregation_function, 10
-            ):
-                await reducer_service.log_customer_meter_comparison(
-                    session, redis, customer_meter
-                )
-
-
 @actor(actor_name="reducer.seal", priority=TaskPriority.LOW)
 async def seal(
     customer_id: Annotated[uuid.UUID, LoggableField],
@@ -62,35 +40,21 @@ async def seal(
     at: Annotated[str, LoggableField],
 ) -> None:
     async with AsyncSessionMaker() as session:
-        customer = await CustomerRepository.from_session(session).get_by_id(customer_id)
+        customer = await CustomerRepository.from_session(session).get_by_id(
+            customer_id, include_deleted=True
+        )
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
+        seal_at = datetime.fromisoformat(at)
+        boundaries = await billing_interval_service.get_boundaries(
+            session, customer, meter_id, until=seal_at
+        )
         await reducer_service.seal(
-            session, customer, meter_id, at=datetime.fromisoformat(at)
+            session, customer, meter_id, at=seal_at, boundaries=boundaries
         )
 
 
-def _sync_debounce_key(
-    reducer_id: uuid.UUID,
-    bucket_start: str,
-    customer_id: uuid.UUID | None,
-    external_customer_id: str | None,
-) -> str:
-    return "reducer_bucket.sync:" + get_reducer_bucket_key(
-        reducer_id,
-        datetime.fromisoformat(bucket_start),
-        customer_id,
-        external_customer_id,
-    )
-
-
-@actor(
-    actor_name="reducer_bucket.sync",
-    priority=TaskPriority.LOW,
-    debounce_key=_sync_debounce_key,
-    debounce_min_threshold=10,
-    debounce_max_threshold=360,
-)
+@actor(actor_name="reducer_bucket.sync", priority=TaskPriority.LOW)
 async def sync(
     reducer_id: Annotated[uuid.UUID, LoggableField],
     bucket_start: Annotated[str, LoggableField],
@@ -105,3 +69,20 @@ async def sync(
             customer_id,
             external_customer_id,
         )
+
+
+@actor(
+    actor_name="reducer_bucket.enqueue_syncs",
+    # A minute after each window closes, once the requests writing to it committed
+    cron_trigger=CronTrigger.from_crontab("1-59/5 * * * *"),
+    priority=TaskPriority.LOW,
+    # Retried within the window: its buckets must reach Postgres before live
+    # reads stop looking for them in Redis.
+    max_retries=4,
+    min_backoff=5_000,
+    max_backoff=60_000,
+)
+async def enqueue_syncs() -> None:
+    async with AsyncSessionMaker() as session:
+        # The scheduled time, so a run delayed behind a backlog still syncs its windows
+        await reducer_service.enqueue_bucket_syncs(session, at=get_message_timestamp())

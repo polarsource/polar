@@ -1,0 +1,86 @@
+---
+title: "Embed hosts"
+sidebarTitle: "Embed hosts"
+description: "Allow the sites that embed your checkout or payment method form, write host entries, and fix a blank embed."
+---
+
+**Embed hosts** are the sites allowed to embed your [checkout](/features/checkout/embed) and [Embedded Payment Method](/features/checkout/embed-payment-method). Both embeds only open on a host you've listed. Anywhere else, the browser refuses to load them.
+
+**Why it's required:** after a payment, the embed sends your page a message carrying a session token for your customer. The list is how Polar knows that page is yours.
+
+## Add a host
+
+- Open **Settings → Embedding**
+- Enter one or more hosts, separated by commas or spaces
+- Click **Add**
+
+The list applies as soon as it's saved. Add staging and preview domains too: a host you leave out stops working right away.
+
+When you verify a domain under **Settings → Domains**, Polar adds it to the list with its subdomains, as `example.com` and `*.example.com`. Remove either entry if you don't want it. See [Domains](/features/domains).
+
+### From the API
+
+Set `embed_hosts` with [Update Organization](/api-reference/current/organizations/update-organization). The value replaces the whole list. The examples use the sandbox and API version `2026-10`:
+
+<CodeGroup>
+```typescript TypeScript
+await polar.organizations.update(organizationId, {
+  embed_hosts: ["example.com", "*.example.com", "localhost:3000"],
+});
+```
+
+```python Python
+polar.organizations.update(
+    organization_id,
+    embed_hosts=["example.com", "*.example.com", "localhost:3000"],
+)
+```
+
+```bash cURL
+curl -X PATCH https://sandbox-api.polar.sh/v1/organizations/$ORGANIZATION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "embed_hosts": ["example.com", "*.example.com", "localhost:3000"] }'
+```
+</CodeGroup>
+
+<Note>Dashboard and API only. Not available from the CLI or MCP server.</Note>
+
+## Write a host
+
+Write the host without a scheme:
+
+| Entry | Matches |
+| --- | --- |
+| `example.com` | `example.com` only |
+| `*.example.com` | Any subdomain, but not `example.com` itself |
+| `example.com:8443` | That host on that port |
+| `localhost:3000` | Your local development server |
+| `chrome-extension://abcdefghijklmnopqrstuvwxyzabcdef` | An app origin, like a browser extension, written in full |
+
+- An entry without a port matches the default port only. `example.com` doesn't match `https://example.com:8443`.
+- HTTPS is always allowed. HTTP is allowed only for local hosts: `localhost`, names ending in `.localhost` or `.local`, and loopback or private addresses such as `192.168.1.10` or `10.0.0.5`.
+- A bare `*` and wildcards on a domain suffix, like `*.com`, are rejected.
+- A wildcard on a shared platform, like `*.vercel.app`, is accepted for preview deployments. **One trade-off:** it lets every site on that platform embed your checkout.
+
+### Sites served over HTTP
+
+A public host served over plain HTTP can't be listed. Move the site to HTTPS first. The message sent after payment carries a customer session token, and on a plain HTTP page anyone on the network can read it.
+
+## When the embed stays blank
+
+Open the browser console on the page doing the embedding. A message naming `frame-ancestors` means the page's host isn't on your list. Add it under **Settings → Embedding**.
+
+A Checkout Link opened from a host that isn't listed doesn't open the checkout either. The fix is the same.
+
+For the Embedded Payment Method, an invalid or expired session token also leaves the embed blank.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Embedded checkout](/features/checkout/embed) | Open the checkout as an overlay on your site |
+| [Embedded Payment Method](/features/checkout/embed-payment-method) | Let customers add a card on your site |
+| [Domains](/features/domains) | Verify a domain to add it to the list |
+| [Settings](/features/settings) | Every organization setting |

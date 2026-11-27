@@ -25,6 +25,7 @@ import {
 import { useCallback, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
+import { SettingsGroup } from './SettingsGroup'
 
 const MONTH_NAMES = [
   'January',
@@ -147,81 +148,20 @@ const PersonalInformationSettings = () => {
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="dark:ring-polar-700 flex w-full flex-col gap-y-6 overflow-hidden rounded-2xl bg-transparent p-5 ring-1 ring-gray-200 dark:ring-1"
-      >
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <FormField
-            control={control}
-            name="firstName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>First Name</FormLabel>
-                <FormControl>
-                  <Input {...field} placeholder="Jane" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={control}
-            name="lastName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Last Name</FormLabel>
-                <FormControl>
-                  <Input {...field} placeholder="Doe" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={control}
-          name="country"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Country of Residence</FormLabel>
-              <FormControl>
-                <CountryPicker
-                  allowedCountries={enums.addressInputCountryValues}
-                  value={field.value || undefined}
-                  onChange={field.onChange}
-                  placeholder="Select country"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex flex-col gap-y-2">
-          <FormLabel>Date of Birth</FormLabel>
-          <div className="grid grid-cols-3 gap-4">
+      <SettingsGroup>
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex w-full flex-col gap-y-6 p-6"
+        >
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <FormField
               control={control}
-              name="dobMonth"
+              name="firstName"
               render={({ field }) => (
                 <FormItem>
+                  <FormLabel>First Name</FormLabel>
                   <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger
-                        onKeyDown={(e) => handleMonthDigit(e, field.onChange)}
-                      >
-                        <SelectValue placeholder="Month" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {months.map((m) => (
-                          <SelectItem key={m.value} value={m.value}>
-                            {m.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input {...field} placeholder="Jane" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -229,59 +169,131 @@ const PersonalInformationSettings = () => {
             />
             <FormField
               control={control}
-              name="dobDay"
+              name="lastName"
               render={({ field }) => (
                 <FormItem>
+                  <FormLabel>Last Name</FormLabel>
                   <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Day" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {days.map((d) => (
-                          <SelectItem key={d} value={d}>
-                            {d}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={control}
-              name="dobYear"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Year" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {years.map((y) => (
-                          <SelectItem key={y} value={y}>
-                            {y}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input {...field} placeholder="Doe" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
           </div>
-        </div>
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={updateUser.isPending}>
-            {updateUser.isPending ? 'Saving...' : 'Save'}
-          </Button>
-        </div>
-      </form>
+          <FormField
+            control={control}
+            name="country"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Country of Residence</FormLabel>
+                <FormControl>
+                  <CountryPicker
+                    allowedCountries={enums.addressInputCountryValues}
+                    value={field.value || undefined}
+                    onChange={field.onChange}
+                    placeholder="Select country"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="flex flex-col gap-y-2">
+            <FormLabel>Date of Birth</FormLabel>
+            <div className="grid grid-cols-3 gap-4">
+              <FormField
+                control={control}
+                name="dobMonth"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger
+                          onKeyDown={(e) => handleMonthDigit(e, field.onChange)}
+                        >
+                          <SelectValue placeholder="Month" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {months.map((m) => (
+                            <SelectItem key={m.value} value={m.value}>
+                              {m.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name="dobDay"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Day" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {days.map((d) => (
+                            <SelectItem key={d} value={d}>
+                              {d}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name="dobYear"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Year" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {years.map((y) => (
+                            <SelectItem key={y} value={y}>
+                              {y}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button type="submit" disabled={updateUser.isPending}>
+              {updateUser.isPending ? 'Saving...' : 'Save'}
+            </Button>
+          </div>
+        </form>
+      </SettingsGroup>
     </Form>
   )
 }

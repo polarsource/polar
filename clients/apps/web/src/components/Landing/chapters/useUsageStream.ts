@@ -1,41 +1,45 @@
 import { useInView } from '@/hooks/useInView'
 import { useEffect, useRef, useState } from 'react'
 
-export type UsageEventName = 'tokens.in' | 'tokens.out' | 'tool.call'
+export type UsageEventName =
+  | 'llm.completion'
+  | 'tts.generate'
+  | 'image.generate'
 
 export interface UsageEvent {
   id: number
   name: UsageEventName
+  /** What the event counts: tokens for a completion, characters for speech, images for an image. */
   quantity: number
   /** What the customer is charged for it. */
   revenue: number
-  /** What it cost to serve: the model's inference, or the tool's run. */
+  /** What it cost to serve: the model's inference. */
   cost: number
 }
 
 /** What the customer pays, per unit. */
 const PRICES: Record<UsageEventName, number> = {
-  'tokens.in': 0.5 / 1_000_000,
-  'tokens.out': 2 / 1_000_000,
-  'tool.call': 0.005,
+  'llm.completion': 1 / 1_000_000,
+  'tts.generate': 15 / 1_000_000,
+  'image.generate': 0.04,
 }
 /** What it costs to serve, per unit. */
 const COSTS: Record<UsageEventName, number> = {
-  'tokens.in': 0.3 / 1_000_000,
-  'tokens.out': 1.2 / 1_000_000,
-  'tool.call': 0.0012,
+  'llm.completion': 0.6 / 1_000_000,
+  'tts.generate': 6 / 1_000_000,
+  'image.generate': 0.018,
 }
 const EVENT_RHYTHM: UsageEventName[] = [
-  'tokens.in',
-  'tool.call',
-  'tokens.out',
-  'tokens.in',
-  'tokens.out',
+  'llm.completion',
+  'tts.generate',
+  'llm.completion',
+  'image.generate',
+  'llm.completion',
 ]
 const QUANTITIES: Record<UsageEventName, [number, number]> = {
-  'tokens.in': [180_000, 940_000],
-  'tokens.out': [60_000, 420_000],
-  'tool.call': [40, 260],
+  'llm.completion': [180_000, 1_200_000],
+  'tts.generate': [8_000, 40_000],
+  'image.generate': [4, 24],
 }
 
 export const VISIBLE_EVENTS = 3
@@ -44,9 +48,9 @@ export const PLAN_PRICE = 2_499
 const OPENING = { revenue: 18_432.17, cost: 7_104.62, tokens: 9_216_084_000 }
 /** Each meter's reading at the same point in the cycle. */
 const OPENING_UNITS: Record<UsageEventName, number> = {
-  'tokens.in': 6_402_118_000,
-  'tokens.out': 2_813_966_000,
-  'tool.call': 1_204_380,
+  'llm.completion': 9_216_084_000,
+  'tts.generate': 184_220_400,
+  'image.generate': 41_806,
 }
 /** Points kept on the chart: enough for a line, few enough to read. */
 export const CHART_POINTS = 32
@@ -103,10 +107,11 @@ export const useUsageStream = (visible = VISIBLE_EVENTS) => {
   const [totals, setTotals] = useState({
     ...OPENING,
     units: OPENING_UNITS,
-    byName: { 'tokens.in': 0, 'tokens.out': 0, 'tool.call': 0 } as Record<
-      UsageEventName,
-      number
-    >,
+    byName: {
+      'llm.completion': 0,
+      'tts.generate': 0,
+      'image.generate': 0,
+    } as Record<UsageEventName, number>,
   })
   const [series, setSeries] = useState<MarginPoint[]>([])
 
@@ -124,7 +129,8 @@ export const useUsageStream = (visible = VISIBLE_EVENTS) => {
             (sum, e) => ({
               revenue: sum.revenue + e.revenue,
               cost: sum.cost + e.cost,
-              tokens: sum.tokens + (e.name === 'tool.call' ? 0 : e.quantity),
+              tokens:
+                sum.tokens + (e.name === 'llm.completion' ? e.quantity : 0),
               units: { ...sum.units, [e.name]: sum.units[e.name] + e.quantity },
               byName: {
                 ...sum.byName,
@@ -134,7 +140,11 @@ export const useUsageStream = (visible = VISIBLE_EVENTS) => {
             {
               ...OPENING,
               units: OPENING_UNITS,
-              byName: { 'tokens.in': 0, 'tokens.out': 0, 'tool.call': 0 },
+              byName: {
+                'llm.completion': 0,
+                'tts.generate': 0,
+                'image.generate': 0,
+              },
             },
           ),
         )
@@ -154,7 +164,8 @@ export const useUsageStream = (visible = VISIBLE_EVENTS) => {
             revenue: sum.revenue + event.revenue,
             cost: sum.cost + event.cost,
             tokens:
-              sum.tokens + (event.name === 'tool.call' ? 0 : event.quantity),
+              sum.tokens +
+              (event.name === 'llm.completion' ? event.quantity : 0),
             units: {
               ...sum.units,
               [event.name]: sum.units[event.name] + event.quantity,

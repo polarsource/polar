@@ -1,15 +1,18 @@
 import contextlib
 import contextvars
+import datetime
 import itertools
 import time
 import uuid
 from collections import defaultdict
 from collections.abc import AsyncIterator, Callable, Iterable, Iterator, Mapping
-from typing import Any, Self
+from typing import Any, Self, cast
 
 import dramatiq
 import structlog
 from dramatiq.common import dq_name
+from redis.exceptions import RedisError
+from redis.typing import EncodableT, FieldT
 
 from polar.config import settings
 from polar.logging import CorrelationID, Logger
@@ -61,7 +64,7 @@ def should_route_to_sqs(actor_name: str) -> bool:
 
 
 class JobQueueManager:
-    __slots__ = ("_enqueued_jobs", "_ingested_events")
+    __slots__ = ("_appended", "_enqueued_jobs", "_ingested_events")
 
     def __init__(self) -> None:
         self._enqueued_jobs: list[
@@ -73,6 +76,7 @@ class JobQueueManager:
             ]
         ] = []
         self._ingested_events: list[uuid.UUID] = []
+        self._appended: list[tuple[str, dict[str, str], int]] = []
 
     def enqueue_job(
         self,
@@ -87,14 +91,27 @@ class JobQueueManager:
     def enqueue_events(self, *event_ids: uuid.UUID) -> None:
         self._ingested_events.extend(event_ids)
 
+    def append(
+        self, stream: str, fields: dict[str, str], *, retention: datetime.timedelta
+    ) -> None:
+        """Append the entry to the Redis stream once flushed, after the commit, trimming
+        the entries older than `retention`."""
+        self._appended.append((stream, fields, int(retention.total_seconds() * 1000)))
+
     async def flush(self, broker: dramatiq.Broker, redis: Redis) -> None:
+        try:
+            await self._flush_jobs(broker, redis)
+        finally:
+            await self._publish(redis)
+        self.reset()
+
+    async def _flush_jobs(self, broker: dramatiq.Broker, redis: Redis) -> None:
         for chunk in itertools.batched(
             self._ingested_events, EVENT_INGESTED_CHUNK_SIZE
         ):
             self.enqueue_job("event.ingested", list(chunk))
 
         if not self._enqueued_jobs:
-            self.reset()
             return
 
         sqs_jobs = [job for job in self._enqueued_jobs if should_route_to_sqs(job[0])]
@@ -105,6 +122,7 @@ class JobQueueManager:
         queue_messages = defaultdict[str, list[tuple[str, Any]]](list)
         all_messages: list[tuple[str, str]] = []
 
+        debounce_pipeline = redis.pipeline(transaction=True)
         for actor_name, args, kwargs, delay in redis_jobs:
             fn: dramatiq.Actor[Any, Any] = broker.get_actor(actor_name)
             redis_message_id = str(uuid.uuid4())
@@ -120,8 +138,8 @@ class JobQueueManager:
             )
 
             # Set debounce key if any
-            debounce = await set_debounce_key(
-                redis, fn, message.message_id, args, kwargs
+            debounce = set_debounce_key(
+                debounce_pipeline, fn, message.message_id, args, kwargs
             )
             if debounce is not None:
                 key, debounce_delay = debounce
@@ -146,6 +164,7 @@ class JobQueueManager:
                 (redis_message_id, encoded_message)
             )
             all_messages.append((fn.actor_name, message.message_id))
+        await debounce_pipeline.execute()
 
         for queue_name, messages in queue_messages.items():
             for batch in itertools.batched(messages, FLUSH_BATCH_SIZE):
@@ -163,12 +182,15 @@ class JobQueueManager:
         if sqs_jobs:
             correlation_id = CorrelationID.get()
             prepared_sqs_jobs: list[_sqs.Job] = []
+            debounce_pipeline = redis.pipeline(transaction=True)
             for actor_name, args, kwargs, delay in sqs_jobs:
                 fn = broker.get_actor(actor_name)
                 message_id = str(uuid.uuid4())
                 debounce_key: str | None = None
 
-                debounce = await set_debounce_key(redis, fn, message_id, args, kwargs)
+                debounce = set_debounce_key(
+                    debounce_pipeline, fn, message_id, args, kwargs
+                )
                 if debounce is not None:
                     debounce_key, debounce_delay = debounce
                     delay = max(delay or 0, debounce_delay)
@@ -184,9 +206,33 @@ class JobQueueManager:
                         debounce_key,
                     )
                 )
+            await debounce_pipeline.execute()
             await _sqs.send_jobs(prepared_sqs_jobs)
 
-        self.reset()
+    async def _publish(self, redis: Redis) -> None:
+        """Publish last and never raise: a lost entry must not drop or replay the
+        jobs of a committed transaction. Published even when the jobs failed: the
+        transaction committed all the same."""
+        if not self._appended:
+            return
+        now = int(time.time() * 1000)
+        try:
+            async with redis.pipeline(transaction=False) as pipeline:
+                for stream, fields, retention in self._appended:
+                    pipeline.xadd(
+                        stream,
+                        cast(dict[FieldT, EncodableT], fields),
+                        minid=now - retention,
+                    )
+                    # Trimming only runs on an append: a stream nothing appends to
+                    # any more goes with its last entries.
+                    pipeline.pexpire(stream, retention)
+                await pipeline.execute()
+        except RedisError:
+            log.warning(
+                "polar.worker.publish_failed",
+                count=len(self._appended),
+            )
 
     async def _batch_hset_messages(
         self,
@@ -214,6 +260,7 @@ class JobQueueManager:
     def reset(self) -> None:
         self._enqueued_jobs = []
         self._ingested_events = []
+        self._appended = []
 
     @contextlib.contextmanager
     def discard_on_error(self) -> Iterator[None]:
@@ -223,11 +270,13 @@ class JobQueueManager:
         with it, while jobs enqueued before the block are kept.
         """
         jobs, events = len(self._enqueued_jobs), len(self._ingested_events)
+        appended = len(self._appended)
         try:
             yield
         except BaseException:
             del self._enqueued_jobs[jobs:]
             del self._ingested_events[events:]
+            del self._appended[appended:]
             raise
 
     @classmethod

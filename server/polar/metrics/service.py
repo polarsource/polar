@@ -29,6 +29,7 @@ from polar.models import (
 from polar.models.product import ProductBillingType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.product.repository import ProductRepository
 from polar.redis import Redis
 
 from .cache import build_cache_key, get_cached_metrics, set_cached_metrics
@@ -202,6 +203,7 @@ class MetricsService:
         interval: TimeInterval,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
+        external_product_id: Sequence[str] | None = None,
         billing_type: Sequence[ProductBillingType] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
         metrics: Sequence[str] | None = None,
@@ -209,6 +211,15 @@ class MetricsService:
         redis: Redis | None = None,
     ) -> MetricsResponse:
         pg_slugs, tb_slugs, meta_slugs = _expand_metrics_with_dependencies(metrics)
+
+        if external_product_id is not None:
+            product_id = await self._resolve_external_product_ids(
+                session,
+                auth_subject,
+                organization_id=organization_id,
+                product_id=product_id,
+                external_product_id=external_product_id,
+            )
 
         tb_filters = await self._resolve_tinybird_filters(
             session,
@@ -477,6 +488,26 @@ class MetricsService:
             ]
         return list(org_ids)
 
+    async def _resolve_external_product_ids(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: Sequence[uuid.UUID] | None,
+        product_id: Sequence[uuid.UUID] | None,
+        external_product_id: Sequence[str],
+    ) -> list[uuid.UUID]:
+        org_ids = await self._get_org_ids_for_subject(
+            session, auth_subject, organization_id=organization_id
+        )
+        product_repository = ProductRepository.from_session(session)
+        resolved = await product_repository.get_version_ids_by_external_ids(
+            org_ids, external_product_id
+        )
+        if product_id is not None:
+            return [pid for pid in resolved if pid in product_id]
+        return resolved
+
     async def _resolve_tinybird_filters(
         self,
         session: AsyncSession | AsyncReadSession,
@@ -566,7 +597,12 @@ class MetricsService:
         external_customer_id: Sequence[str] | None = None,
         tb_needed: set[str],
     ) -> dict[datetime, MetricsPeriod]:
-        if not tb_needed or not tb_org_ids:
+        # If no products match, return nothing. Tinybird would return all products.
+        if (
+            not tb_needed
+            or not tb_org_ids
+            or (product_id is not None and not product_id)
+        ):
             return {}
 
         tb_queries = list({m.query for m in METRICS_TINYBIRD if m.slug in tb_needed})

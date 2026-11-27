@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/cli'
 import { ApiRuntime, ApiCommandError } from '../runtime'
-import { confirm, fields, data, mergeInput, missingFlags } from '../inputs'
+import { confirm, fields, data, mergeInput, missingFlags, org } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['products']['updateBenefits']>[1]>
 
@@ -12,6 +12,7 @@ export const command = Command.make(
   {
     confirm,
     fields,
+    org,
     path: {
       id: Argument.String('id'),
     },
@@ -45,6 +46,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: true,
         confirm: config.confirm,
+        organizationId: config.org,
         fields: config.fields,
         invoke: (client) =>
           client.products.updateBenefits(config.path.id, body),

@@ -17,7 +17,7 @@ from sqlalchemy import (
     true,
     update,
 )
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, with_polymorphic
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -314,18 +314,18 @@ class OrganizationRepository(
         self, cutoff: datetime, *, limit: int = CANCEL_SUBSCRIPTIONS_BATCH_SIZE
     ) -> Sequence[Organization]:
         """Orgs denied, blocked, or offboarded past the cutoff that still have a
-        billable subscription to cancel.
+        cancelable (billable or paused) subscription.
 
         The ``EXISTS`` gate makes the scan idempotent: once an org's
         subscriptions are all cancelled it drops out and is not re-enqueued.
         Falls back to ``created_at`` when ``status_updated_at`` is unset, so a
         terminal org with a legacy null timestamp is still wound down.
         """
-        has_billable_subscription = (
+        has_cancelable_subscription = (
             select(Subscription.id)
             .where(
                 Subscription.organization_id == Organization.id,
-                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                Subscription.status.in_(SubscriptionStatus.cancelable_statuses()),
                 Subscription.ended_at.is_(None),
                 Subscription.deleted_at.is_(None),
             )
@@ -340,7 +340,7 @@ class OrganizationRepository(
             .where(
                 Organization.status.in_(SUBSCRIPTION_CANCELLATION_STATUSES),
                 status_entered_at <= cutoff,
-                has_billable_subscription,
+                has_cancelable_subscription,
             )
             .order_by(status_entered_at.asc())
             .limit(limit)
@@ -386,7 +386,7 @@ class OrganizationRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Organization]]:
+    ) -> Select[Organization]:
         return self.get_base_statement().where(
             Organization.id.in_(org_ids),
             Organization.status != OrganizationStatus.BLOCKED,
@@ -449,10 +449,11 @@ class OrganizationRepository(
         temporarily free by a once/repeating discount are still counted,
         since they will become paid when the discount expires.
         """
+        discount = with_polymorphic(Discount, [DiscountPercentage])
         statement = (
             select(func.count(Subscription.id))
             .join(Customer, Subscription.customer_id == Customer.id)
-            .outerjoin(Discount, Subscription.discount_id == Discount.id)
+            .outerjoin(discount, Subscription.discount_id == discount.id)
             .where(
                 Subscription.organization_id == organization_id,
                 ~Customer.is_deleted,
@@ -462,9 +463,9 @@ class OrganizationRepository(
                     & (
                         Subscription.discount_id.is_(None)
                         | (
-                            (Discount.type == DiscountType.percentage)
-                            & (DiscountPercentage.basis_points == 10000)
-                            & (Discount.duration == DiscountDuration.forever)
+                            (discount.type == DiscountType.percentage)
+                            & (discount.DiscountPercentage.basis_points == 10000)
+                            & (discount.duration == DiscountDuration.forever)
                         )
                     )
                 ),

@@ -3,7 +3,8 @@
 import { useCustomerMeters } from '@/hooks/queries/customerMeters'
 import { getAPIParams } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
-import { Avatar } from '@polar-sh/orbit'
+import { Avatar, Truncated } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   DataTable,
   DataTableColumnHeader,
@@ -64,21 +65,25 @@ const MeterCustomersTab = ({
           }) => (
             <Link
               href={`/dashboard/${organization.slug}/customers/${customer.id}`}
-              className="flex items-center gap-x-3"
+              className="flex min-w-0 items-center gap-x-3"
             >
               <Avatar
                 className="dark:bg-polar-900 text-xxs h-8 w-8 bg-white"
                 name={customer.name ?? customer.email ?? '—'}
                 avatar_url={customer.avatar_url ?? null}
               />
-              <div className="flex flex-col">
-                <span className="text-xs">{customer.name ?? '—'}</span>
+              <Box flexDirection="column" minWidth={0}>
+                <Truncated>
+                  <span className="text-xs">{customer.name ?? '—'}</span>
+                </Truncated>
                 {(customer.email || customer.type === 'individual') && (
-                  <span className="dark:text-polar-500 text-xxs text-gray-500">
-                    {customer.email ?? '—'}
-                  </span>
+                  <Truncated>
+                    <span className="dark:text-polar-500 text-xxs text-gray-500">
+                      {customer.email ?? '—'}
+                    </span>
+                  </Truncated>
                 )}
-              </div>
+              </Box>
             </Link>
           ),
         },

@@ -9,10 +9,11 @@ import {
   ArrowOutwardOutlined,
   KeyboardArrowDown,
   LockOutlined,
-  SearchFilled as Search,
+  Search,
 } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Avatar, Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   Sidebar,
   SidebarContent,
@@ -39,25 +40,26 @@ import { PolarLogotype } from '../Public/PolarLogotype'
 import {
   AccountNavigation,
   OrganizationNavigation,
+  SettingsNavigationHeader,
+  useIsSettingsPath,
 } from './DashboardNavigation'
 import { useOrganizationSubscription } from '@/hooks/queries'
 
 export const DashboardSidebar = ({
   type = 'organization',
   organization,
-  organizations,
-  memberOrganizations,
 }: {
   type?: 'organization' | 'account'
   organization?: schemas['Organization']
-  organizations: schemas['Organization'][]
-  memberOrganizations: schemas['MemberOrganization'][]
 }) => {
   const router = useRouter()
-  const { currentUser } = useAuth()
+  const { currentUser, userOrganizations: organizations } = useAuth()
+  const memberOrganizations = currentUser?.member_organizations ?? []
   const logout = useLogout()
 
   const [searchOpen, setSearchOpen] = useState(false)
+  const isSettingsPath = useIsSettingsPath(organization)
+  const isSubSidebar = type === 'account' || isSettingsPath
 
   const canManageBilling = useHasPermission(
     organization?.id,
@@ -137,10 +139,16 @@ export const DashboardSidebar = ({
             onClick={() => setSearchOpen(true)}
             aria-label="Search"
           >
-            <Search fontSize="small" aria-hidden="true" />
+            <Search size={16} aria-hidden="true" />
           </Button>
         </m.div>
       </SidebarHeader>
+
+      {type === 'organization' && organization && isSettingsPath && (
+        <div className="px-2 pt-2">
+          <SettingsNavigationHeader organization={organization} />
+        </div>
+      )}
 
       <SidebarContent className="gap-4 px-2 py-2">
         {type === 'organization' && organization && (
@@ -163,7 +171,7 @@ export const DashboardSidebar = ({
         </m.div>
       </SidebarContent>
       <SidebarFooter>
-        {isOnFreePlan && (
+        {isOnFreePlan && !isSubSidebar && (
           <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-2 rounded-sm border border-gray-100 bg-white p-4">
             <h3 className="text-sm">Introducing Polar Plans</h3>
             <p className="dark:text-polar-500 text-sm text-gray-500">
@@ -178,22 +186,26 @@ export const DashboardSidebar = ({
           </div>
         )}
 
-        {type === 'organization' && organization && (
-          <SupportButton organization={organization} />
+        {!isSubSidebar && (
+          <>
+            {type === 'organization' && organization && (
+              <SupportButton organization={organization} />
+            )}
+            <a
+              className={twMerge(
+                'flex flex-row items-center rounded-lg border border-transparent text-sm transition-colors dark:border-transparent',
+                'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
+              )}
+              href="https://polar.sh/docs"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
+              <span className="ml-4 font-medium">Documentation</span>
+            </a>
+            <Separator />
+          </>
         )}
-        <a
-          className={twMerge(
-            'flex flex-row items-center rounded-lg border border-transparent text-sm transition-colors dark:border-transparent',
-            'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
-          )}
-          href="https://polar.sh/docs"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
-          <span className="ml-4 font-medium">Documentation</span>
-        </a>
-        <Separator />
         {type === 'organization' && organization && (
           <SidebarMenu>
             <SidebarMenuItem>
@@ -214,46 +226,49 @@ export const DashboardSidebar = ({
                 <DropdownMenuContent
                   side="top"
                   align="center"
-                  className="w-(--radix-popper-anchor-width) min-w-[200px]"
+                  collisionPadding={8}
+                  className="flex max-h-(--radix-dropdown-menu-content-available-height) w-(--radix-popper-anchor-width) min-w-[200px] flex-col"
                 >
-                  {organizations.map((org) => (
-                    <DropdownMenuItem
-                      key={org.id}
-                      className="flex flex-row items-center gap-x-2"
-                      onClick={() => navigateToOrganization(org)}
-                    >
-                      <Avatar
-                        name={org.name}
-                        avatar_url={org.avatar_url}
-                        className="h-6 w-6"
-                      />
-                      <span className="min-w-0 truncate">{org.name}</span>
-                    </DropdownMenuItem>
-                  ))}
-                  {signInOrganizations.map((org) => (
-                    <DropdownMenuItem
-                      key={org.id}
-                      className="flex flex-row items-center gap-x-2"
-                      onClick={() => signInToOrganization(org)}
-                    >
-                      <Avatar
-                        name={org.name}
-                        avatar_url={org.avatar_url}
-                        className="h-6 w-6"
-                      />
-                      <span className="min-w-0 truncate">{org.name}</span>
-                      <span className="dark:bg-polar-700 ml-auto flex shrink-0 items-center gap-x-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400">
-                        {org.requires_sso ? (
-                          <>
-                            <LockOutlined fontSize="inherit" />
-                            SSO
-                          </>
-                        ) : (
-                          'Sign in'
-                        )}
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
+                  <Box flexDirection="column" minHeight={0} overflowY="auto">
+                    {organizations.map((org) => (
+                      <DropdownMenuItem
+                        key={org.id}
+                        className="flex flex-row items-center gap-x-2"
+                        onClick={() => navigateToOrganization(org)}
+                      >
+                        <Avatar
+                          name={org.name}
+                          avatar_url={org.avatar_url}
+                          className="h-6 w-6"
+                        />
+                        <span className="min-w-0 truncate">{org.name}</span>
+                      </DropdownMenuItem>
+                    ))}
+                    {signInOrganizations.map((org) => (
+                      <DropdownMenuItem
+                        key={org.id}
+                        className="flex flex-row items-center gap-x-2"
+                        onClick={() => signInToOrganization(org)}
+                      >
+                        <Avatar
+                          name={org.name}
+                          avatar_url={org.avatar_url}
+                          className="h-6 w-6"
+                        />
+                        <span className="min-w-0 truncate">{org.name}</span>
+                        <span className="dark:bg-polar-700 ml-auto flex shrink-0 items-center gap-x-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400">
+                          {org.requires_sso ? (
+                            <>
+                              <LockOutlined fontSize="inherit" />
+                              SSO
+                            </>
+                          ) : (
+                            'Sign in'
+                          )}
+                        </span>
+                      </DropdownMenuItem>
+                    ))}
+                  </Box>
                   <DropdownMenuSeparator />
                   {!currentUser?.organization_scoped && (
                     <DropdownMenuItem
@@ -266,11 +281,6 @@ export const DashboardSidebar = ({
                       New Organization
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem
-                    onClick={() => router.push('/dashboard/account')}
-                  >
-                    User Settings
-                  </DropdownMenuItem>
                   {!CONFIG.IS_SANDBOX && (
                     <DropdownMenuItem
                       onClick={() =>

@@ -33,7 +33,13 @@ import {
 import { X as XIcon } from '@polar-sh/orbit/icons'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { type FieldPath, SubmitHandler, useForm } from 'react-hook-form'
+import {
+  type FieldPath,
+  SubmitHandler,
+  useForm,
+  useFormState,
+  useWatch,
+} from 'react-hook-form'
 import ProductSelect from '../Products/ProductSelect'
 import { toast } from '../Toast/use-toast'
 import { TrialConfigurationForm } from '../TrialConfiguration/TrialConfigurationForm'
@@ -110,19 +116,14 @@ export const CheckoutLinkForm = ({
     defaultValues,
   })
 
-  const {
-    control,
-    handleSubmit,
-    setError,
-    clearErrors,
-    reset,
-    watch,
-    formState: { errors },
-  } = form
+  const { control, handleSubmit, setError, clearErrors, reset } = form
+  const { errors } = useFormState({ control })
   // Watch for selected product IDs to determine if we should show trial configuration
   // oxlint-disable-next-line react-hooks/incompatible-library
-  const selectedProductIds = watch('products') || []
-  const { data: selectedProducts } = useSelectedProducts(selectedProductIds)
+  const selectedProductIds = useWatch({ control, name: 'products' }) || []
+  const { data: selectedProducts } = useSelectedProducts({
+    id: selectedProductIds,
+  })
 
   // Check if any selected products are recurring (subscription products)
   const hasRecurringProducts = useMemo(() => {
@@ -202,6 +203,9 @@ export const CheckoutLinkForm = ({
         success_url: data.success_url || null,
         return_url: data.return_url || null,
         metadata: entriesToMetadata(data.metadata),
+        trial_payment_setup_required: data.trial_interval
+          ? data.trial_payment_setup_required
+          : null,
       }
 
       let newCheckoutLink: schemas['CheckoutLink']
@@ -456,7 +460,10 @@ export const CheckoutLinkForm = ({
         <CheckoutLinkSeatsField selectedProducts={selectedProducts} />
 
         {hasRecurringProducts && (
-          <TrialConfigurationForm bottomText="This will override the trial configuration set on products." />
+          <TrialConfigurationForm
+            variant="field"
+            bottomText="This will override the trial configuration set on products."
+          />
         )}
 
         <MetadataForm label="Metadata" />

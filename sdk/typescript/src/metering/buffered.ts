@@ -1,5 +1,3 @@
-import { setTimeout as sleep } from "node:timers/promises";
-
 import type { EventInput } from "./event";
 
 import {
@@ -9,10 +7,35 @@ import {
   PolarServerError,
   type RequestOptions,
 } from "../base";
+import {
+  MeteringDeliveryError,
+  MeteringTimeoutError,
+  deliveryTimeout,
+  retryAfterMs,
+  waitForDelivery,
+  type DeliveryFailure,
+  type DeliveryOptions,
+  type DropReason,
+} from "./errors";
 
-export type DropReason = "retry_exhausted" | "shutdown_timeout" | "permanent_error";
+export type { DropReason } from "./errors";
 
 const RETRY_AFTER_BUDGET_MS = 300_000;
+
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) return reject(signal.reason);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(signal.reason);
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
 
 export interface MeteringClient {
   events: {
@@ -25,17 +48,13 @@ export interface MeteringClient {
  */
 export interface BufferedMeteringOptions {
   /**
-   * Maximum events per request. Defaults to 100.
+   * Maximum events per HTTP request. Defaults to 100.
    */
   batchSize?: number;
   /**
    * Milliseconds to collect a batch after its first event. Defaults to 1000.
    */
   batchIntervalMs?: number;
-  /**
-   * Milliseconds allowed to drain on exit. Defaults to 5000.
-   */
-  shutdownTimeoutMs?: number;
   /**
    * Total delivery attempts per batch, including the first. Defaults to 3.
    */
@@ -46,18 +65,35 @@ export interface BufferedMeteringOptions {
   onDelivered?: (events: EventInput[]) => void | Promise<void>;
   /**
    * Callback for undelivered events and their DropReason; may be async.
-   * Defaults to undefined; drops are always logged.
+   * Defaults to undefined; drops are always logged and remain observable by flush().
    */
   onDropped?: (events: EventInput[], reason: DropReason) => void | Promise<void>;
 }
 
+interface QueuedEvent {
+  sequence: number;
+  event: EventInput;
+}
+
+interface FailedEvent extends QueuedEvent {
+  reason: DropReason;
+  cause: unknown;
+}
+
 class FlushRequest {
   resolve!: () => void;
-  reject!: (error: Error) => void;
+  reject!: (error: unknown) => void;
+  active = true;
+  deadline = Infinity;
   readonly completed = new Promise<void>((resolve, reject) => {
     this.resolve = resolve;
     this.reject = reject;
   });
+
+  constructor(
+    readonly after: number,
+    readonly through: number,
+  ) {}
 }
 
 /**
@@ -66,19 +102,25 @@ class FlushRequest {
 export class BufferedMeteringStrategy {
   private readonly options: Required<Omit<BufferedMeteringOptions, "onDelivered" | "onDropped">> &
     Pick<BufferedMeteringOptions, "onDelivered" | "onDropped">;
-  private readonly queue: (EventInput | FlushRequest)[] = [];
+  private readonly queue: (QueuedEvent | FlushRequest)[] = [];
+  private readonly barriers = new Set<FlushRequest>();
   private readonly abort = new AbortController();
+  private failures: FailedEvent[] = [];
+  private batch: QueuedEvent[] = [];
+  private sequence = 0;
+  private acknowledged = 0;
   private worker?: Promise<void>;
   private closing?: Promise<void>;
   private wake?: () => void;
-  private failure?: Error;
+  private failure?: unknown;
+  private finished = false;
 
   /**
    * Configure event delivery and retries.
    *
    * @param polar Client exposing the events.ingest API.
-   * @param options Batch size, timing in milliseconds, retries, and the drop callback.
-   * @throws RangeError if the batch size, max attempts, or intervals are invalid.
+   * @param options Batch size, collection interval in milliseconds, retries, and delivery callbacks.
+   * @throws RangeError if the batch size, max attempts, or batch interval is invalid.
    */
   constructor(
     private readonly polar: MeteringClient,
@@ -86,8 +128,7 @@ export class BufferedMeteringStrategy {
   ) {
     this.options = {
       batchSize: options.batchSize ?? 100,
-      batchIntervalMs: options.batchIntervalMs ?? 1_000,
-      shutdownTimeoutMs: options.shutdownTimeoutMs ?? 5_000,
+      batchIntervalMs: options.batchIntervalMs ?? 1000,
       maxAttempts: options.maxAttempts ?? 3,
       onDelivered: options.onDelivered,
       onDropped: options.onDropped,
@@ -96,17 +137,20 @@ export class BufferedMeteringStrategy {
       if (!Number.isSafeInteger(value) || value < 1)
         throw new RangeError("Batch size and max attempts must be positive integers");
     }
-    for (const value of [this.options.batchIntervalMs, this.options.shutdownTimeoutMs]) {
-      if (!Number.isFinite(value) || value < 0 || value > 2_147_483_647)
-        throw new RangeError("Metering intervals must be between 0 and 2147483647 milliseconds");
-    }
+    const interval = this.options.batchIntervalMs;
+    if (!Number.isFinite(interval) || interval < 0 || interval > 2_147_483_647)
+      throw new RangeError("Batch interval must be between 0 and 2147483647 milliseconds");
   }
 
+  /**
+   * Start the background delivery worker.
+   *
+   * @returns This strategy, ready to accept events.
+   * @throws PolarError if the worker has already started.
+   */
   async start(): Promise<this> {
     if (this.worker) throw new PolarError("Buffered metering has already started");
-    this.worker = this.run().catch((error: unknown) => {
-      this.failure = error instanceof Error ? error : new PolarError(String(error));
-    });
+    this.worker = this.run();
     return this;
   }
 
@@ -116,43 +160,142 @@ export class BufferedMeteringStrategy {
    * @param event Event including its customer identity.
    */
   async track(event: EventInput): Promise<void> {
-    this.enqueue(event);
-  }
-
-  /** Wait until earlier events are delivered or reported as dropped. */
-  async flush(): Promise<void> {
-    const request = new FlushRequest();
-    this.enqueue(request);
-    await request.completed;
-  }
-
-  async close(): Promise<void> {
-    if (!this.worker) return;
-    if (!this.closing) {
-      this.closing = this.drain();
-      this.wake?.();
-    }
-    await this.closing;
-  }
-
-  async [Symbol.asyncDispose](): Promise<void> {
-    await this.close();
-  }
-
-  private enqueue(message: EventInput | FlushRequest): void {
-    if (this.failure) throw this.failure;
-    if (!this.worker || this.closing) throw new PolarError("Buffered metering is not running");
-    this.queue.push(message);
+    this.assertRunning();
+    this.queue.push({ sequence: ++this.sequence, event });
     this.wake?.();
   }
 
-  private async drain(): Promise<void> {
-    const timer = setTimeout(() => this.abort.abort(), this.options.shutdownTimeoutMs);
+  /**
+   * Wait for events queued before this call and report unacknowledged delivery failures.
+   *
+   * A newer flush releases the ones still waiting that it outlasts, and reports their failures
+   * instead: one waiter keeps a serverless function alive, and the others return without
+   * waiting for Polar. A completed flush acknowledges those outcomes; a timeout leaves them observable
+   * by a later flush and does not cancel background delivery.
+   *
+   * @param options Maximum wait in milliseconds; defaults to 30000.
+   * @throws MeteringDeliveryError if earlier events were dropped or remain pending at the deadline.
+   * @throws MeteringTimeoutError if the wait expires without dropped or pending events to report.
+   */
+  async flush(options?: DeliveryOptions): Promise<void> {
+    const timeout = deliveryTimeout(options);
+    if (!this.worker || this.closing) throw new PolarError("Buffered metering is not running");
+    const request = this.barrier();
+    request.deadline = Date.now() + timeout;
+    if (this.finished || this.failure) this.finish(request);
+    else {
+      this.queue.push(request);
+      this.wake?.();
+    }
+    for (const older of this.barriers) {
+      if (older === request || older.deadline > request.deadline) continue;
+      older.resolve();
+      this.release(older);
+    }
+    const timer = setTimeout(() => {
+      request.reject(this.timeoutError(request, timeout, "flush_timeout"));
+      this.release(request);
+    }, timeout);
     try {
-      await this.worker;
-      if (this.failure) throw this.failure;
+      await request.completed;
     } finally {
       clearTimeout(timer);
+    }
+  }
+
+  /**
+   * Stop accepting events and drain the queue, aborting unfinished delivery at the deadline.
+   *
+   * Repeated calls share the first call's deadline and result. Does nothing if not started.
+   * A callback still running at the deadline may continue after this wait rejects.
+   *
+   * @param options Maximum drain time in milliseconds; defaults to 30000.
+   * @throws MeteringDeliveryError if delivery failures remain unacknowledged or shutdown drops events.
+   * @throws MeteringTimeoutError if shutdown expires while waiting for delivery callbacks.
+   */
+  async close(options?: DeliveryOptions): Promise<void> {
+    const timeout = deliveryTimeout(options);
+    if (!this.worker) return;
+    this.closing ??= this.drain(timeout);
+    this.wake?.();
+    await this.closing;
+  }
+
+  private assertRunning(): void {
+    if (this.failure) throw this.failure;
+    if (!this.worker || this.closing) throw new PolarError("Buffered metering is not running");
+  }
+
+  private barrier(): FlushRequest {
+    const request = new FlushRequest(this.acknowledged, this.sequence);
+    this.barriers.add(request);
+    return request;
+  }
+
+  private deliveryFailures(request: FlushRequest): DeliveryFailure[] {
+    return this.failures
+      .filter((item) => item.sequence > request.after && item.sequence <= request.through)
+      .map((item) => ({ events: [item.event], reason: item.reason, cause: item.cause }));
+  }
+
+  private finish(request: FlushRequest): void {
+    if (!request.active) return;
+    const failures = this.deliveryFailures(request);
+    this.acknowledged = Math.max(this.acknowledged, request.through);
+    if (failures.length) request.reject(new MeteringDeliveryError(failures));
+    else if (this.failure) request.reject(this.failure);
+    else request.resolve();
+    this.release(request);
+  }
+
+  private release(request: FlushRequest): void {
+    request.active = false;
+    this.barriers.delete(request);
+    let oldest = this.acknowledged;
+    for (const barrier of this.barriers) oldest = Math.min(oldest, barrier.after);
+    this.failures = this.failures.filter((item) => item.sequence > oldest);
+  }
+
+  private timeoutError(
+    request: FlushRequest,
+    timeout: number,
+    reason: "flush_timeout" | "shutdown_timeout",
+  ): MeteringDeliveryError | MeteringTimeoutError {
+    const pending = [
+      ...this.batch,
+      ...this.queue.filter((item): item is QueuedEvent => !(item instanceof FlushRequest)),
+    ].filter((item) => item.sequence > request.after && item.sequence <= request.through);
+    const failures = this.deliveryFailures(request);
+    if (pending.length)
+      failures.push({
+        events: pending.map((item) => item.event),
+        reason,
+        cause: new MeteringTimeoutError(timeout),
+      });
+    return failures.length
+      ? new MeteringDeliveryError(failures)
+      : new MeteringTimeoutError(timeout);
+  }
+
+  private async drain(timeout: number): Promise<void> {
+    const request = this.barrier();
+    const timer = setTimeout(
+      () => this.abort.abort(new Error(`Metering shutdown timed out after ${timeout}ms`)),
+      timeout,
+    );
+    try {
+      try {
+        await waitForDelivery(this.worker!, timeout);
+      } catch (error) {
+        if (error instanceof MeteringTimeoutError)
+          throw this.timeoutError(request, timeout, "shutdown_timeout");
+        throw error;
+      }
+      this.finish(request);
+      await request.completed;
+    } finally {
+      clearTimeout(timer);
+      this.release(request);
     }
   }
 
@@ -170,7 +313,6 @@ export class BufferedMeteringStrategy {
   }
 
   private async run(): Promise<void> {
-    let batch: EventInput[] = [];
     let requests: FlushRequest[] = [];
     try {
       while (!this.closing || this.queue.length) {
@@ -181,12 +323,12 @@ export class BufferedMeteringStrategy {
           continue;
         }
         if (message instanceof FlushRequest) {
-          message.resolve();
+          this.finish(message);
           continue;
         }
-        batch = [message];
+        this.batch = [message];
         const deadline = Date.now() + this.options.batchIntervalMs;
-        while (batch.length < this.options.batchSize) {
+        while (this.batch.length < this.options.batchSize) {
           if (!this.queue.length) {
             const remaining = deadline - Date.now();
             if (this.closing || requests.length || remaining <= 0) break;
@@ -194,38 +336,57 @@ export class BufferedMeteringStrategy {
           }
           const next = this.queue.shift();
           if (next === undefined) break;
-          if (next instanceof FlushRequest) requests.push(next);
-          else batch.push(next);
+          if (!(next instanceof FlushRequest)) this.batch.push(next);
+          else if (next.active) requests.push(next);
         }
-        await this.processBatch(batch);
-        batch = [];
-        for (const request of requests) request.resolve();
+        const events = this.batch.map((item) => item.event);
+        const failure = await this.processBatch(events);
+        if (failure) {
+          for (const item of this.batch) this.failures.push({ ...item, ...failure });
+        }
+        this.batch = [];
+        if (failure) await this.onDropped(events, failure.reason);
+        else await this.options.onDelivered?.(events);
+        for (const request of requests) this.finish(request);
         requests = [];
       }
     } catch (error) {
-      const failure = this.abort.signal.aborted
-        ? new PolarError("Buffered metering shutdown timed out")
-        : error instanceof Error
-          ? error
-          : new PolarError(String(error));
-      if (!this.abort.signal.aborted) this.failure = failure;
-      for (const request of requests) request.reject(failure);
+      const reason: DropReason = this.abort.signal.aborted ? "shutdown_timeout" : "worker_error";
+      const pending = this.batch;
+      this.batch = [];
       for (const message of this.queue.splice(0)) {
-        if (message instanceof FlushRequest) message.reject(failure);
-        else batch.push(message);
+        if (!(message instanceof FlushRequest)) pending.push(message);
       }
-      if (this.abort.signal.aborted && batch.length)
-        await this.onDropped(batch, "shutdown_timeout");
+      for (const item of pending) this.failures.push({ ...item, reason, cause: error });
+      if (!this.abort.signal.aborted)
+        this.failure = error instanceof Error ? error : new PolarError(String(error));
+      try {
+        if (pending.length)
+          await this.onDropped(
+            pending.map((item) => item.event),
+            reason,
+          );
+      } catch (callbackError) {
+        this.failure = new AggregateError(
+          [error, callbackError],
+          "Metering worker and drop callback failed",
+        );
+      }
+    } finally {
+      this.finished = true;
+      for (const request of this.barriers) this.finish(request);
     }
   }
 
-  private async processBatch(batch: EventInput[]): Promise<void> {
+  private async processBatch(
+    events: EventInput[],
+  ): Promise<{ reason: DropReason; cause: unknown } | undefined> {
     let attempt = 1;
     let waited = 0;
     for (;;) {
       try {
-        await this.polar.events.ingest({ events: batch }, { signal: this.abort.signal });
-        break;
+        await this.polar.events.ingest({ events }, { signal: this.abort.signal });
+        return;
       } catch (error) {
         this.abort.signal.throwIfAborted();
         if (
@@ -233,33 +394,26 @@ export class BufferedMeteringStrategy {
           error instanceof PolarRateLimitError ||
           error instanceof PolarServerError
         ) {
-          const retryAfter = error instanceof PolarRateLimitError ? error.retryAfter : null;
+          const retryAfter = retryAfterMs(error);
           let delay: number;
-          if (retryAfter !== null && Number.isFinite(retryAfter) && retryAfter >= 0) {
-            delay = Math.max(retryAfter, 1) * 1000;
+          if (retryAfter !== null) {
+            delay = retryAfter;
             waited += delay;
-            if (waited > RETRY_AFTER_BUDGET_MS) {
-              await this.onDropped(batch, "retry_exhausted");
-              return;
-            }
+            if (waited > RETRY_AFTER_BUDGET_MS) return { reason: "retry_exhausted", cause: error };
           } else {
-            if (attempt >= this.options.maxAttempts) {
-              await this.onDropped(batch, "retry_exhausted");
-              return;
-            }
+            if (attempt >= this.options.maxAttempts)
+              return { reason: "retry_exhausted", cause: error };
             delay = 2 ** attempt * 1000 * (1 + (Math.random() * 2 - 1) * 0.1);
             attempt++;
           }
-          await sleep(Math.min(delay, 2_147_483_647), undefined, { signal: this.abort.signal });
+          await sleep(Math.min(delay, 2_147_483_647), this.abort.signal);
         } else if (error instanceof PolarError) {
-          await this.onDropped(batch, "permanent_error");
-          return;
+          return { reason: "permanent_error", cause: error };
         } else {
           throw error;
         }
       }
     }
-    await this.options.onDelivered?.(batch);
   }
 
   private async onDropped(events: EventInput[], reason: DropReason): Promise<void> {

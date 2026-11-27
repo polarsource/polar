@@ -1,74 +1,87 @@
 ---
 title: "Fees"
-description: "Transparent, public pricing — pick the plan that fits"
+sidebarTitle: "Fees"
+description: "Compare Polar's plans and transaction fees, see which additional fees apply, and change your plan."
 ---
+
+Polar charges a fee on each transaction, at your plan's rate. The free **Starter** plan has no monthly fee. The paid plans, **Pro**, **Growth** and **Scale**, add a monthly fee in exchange for a lower rate and prioritized support. You can switch plans at any time, and your rate changes immediately.
 
 ## Plans
 
-Polar offers a free Starter plan plus three optional paid plans — Pro, Growth, and Scale — that lower your variable rate and prioritize your support inquiries. You can switch between plans anytime, and your rate adjusts immediately.
-
 | Plan | Monthly fee | Per transaction | Support | Included |
 | --- | --- | --- | --- | --- |
-| **Starter** | Free | 5% + 50¢ | Standard Support | |
-| **Pro** | $20 /mo | 3.8% + 40¢ | Prioritized Support | |
-| **Growth** | $100 /mo | 3.6% + 35¢ | Prioritized Support | |
-| **Scale** | $400 /mo | 3.4% + 30¢ | Slack + Prioritized Support | [Single Sign-On](/features/sso) |
-
-The paid plans replace the per-transaction Merchant of Record premium with a fixed monthly fee and a lower variable rate.
+| **Starter** | Free | 5% + 50¢ | Standard support | |
+| **Pro** | $20/mo | 3.8% + 40¢ | Prioritized support | |
+| **Growth** | $100/mo | 3.6% + 35¢ | Prioritized support | |
+| **Scale** | $400/mo | 3.4% + 30¢ | Slack + prioritized support | [Single Sign-On](/features/sso) |
 
 ### When does a paid plan pay off?
 
-Each paid plan crosses over to save you money at a predictable monthly sales threshold.
+Each paid plan costs less than Starter once your monthly sales pass a threshold:
 
 | Plan | Breakeven vs. Starter |
 | --- | --- |
-| **Pro** | ~$1,379 /mo in sales |
-| **Growth** | ~$5,634 /mo in sales |
-| **Scale** | ~$19,048 /mo in sales |
+| **Pro** | ~$1,379/mo in sales |
+| **Growth** | ~$5,634/mo in sales |
+| **Scale** | ~$19,048/mo in sales |
 
-Below your plan's threshold, a lower tier is the better deal. Above it, the paid plan saves money — and you get faster support on top.
+Below the threshold, the lower plan is cheaper.
+
+### Change your plan
+
+1. Open [**Settings → Billing**](https://polar.sh/to/dashboard/settings/billing).
+2. Click **Change plan**.
+3. Pick a plan and confirm with **Upgrade plan**, **Downgrade plan** or **Continue to checkout**.
+
+If you're on a custom plan, contact [support](/support) to change it.
+
+<Note>Dashboard only. Plans can't be changed from the CLI or MCP server.</Note>
 
 ## Preview features
 
-Paid plans also unlock early access to features that are still in preview. While in preview, each of these is available only on paid plans:
+Paid plans include access to features that are still in preview:
 
-- [Shared Slack Channel benefit](/features/benefits/slack-shared-channel) — automatically give each customer a shared Slack channel via Slack Connect.
-- [`reset` proration behavior](/features/subscriptions/proration#charge-full-amount-and-reset-cycle-reset) — on a plan change, charge the full new-plan price and restart the billing cycle, with no proration.
-- [Off-session charges](/features/orders#arbitrary-charges) — charge a customer's saved payment method for an arbitrary amount, outside of a checkout or renewal.
+- [Shared Slack Channel benefit](/features/benefits/slack-shared-channel): give each customer a shared Slack channel through Slack Connect.
+- [`reset` proration](/features/subscriptions/proration#charge-full-amount-and-reset-cycle-reset): on a plan change, charge the full new price and restart the billing cycle.
+- [Off-session charges](/features/off-session-charges): charge a customer's saved payment method outside a checkout or renewal.
+
+**Testing in the sandbox?** The sandbox has no paid plans. To try preview features there, open **Settings → Billing** in your sandbox organization and click **I understand, enable preview access**. To use them in production, you'll need a paid plan, or to wait until they're generally available.
 
 ## Early Member
 
-Organizations created before **May 27, 2026** stay on the Early Member rate indefinitely. This was the rate we offered while Polar was catching up on feature parity with other Merchant of Record providers, and we've committed to honoring it for everyone who signed up under it.
+Organizations created before **May 27, 2026** keep the Early Member rate for as long as they stay on it:
 
 | Monthly fee | Per transaction | Subscription fee |
 | --- | --- | --- |
 | Free | 4% + 40¢ | +0.5% |
 
-**One trade-off worth understanding:** Early Member is yours forever as long as you stay on it. The moment you upgrade to a paid plan, Early Member is retired for that organization. You can still switch freely between the paid plans afterwards, but downgrading to Starter lands you on the new 5% + 50¢ rate, not your original Early Member rate.
+**One trade-off:** upgrading to a paid plan retires Early Member for that organization. You can switch freely between paid plans afterwards, but downgrading takes you to Starter at 5% + 50¢, not back to Early Member.
 
-Organizations created on or after May 27, 2026 start on Starter (5% + 50¢). This applies to new organizations even if they're created by customers who signed up earlier.
+Organizations created on or after May 27, 2026 start on Starter, even when the person creating them signed up earlier.
 
-## Additional Fees
+## Additional fees
 
-These apply on top of your plan's per-transaction fee.
+These apply on top of your plan's rate:
 
-* **+1.5%** for international cards (non-US)
-* **+0.5%** for subscription payments — **Early Member only**. Starter, Pro, Growth, and Scale have no separate subscription fee.
-* *We also reserve the right to pass on any other fees Stripe might impose in the future.*
+- **+1.5%** for cards issued outside the US, including cards saved in Link. Other payment methods don't incur it.
+- **+0.5%** for subscription payments, on Early Member only. Starter, Pro, Growth and Scale have no subscription fee.
+- Polar may pass on new fees that Stripe introduces.
+
+Fees are calculated on the total the customer pays, **tax included**.
 
 ### Example
 
-Below is a $30 purchase from Sweden (25% VAT) paid with an international card.
+A $30 purchase from Sweden, with 25% VAT, paid with a card issued outside the US:
 
 | Item | Amount |
 | --- | --- |
-| Product Price | $30 |
-| VAT (25%) | $7.5 |
-| **Total Transaction Value** | **$37.5** |
+| Product price | $30.00 |
+| VAT (25%) | $7.50 |
+| **Total paid** | **$37.50** |
 
-Here's how the fees on that $37.5 transaction compare across plans.
+The fees on that $37.50 transaction, per plan:
 
-| Plan | Transaction Fee | International (+1.5%) | Total Fees |
+| Plan | Transaction fee | International (+1.5%) | Total fees |
 | --- | --- | --- | --- |
 | **Starter** (5% + 50¢) | \$2.38 | \$0.56 | **\$2.94** |
 | **Pro** (3.8% + 40¢) | \$1.83 | \$0.56 | **\$2.39** |
@@ -77,36 +90,28 @@ Here's how the fees on that $37.5 transaction compare across plans.
 
 ## Refunds
 
-You can issue both full or partial refunds on Polar to your customers. However, the initial transaction fees are not refunded to you since credit card networks and PSPs charge them regardless of a future refund.
+You can issue full or partial [refunds](/features/refunds). The original transaction fees aren't returned to you: card networks and payment processors charge them whether or not the payment is refunded later.
 
-Please note: Polar reserves the right to issue refunds at our own discretion up to 60 days after the purchase as part of our efforts to continuously and proactively reduce disputes & chargebacks which cost you $15/dispute. We only leverage this right for this purpose and in the interest of reducing chargebacks and fees for you.
+Polar reserves the right to refund a purchase itself up to 60 days after it was made, to head off a likely dispute. It only does this to reduce disputes and their fees.
 
-[Learn more about refunds →](/features/refunds)
+## Dispute fees
 
-## Dispute/Chargeback Fees
+A customer can ask their bank to reverse a payment. This is a **dispute**, or chargeback. Each dispute costs the payment processor's dispute fee, currently $15, deducted from your balance whatever the outcome. The processor charges it either way, so Polar can't refund it. See [Disputes](/features/disputes).
 
-Sometimes, customers can open a **dispute/chargeback** via their bank for a purchase. **Disputes cost $15 per dispute** regardless of outcome and is deducted from your balance directly. This fee is charged by the underlying credit card networks & PSPs regardless of outcome and therefore something we cannot refund.
+Card networks penalize sellers whose dispute rate is too high, at around 0.7% of sales and above. Since Polar is the Merchant of Record, it monitors your rate and may step in, up to suspending your account, if yours stays high. See [Account reviews](/merchant-of-record/account-reviews#chargeback-management).
 
-However, we continuously work to proactively reduce the rate of chargebacks across Polar to be at or lower than industry standards.
+## Payout fees
 
-Credit card networks impose monitoring programs, penalties and higher chargeback costs for sellers with high chargeback rates (~0.7%+). Since Polar is the Merchant of Record, we therefore always monitor and proactively prevent our rate coming close to these thresholds.
-
-Therefore, we might need to intervene and even suspend your account unless swift and proactive measures are taken to reduce chargebacks to an acceptable industry standard.
-
-## Payout Fees
-
-While payouts may incur fees charged by our payout provider (Stripe), Polar does not add any extra fees or markup. These are strictly Stripe's fees, and Polar does not profit from them.
-
-In addition, Polar offers manual withdrawals for developers. Keeping you in control of when to issue payouts.
-
-*Unless you have a Polar balance that you haven't withdrawn for several months, at which point we'll eventually need to trigger a payout on your behalf.*
-
-**Fees (Stripe)**
-
-* $2 per month of active payout(s)
-* 0.25% + $0.25 per payout
-* Cross border fees (currency conversion): 0.25% (EU) - 1% in other countries.
+Withdrawing your balance carries Stripe's payout fees, which Polar passes on without a markup. See [Payout fees](/features/finance/payouts#payout-fees).
 
 ## Volume pricing
 
-Large or fast-growing business? The published Scale plan is our cheapest public rate. If you need something custom on top of that, [reach out to us](/support).
+The Scale plan is Polar's lowest public rate. If you need custom terms on top of it, [contact support](/support).
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Money flow](/concepts/money-flow) | How a payment becomes your balance and payout |
+| [Balance and payouts](/features/finance/payouts) | Fee lines on your transactions, and payout fees |
+| [Merchant of Record](/merchant-of-record/introduction) | What Polar takes on as the seller |

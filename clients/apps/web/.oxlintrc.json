@@ -23,6 +23,7 @@
     "scripts/**"
   ],
   "rules": {
+    "polar/no-form-state-read": "error",
     "polar/no-unsanitized-toast-detail": "error"
   },
   "overrides": [

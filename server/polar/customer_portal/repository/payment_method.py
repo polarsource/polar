@@ -22,7 +22,7 @@ class CustomerPaymentMethodRepository(
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[Customer | Member]
-    ) -> Select[tuple[PaymentMethod]]:
+    ) -> Select[PaymentMethod]:
         return self.get_base_statement().where(
             PaymentMethod.customer_id == get_customer_id(auth_subject)
         )

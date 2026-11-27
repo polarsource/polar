@@ -12,6 +12,8 @@ from polar.observability.task_logging import TaskLogFilter
 
 Logger = structlog.stdlib.BoundLogger
 
+get_logger = logging.getLogger
+
 
 def _map_critical_to_fatal(
     logger: logging.Logger, method_name: str, event_dict: dict[str, Any]
@@ -42,6 +44,7 @@ class Logging[RendererType]:
     @classmethod
     def get_processors(cls, *, logfire: bool) -> list[Any]:
         return [
+            structlog.stdlib.filter_by_level,
             structlog.contextvars.merge_contextvars,
             structlog.stdlib.add_log_level,
             structlog.stdlib.add_logger_name,

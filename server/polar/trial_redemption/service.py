@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from polar.kit.email import normalize_email
 from polar.models import Customer, Organization, Product, TrialRedemption
 from polar.postgres import AsyncSession
@@ -10,21 +12,25 @@ class TrialRedemptionService:
         session: AsyncSession,
         organization: Organization,
         *,
-        customer: Customer,
+        customer_email: str | None,
+        customer_id: UUID | None = None,
         product: Product | None = None,
         payment_method_fingerprint: str | None = None,
     ) -> bool:
-        if customer.email is None:
+        if customer_email is None and customer_id is None:
             return False
 
         repository = TrialRedemptionRepository.from_session(session)
-        trial_redemptions = await repository.get_all_by_organization_and_hints(
+        trial_redemption = await repository.get_first_by_organization_and_hints(
             organization.id,
-            customer_email=normalize_email(customer.email),
+            customer_email=normalize_email(customer_email)
+            if customer_email is not None
+            else None,
+            customer_id=customer_id,
             product=product.id if product else None,
             payment_method_fingerprint=payment_method_fingerprint,
         )
-        return len(trial_redemptions) > 0
+        return trial_redemption is not None
 
     async def create_trial_redemption(
         self,

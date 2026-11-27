@@ -3,7 +3,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy import delete
+from sqlalchemy import delete, func, select
 
 from polar.enums import EmailSender
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
@@ -39,6 +39,28 @@ class EmailLogRepository(RepositoryBase[EmailLog], RepositoryIDMixin[EmailLog, U
             EmailLog.processor_id == processor_id
         )
         return await self.get_one_or_none(statement)
+
+    async def get_latest_by_to_email_addr(self, to_email_addr: str) -> EmailLog | None:
+        statement = (
+            self.get_base_statement()
+            .where(EmailLog.to_email_addr == to_email_addr)
+            .order_by(EmailLog.created_at.desc())
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def count_bounces_since(self, to_email_addr: str, since: datetime) -> int:
+        statement = (
+            select(func.count())
+            .select_from(EmailLog)
+            .where(
+                EmailLog.to_email_addr == to_email_addr,
+                EmailLog.status == EmailLogStatus.failed,
+                EmailLog.error.startswith("email.bounced"),
+                EmailLog.created_at >= since,
+            )
+        )
+        return (await self.session.execute(statement)).scalar_one()
 
     async def delete_before(self, before: datetime) -> None:
         statement = delete(EmailLog).where(EmailLog.created_at < before)

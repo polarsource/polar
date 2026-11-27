@@ -1,8 +1,36 @@
-import { Console, Effect } from 'effect'
+import { Console, Context, Effect } from 'effect'
 import { CliOutput, type Command, Flag, GlobalFlag } from 'effect/cli'
 import * as ui from '@/utils/ui'
 
 type Node = Command.Command.Any
+
+export interface EnvironmentVariable {
+  readonly name: string
+  readonly description: string
+}
+
+export const EnvironmentVariables = Context.Reference<
+  ReadonlyArray<EnvironmentVariable>
+>('polar/Help/EnvironmentVariables', { defaultValue: () => [] })
+
+export const environmentVariables = (annotations: Context.Context<never>) =>
+  Context.get(annotations, EnvironmentVariables)
+
+const environmentSection = (command: Node) => {
+  const variables = environmentVariables(command.annotations)
+  if (variables.length === 0) return Effect.void
+  const width = Math.max(...variables.map(({ name }) => name.length))
+  return Console.log(
+    [
+      '',
+      ui.bold('ENVIRONMENT'),
+      ...variables.map(
+        ({ name, description }) =>
+          `  ${ui.command(name.padEnd(width))}  ${ui.dim(description)}`,
+      ),
+    ].join('\n'),
+  )
+}
 
 interface Leaf {
   readonly path: ReadonlyArray<string>
@@ -74,14 +102,14 @@ export const Help = GlobalFlag.Action({
             }),
           ),
         )
+        yield* environmentSection(context.command)
         return yield* Console.log(`\n${index(context.command)}`)
       }
-      const commands = leaves(
-        resolve(context.command, context.commandPath),
-        context.commandPath,
-      )
+      const node = resolve(context.command, context.commandPath)
+      const commands = leaves(node, context.commandPath)
       if (commands.length === 1) {
-        return yield* GlobalFlag.Help.run(true, context)
+        yield* GlobalFlag.Help.run(true, context)
+        return yield* environmentSection(node)
       }
       for (const [position, { path }] of commands.entries()) {
         const last = position === commands.length - 1
@@ -98,5 +126,6 @@ export const Help = GlobalFlag.Action({
           ),
         )
       }
+      yield* environmentSection(node)
     }),
 })

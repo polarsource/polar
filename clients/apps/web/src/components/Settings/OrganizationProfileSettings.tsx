@@ -1,4 +1,3 @@
-import { useAuth } from '@/hooks'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useListKeys } from '@/hooks/useListKeys'
@@ -32,13 +31,17 @@ import {
   FormField,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useRouter } from 'next/navigation'
-import React, { useCallback } from 'react'
+import React, { useCallback, useId } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { useForm, useFormContext, useWatch } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../FileUpload'
 import { toast } from '../Toast/use-toast'
+import { Box } from '@polar-sh/orbit/Box'
+import {
+  SupportEmailStatusIcon,
+  SupportEmailVerifyPrompt,
+} from '@/components/Finance/Account/sections/SupportEmailVerification'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationDetailsFormProps {
@@ -209,7 +212,8 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
 }) => {
   const { control, setError, setValue } =
     useFormContext<schemas['OrganizationUpdate']>()
-  const { name, avatar_url: avatarURL } = useWatch({ control })
+  const { name, avatar_url: avatarURL, email } = useWatch({ control })
+  const fieldId = useId()
 
   const { status: urlStatus, validateURL } = useURLValidation({
     organizationId: organization.id,
@@ -256,7 +260,12 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-[auto_1fr] sm:gap-x-5">
           <div>
-            <label className="mb-2 block text-sm font-medium">Logo</label>
+            <label
+              htmlFor={`${fieldId}-avatar`}
+              className="mb-2 block text-sm font-medium"
+            >
+              Logo
+            </label>
             <FormField
               control={control}
               name="avatar_url"
@@ -270,7 +279,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                       isDragActive && 'opacity-50',
                     )}
                   >
-                    <input {...getInputProps()} />
+                    <input {...getInputProps({ id: `${fieldId}-avatar` })} />
                     <Avatar
                       avatar_url={avatarURL ?? ''}
                       name={name ?? ''}
@@ -293,7 +302,10 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
 
           <div className="space-y-4">
             <div>
-              <label className="mb-2 block text-sm font-medium">
+              <label
+                htmlFor={`${fieldId}-name`}
+                className="mb-2 block text-sm font-medium"
+              >
                 Organization Name *
               </label>
               <FormField
@@ -308,6 +320,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                 render={({ field }) => (
                   <div>
                     <Input
+                      id={`${fieldId}-name`}
                       {...field}
                       value={field.value || ''}
                       placeholder="Acme Inc"
@@ -322,13 +335,19 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium">Country</label>
+          <label
+            htmlFor={`${fieldId}-country`}
+            className="mb-2 block text-sm font-medium"
+          >
+            Country
+          </label>
           <FormField
             control={control}
             name="country"
             render={({ field }) => (
               <div>
                 <CountryPicker
+                  id={`${fieldId}-country`}
                   allowedCountries={enums.addressInputCountryValues}
                   value={
                     (field.value as schemas['CountryAlpha2Input']) ?? undefined
@@ -345,7 +364,12 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm font-medium">Website *</label>
+            <label
+              htmlFor={`${fieldId}-website`}
+              className="mb-2 block text-sm font-medium"
+            >
+              Website *
+            </label>
             <FormField
               control={control}
               name="website"
@@ -367,6 +391,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
               render={({ field }) => (
                 <div>
                   <Input
+                    id={`${fieldId}-website`}
                     type="url"
                     {...field}
                     value={field.value || ''}
@@ -412,7 +437,10 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium">
+            <label
+              htmlFor={`${fieldId}-email`}
+              className="mb-2 block text-sm font-medium"
+            >
               Support Email *
             </label>
             <FormField
@@ -422,23 +450,32 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
               render={({ field }) => (
                 <div>
                   <Input
+                    id={`${fieldId}-email`}
                     type="email"
                     {...field}
                     disabled={readOnly}
                     value={field.value || ''}
                     placeholder="support@acme.com"
+                    postSlot={
+                      email === organization.email ? (
+                        <SupportEmailStatusIcon organization={organization} />
+                      ) : undefined
+                    }
                   />
                   <FormMessage />
                 </div>
               )}
             />
+            {!readOnly && email === organization.email && (
+              <SupportEmailVerifyPrompt organization={organization} />
+            )}
           </div>
         </div>
 
         {/* Social Links - Progressive Disclosure */}
         <div>
           <div className="mb-4 flex flex-col items-start">
-            <label className="block text-sm font-medium">Social Media</label>
+            <p className="block text-sm font-medium">Social Media</p>
             <p className="dark:text-polar-400 mt-2 text-xs text-gray-600">
               Your personal social media links are used for identity
               verification. They will never be shown publicly.
@@ -463,16 +500,14 @@ const OrganizationProfileSettings: React.FC<
     default_presentment_currency: schemas['PresentmentCurrency']
     country?: schemas['CountryAlpha2Input']
   }
-  const router = useRouter()
 
   const form = useForm<schemas['OrganizationUpdate']>({
     defaultValues: {
       ...organization,
+      feature_settings: undefined,
     },
   })
   const { setError } = form
-
-  const { currentUser } = useAuth()
 
   const updateOrganization = useUpdateOrganization()
 
@@ -498,7 +533,6 @@ const OrganizationProfileSettings: React.FC<
     const { data, error } = await updateOrganization.mutateAsync({
       id: organization.id,
       body: cleanedBody,
-      userId: currentUser?.id,
     })
 
     if (error) {
@@ -523,11 +557,9 @@ const OrganizationProfileSettings: React.FC<
       return
     }
 
-    // Refresh the router to get the updated organization data from the server
-    router.refresh()
-
     return {
       ...data,
+      feature_settings: undefined,
       default_presentment_currency:
         data.default_presentment_currency as schemas['PresentmentCurrency'],
       country: data.country as schemas['CountryAlpha2Input'] | undefined,
@@ -548,46 +580,50 @@ const OrganizationProfileSettings: React.FC<
           e.preventDefault()
         }}
       >
-        <SettingsGroup>
-          <SettingsGroupItem
-            title="Identifier"
-            description="Unique identifier for your organization"
-          >
-            <FormControl>
-              <CopyToClipboardInput
-                value={organization.id}
-                onCopy={() => {
-                  toast({
-                    title: 'Copied To Clipboard',
-                    description: `Organization ID was copied to clipboard`,
-                  })
-                }}
+        <Box flexDirection="column" rowGap="2xl">
+          <SettingsGroup title="Identifiers">
+            <SettingsGroupItem
+              title="Organization ID"
+              description="Unique identifier for your organization"
+            >
+              <FormControl>
+                <CopyToClipboardInput
+                  value={organization.id}
+                  onCopy={() => {
+                    toast({
+                      title: 'Copied To Clipboard',
+                      description: `Organization ID was copied to clipboard`,
+                    })
+                  }}
+                />
+              </FormControl>
+            </SettingsGroupItem>
+            <SettingsGroupItem
+              title="Organization Slug"
+              description="Used for Customer Portal, Transaction Statements, etc."
+            >
+              <FormControl>
+                <CopyToClipboardInput
+                  value={organization.slug}
+                  onCopy={() => {
+                    toast({
+                      title: 'Copied To Clipboard',
+                      description: `Organization Slug was copied to clipboard`,
+                    })
+                  }}
+                />
+              </FormControl>
+            </SettingsGroupItem>
+          </SettingsGroup>
+          <SettingsGroup title="Profile">
+            <Box flexDirection="column" padding="xl">
+              <OrganizationDetailsForm
+                organization={organization}
+                readOnly={readOnly}
               />
-            </FormControl>
-          </SettingsGroupItem>
-          <SettingsGroupItem
-            title="Organization Slug"
-            description="Used for Customer Portal, Transaction Statements, etc."
-          >
-            <FormControl>
-              <CopyToClipboardInput
-                value={organization.slug}
-                onCopy={() => {
-                  toast({
-                    title: 'Copied To Clipboard',
-                    description: `Organization Slug was copied to clipboard`,
-                  })
-                }}
-              />
-            </FormControl>
-          </SettingsGroupItem>
-          <div className="flex flex-col gap-y-4 p-4">
-            <OrganizationDetailsForm
-              organization={organization}
-              readOnly={readOnly}
-            />
-          </div>
-        </SettingsGroup>
+            </Box>
+          </SettingsGroup>
+        </Box>
       </form>
     </Form>
   )

@@ -104,7 +104,7 @@ export const TierSheet = ({ tier }: { tier: Tier }) => (
     }
   >
     <Box alignItems="baseline" columnGap="s">
-      <Text variant="heading-s" tabularNums>
+      <Text variant="heading-s" as="p" tabularNums>
         {tier.free ? 'Free' : tier.price}
       </Text>
       {tier.period ? (

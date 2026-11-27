@@ -25,12 +25,21 @@ describe('rowPaymentMethod', () => {
     ['sepa_debit', 'SEPA Debit'],
     ['us_bank_account', 'ACH Debit'],
     ['bacs_debit', 'Bacs Debit'],
+    ['paypal', 'PayPal'],
     ['other', 'Other method'],
   ] as const)('flags %s as moving without a card', (type, label) => {
     const method = rowPaymentMethod(row({ payment_method_type: type }))
     expect(method).toMatchObject({ label, kind: 'no_card' })
     expect(method?.note?.body).toContain("can't be copied")
     expect(method?.note?.body).toContain('another card copied')
+  })
+
+  it('flags a likely India-issued card as needing another method', () => {
+    const method = rowPaymentMethod(
+      row({ payment_method_assessment: 'india_card' }),
+    )
+    expect(method).toMatchObject({ label: 'India card', kind: 'no_card' })
+    expect(method?.note?.body).toContain('mandate')
   })
 
   it('flags a subscription with no payment method', () => {
@@ -54,6 +63,7 @@ describe('isPaymentMethodReason', () => {
   it('recognises the pre-check payment notes only', () => {
     expect(isPaymentMethodReason('payment_method_requires_reentry')).toBe(true)
     expect(isPaymentMethodReason('payment_method_missing')).toBe(true)
+    expect(isPaymentMethodReason('payment_method_india_card')).toBe(true)
     expect(isPaymentMethodReason('customer_tax_exempt')).toBe(false)
     expect(isPaymentMethodReason(null)).toBe(false)
   })

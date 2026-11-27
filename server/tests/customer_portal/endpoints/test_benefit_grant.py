@@ -1,5 +1,5 @@
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.kit.visibility import Visibility
 from polar.models import Benefit, Customer, Member, Organization, Subscription
@@ -244,7 +244,7 @@ class TestListBenefitGrants:
             role="member",
             _oauth_accounts={},
         )
-        member.set_oauth_account(
+        await member.set_oauth_account(
             CustomerOAuthAccount(
                 access_token="member-token",
                 account_id="11111",

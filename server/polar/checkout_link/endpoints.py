@@ -12,19 +12,21 @@ from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.exceptions import ResourceNotFound
 from polar.kit.http import get_ip_address
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import EmptyStrToNone, MultipleQueryFilter, empty_str_to_none
+from polar.kit.schemas import EmptyStrToNone, empty_str_to_none
 from polar.kit.versioning import version
 from polar.models import CheckoutLink
 from polar.openapi import APITag, cli_preview
-from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
-from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 from polar.version import V2027_01
 
 from . import auth, legacy_schemas, sorting
 from .schemas import CheckoutLink as CheckoutLinkSchema
-from .schemas import CheckoutLinkCreateProducts, CheckoutLinkUpdate
+from .schemas import (
+    CheckoutLinkCreateProducts,
+    CheckoutLinkListParams,
+    CheckoutLinkUpdate,
+)
 from .service import checkout_link as checkout_link_service
 
 router = APIRouter(
@@ -62,23 +64,18 @@ CheckoutLinkNotFound = {
     tags=[APITag.mcp, APITag.cli],
 )
 async def list(
+    filters: Annotated[CheckoutLinkListParams, Query()],
     auth_subject: auth.CheckoutLinkRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    product_id: MultipleQueryFilter[ProductID] | None = Query(
-        None, title="ProductID Filter", description="Filter by product ID."
-    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[CheckoutLinkSchema]:
     """List checkout links."""
     results, count = await checkout_link_service.list(
         session,
         auth_subject,
-        organization_id=organization_id,
-        product_id=product_id,
+        organization_id=filters.organization_id,
+        product_id=filters.product_id,
         pagination=pagination,
         sorting=sorting,
     )

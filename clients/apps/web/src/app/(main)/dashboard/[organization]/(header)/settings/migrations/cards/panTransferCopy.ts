@@ -1,6 +1,8 @@
 // The backend checklist stores state only. All wording lives here, keyed by
 // step key, so we can reword a step without a data migration.
 
+import type { MigrationSource } from '../sources'
+
 export interface StepInputField {
   name: string
   label: string
@@ -145,7 +147,7 @@ export const STEP_COPY: Record<string, StepCopy> = {
   cutover: {
     title: 'Switch billing to Polar',
     description:
-      'Pick the subscriptions to switch. Polar starts billing them and stops them on Stripe.',
+      'Pick the subscriptions to switch. Polar starts billing them and stops them at your current provider.',
     warning: 'You cannot undo this. Charges start on Polar from now on.',
     action: 'Switch subscriptions',
   },
@@ -168,4 +170,34 @@ export function isSwitchChecklistKey(key: string | null | undefined): boolean {
 
 export function cardMovementSteps<T extends { key: string }>(steps: T[]): T[] {
   return steps.filter((step) => !isSwitchChecklistKey(step.key))
+}
+
+const LEMON_SQUEEZY_STEP_COPY: Record<string, StepCopy> = {
+  request_copy: {
+    title: 'Request the copy in Lemon Squeezy',
+    description:
+      "Lemon Squeezy copies your customers and their saved cards to Polar's Stripe account.",
+    action: "I've requested the copy",
+  },
+  start_copy: {
+    title: 'Lemon Squeezy starts the copy',
+    description:
+      'Lemon Squeezy starts the copy and shares its Stripe migration ID, usually within a week. Paste it here once you have it.',
+    inputs: [
+      {
+        ...STRIPE_MIGRATION_ID_INPUT,
+        hint: 'Starts with migreq_. If Lemon Squeezy sends it to Polar, we fill it in for you.',
+      },
+    ],
+    action: 'Save migration ID',
+  },
+}
+
+export function stepCopy(
+  key: string,
+  source: MigrationSource,
+): StepCopy | undefined {
+  const sourceCopy =
+    source === 'lemon_squeezy' ? LEMON_SQUEEZY_STEP_COPY[key] : undefined
+  return sourceCopy ?? STEP_COPY[key]
 }

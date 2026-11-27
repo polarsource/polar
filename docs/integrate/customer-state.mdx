@@ -1,59 +1,195 @@
 ---
-title: "Customer State"
-description: "The quickest way to integrate billing in your application"
+title: "Check access with customer state"
+sidebarTitle: "Customer state"
+description: "Read a customer's active subscriptions, granted benefits and meter balances in one call or one webhook, and gate features in your app."
 ---
 
-Customer State is a concept allowing you to query for the current state of a customer, including their active subscriptions and granted [benefits](/features/benefits/introduction), in a single [API call](/api-reference/current/customers/get-customer-state-by-external-id) or single [webhook event](/api-reference/current/customer_state_changed).
+The **customer state** is one object with everything you need to decide what a customer can access: their details, **active** subscriptions, **granted** benefits and **active** meters with balances. Read it by your own user ID, or receive it in the `customer.state_changed` webhook whenever it changes. See [Customers](/concepts/customers#customer-state) for the concept.
 
-Combined with the [External ID](/features/customer-management#external-id) feature, you can get up-and-running in minutes.
+The examples use the sandbox client from the [quickstart overview](/quickstart/overview#prerequisites), on API version `2026-10`.
 
-## The customer state object
+## Read the state
 
-The customer state object contains:
+<CodeGroup>
+```typescript TypeScript
+const state = await polar.customers.getStateExternal("user_123");
 
-- All the data about the customer.
-- The list of their **active** subscriptions.
-- The list of their **granted** benefits.
-- The list of their **active** meters, with their current balance.
+const hasPro = state.active_subscriptions.some((s) => s.product_id === proProductId);
+const tokens = state.active_meters.find((m) => m.meter_id === meterId);
+```
 
-Thus, with that single object, you have all the required information to check if you should provision access to your service or not.
+```python Python
+state = polar.customers.get_state_external("user_123")
 
-<Card
-  title="Get Customer State by External ID"
-  icon="ring"
-  iconType="duotone"
-  href="/api-reference/current/customers/get-customer-state-by-external-id"
-  horizontal
->
-  One endpoint to rule them all, using your own customer ID.
-</Card>
+has_pro = any(s.product_id == pro_product_id for s in state.active_subscriptions)
+tokens = next((m for m in state.active_meters if m.meter_id == meter_id), None)
+```
 
-<Card
-  title="Get Customer State "
-  icon="ring"
-  iconType="duotone"
-  href="/api-reference/current/customers/get-customer-state"
-  horizontal
->
-  The same one, but with internal Polar customer ID.
-</Card>
+```bash cURL
+curl https://sandbox-api.polar.sh/v1/customers/external/user_123/state \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10"
+```
+</CodeGroup>
 
-## The `customer.state_changed` webhook
+To use Polar's customer ID, call `getState` (`get_state` in Python), or `GET /v1/customers/{id}/state`.
 
-To be notified of the customer state changes, you can listen to the `customer.state_changed` webhook event. It's triggered when:
+To look up the same information by hand:
 
-- Customer is created, updated or deleted.
-- A subscription is created or updated.
-- A benefit is granted or revoked.
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Customers**
+    - Select the customer
+    - **Overview** lists their **Subscriptions** and **Benefit Grants**
+    - **Usage** shows each meter's consumed and credited units
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar customers get_state_external user_123
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Show the customer state for user_123 in my Polar sandbox.
+    ```
 
-By subscribing to this webhook event, you keep your system up-to-date and update your customer's access accordingly.
+    Uses the `customers_get_state_external` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
 
-<Card
-  title="customer.state_changed"
-  icon="ring"
-  iconType="duotone"
-  href="/api-reference/current/customer_state_changed"
-  horizontal
->
-  One webhook to rule them all.
-</Card>
+## Handle `customer.state_changed`
+
+The webhook's payload is the full state, so you don't need to fetch anything:
+
+<CodeGroup>
+```typescript TypeScript
+import { webhooks } from "@polar-sh/sdk/2026-10";
+
+export async function POST(request: Request) {
+  let event;
+  try {
+    event = await webhooks.validateEvent(
+      await request.text(),
+      {
+        "webhook-id": request.headers.get("webhook-id") ?? "",
+        "webhook-timestamp": request.headers.get("webhook-timestamp") ?? "",
+        "webhook-signature": request.headers.get("webhook-signature") ?? "",
+      },
+      process.env.POLAR_WEBHOOK_SECRET!,
+    );
+  } catch (error) {
+    if (error instanceof webhooks.PolarWebhookVerificationError) {
+      return new Response(null, { status: 403 });
+    }
+    if (error instanceof webhooks.PolarWebhookUnknownTypeError) {
+      return new Response(null, { status: 202 });
+    }
+    throw error;
+  }
+
+  if (event.type === "customer.state_changed") {
+    const state = event.data;
+    await saveAccess(state.external_id, {
+      hasPro: state.active_subscriptions.some((s) => s.product_id === proProductId),
+      features: state.granted_benefits.map((g) => g.benefit_id),
+    });
+  }
+
+  return new Response(null, { status: 202 });
+}
+```
+
+```python Python
+import os
+
+from flask import Flask, request
+from polar.v2026_10.webhooks import (
+    PolarWebhookUnknownTypeError,
+    PolarWebhookVerificationError,
+    validate_event,
+)
+
+app = Flask(__name__)
+
+
+@app.post("/api/webhooks")
+def webhook():
+    try:
+        event = validate_event(
+            request.get_data(),
+            dict(request.headers),
+            os.environ["POLAR_WEBHOOK_SECRET"],
+        )
+    except PolarWebhookVerificationError:
+        return "", 403
+    except PolarWebhookUnknownTypeError:
+        return "", 202
+
+    if event.type == "customer.state_changed":
+        state = event.data
+        save_access(
+            state.external_id,
+            has_pro=any(s.product_id == pro_product_id for s in state.active_subscriptions),
+            features=[g.benefit_id for g in state.granted_benefits],
+        )
+
+    return "", 202
+```
+</CodeGroup>
+
+Test it locally by forwarding your sandbox webhooks with the [CLI](/integrate/cli/webhooks):
+
+```bash Terminal
+polar webhook listen http://localhost:3000/api/webhooks
+```
+
+Without an SDK, verify signatures with a [Standard Webhooks library](/integrate/webhooks/delivery#custom-validation).
+
+## The state object
+
+| Field | Contents |
+| --- | --- |
+| `id`, `external_id`, `email`, `name`, `metadata`, … | The customer's details, as on the [customer](/features/customer-management#customer-fields) |
+| `type` | `individual` or `team` |
+| `active_subscriptions[]` | Subscriptions with `status` `active` or `trialing`. Each has `product_id`, `current_period_end`, `cancel_at_period_end`, `seats`, `units`, `metadata` and `meters[]` (usage this period: `meter_id`, `consumed_units`, `credited_units`, `amount`) |
+| `granted_benefits[]` | Benefits currently granted. Each has `benefit_id`, `benefit_type`, `benefit_metadata` and `properties` (like a license key or Discord connection) |
+| `active_meters[]` | Meter balances: `meter_id`, `consumed_units`, `credited_units` and `balance` (credited minus consumed) |
+
+Common checks:
+
+- **A plan:** a subscription in `active_subscriptions` with your `product_id`. A subscription canceled at period end stays here until it ends.
+- **A feature flag:** a grant in `granted_benefits` with your `benefit_id`, or with a `benefit_metadata` key you set on the benefit. See [Feature flags](/features/benefits/feature-flags).
+- **Credits left:** the `balance` of your meter in `active_meters`. Polar never blocks usage, so enforce limits in your app.
+
+<Warning>
+  The state is per customer, not per member. For a [team customer](/concepts/customers#individuals-and-teams), it shows what the team bought. Check the member's own benefit grants or seat to decide what an individual member can use.
+</Warning>
+
+## When `customer.state_changed` fires
+
+- A customer is created, updated or deleted
+- A subscription is created, updated, canceled, revoked or renewed
+- A benefit is granted, updated or revoked
+- A meter balance changes, from usage or credits
+- A license key changes
+
+<Visibility for="agents">
+  When integrating customer state:
+
+  - Use the application's user ID as `external_id` and read state with `GET /v1/customers/external/{external_id}/state`. Don't store Polar customer IDs.
+  - Keep `POLAR_ACCESS_TOKEN` and `POLAR_WEBHOOK_SECRET` on the server.
+  - Verify every webhook signature. Return `403` on `PolarWebhookVerificationError` and `202` on `PolarWebhookUnknownTypeError`.
+  - Gate access on `customer.state_changed` or a fresh state read, never on the checkout `success_url` redirect.
+  - Match subscriptions by `product_id` and benefits by `benefit_id`, not by name.
+  - Use the sandbox (`https://sandbox-api.polar.sh`) until the user says to go live.
+</Visibility>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Customers](/concepts/customers) | External IDs, teams and the customer state |
+| [Sync customer state](/quickstart/webhooks) | The quickstart step that builds this handler |
+| [Webhook events](/integrate/webhooks/events) | Every event Polar sends |
+| [Get Customer State by External ID](/api-reference/current/customers/get-customer-state-by-external-id) | API reference |
+| [`customer.state_changed`](/api-reference/current/customer_state_changed) | Webhook payload reference |

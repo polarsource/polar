@@ -1,11 +1,11 @@
 'use client'
 
 import { DetailCell } from '@/components/Orders/OrderSection'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
-import { Fragment, ReactNode, useContext } from 'react'
+import { Fragment, ReactNode } from 'react'
 import { ImportTaxPicker } from '../ImportTaxPicker'
 import { BillingAddressEditor } from './BillingAddressEditor'
 import { needsAttention, reasonLinks, ReviewRow } from './reviewRows'
@@ -33,7 +33,7 @@ export function RecordCard({
       minWidth={0}
     >
       <Box alignItems="center" justifyContent="between" columnGap="m">
-        <Text variant="heading-xxs" as="h3">
+        <Text variant="title" as="h3">
           {title}
         </Text>
         {action}
@@ -54,7 +54,7 @@ export function RecordReason({
   row: ReviewRow
   hidden?: boolean
 }) {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   if (!row.reason || hidden) return null
 
   const links = reasonLinks(row, organization.slug)
@@ -110,9 +110,11 @@ export function BillingCountryField({
 export function TaxAfterSwitchField({
   row,
   migrationId,
+  readOnly = false,
 }: {
   row: ReviewRow
   migrationId: string
+  readOnly?: boolean
 }) {
   if (row.entity !== 'subscriptions') return null
   return (
@@ -120,6 +122,7 @@ export function TaxAfterSwitchField({
       key={row.record_id ?? row.source_id}
       migrationId={migrationId}
       row={row}
+      readOnly={readOnly}
     />
   )
 }

@@ -109,6 +109,9 @@ export default {
           _mode: 'plural',
         },
         updateFailed: 'Impossibile aggiornare le unità',
+        range: '{min} - {max} {unitLabelPlural}',
+        minimum: 'Minimo {min} {unitLabelPlural}',
+        maximum: 'Massimo {max} {unitLabelPlural}',
       },
       meteredChargesMayApply:
         'Potrebbero essere applicati costi aggiuntivi a consumo',

@@ -1,12 +1,12 @@
 import { useOnboardingTracking } from '@/hooks'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { ArrowOutwardOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { useRouter } from 'next/navigation'
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import slugify from 'slugify'
 import LogoIcon from '../Brand/logos/LogoIcon'
 import BetterAuthIcon from '../Icons/frameworks/better-auth'
@@ -150,7 +150,7 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
   const [createdToken, setCreatedToken] = useState<string | null>(null)
   const [packageManager, setPackageManager] = useState<PackageManager>('pnpm')
 
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const router = useRouter()
   const { trackStepStarted, trackStepCompleted, trackCompleted, getSession } =
     useOnboardingTracking()

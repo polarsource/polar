@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useEffect } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 import { ProductFormType } from '../ProductForm'
 
 const INVALID_MESSAGE = 'The meter cycle must evenly divide the billing cycle'
@@ -33,13 +33,15 @@ export interface MeterCycleFieldProps {
 }
 
 export const MeterCycleField = ({ disabled }: MeterCycleFieldProps) => {
-  const { control, setValue, trigger, watch } =
-    useFormContext<ProductFormType>()
+  const { control, setValue, trigger } = useFormContext<ProductFormType>()
 
-  const billingInterval = watch('recurring_interval')
-  const billingIntervalCount = watch('recurring_interval_count')
-  const meterInterval = watch('meter_interval')
-  const meterIntervalCount = watch('meter_interval_count')
+  const billingInterval = useWatch({ control, name: 'recurring_interval' })
+  const billingIntervalCount = useWatch({
+    control,
+    name: 'recurring_interval_count',
+  })
+  const meterInterval = useWatch({ control, name: 'meter_interval' })
+  const meterIntervalCount = useWatch({ control, name: 'meter_interval_count' })
 
   const enabled = !!meterInterval
 

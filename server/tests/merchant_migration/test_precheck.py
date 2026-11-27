@@ -21,6 +21,7 @@ from polar.merchant_migration.canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionAddOn,
     CanonicalSubscriptionStatus,
+    PaymentMethodAssessment,
 )
 from polar.merchant_migration.precheck import (
     archived_price_keys,
@@ -279,6 +280,18 @@ class TestPrecheckEngine:
         report = await run([build_product(name="AB")])
         assert "product_name_too_short" in codes(report, PrecheckIssueLevel.warning)
 
+    async def test_long_product_name_warns_but_imports(self) -> None:
+        product = build_product(name="A" * 87)
+        report = await run([product])
+        assert "product_name_too_long" in codes(report, PrecheckIssueLevel.warning)
+        assert plan_product_imports([product], "usd")[product.source_id].skip is None
+
+    async def test_name_too_short_once_cut_is_dropped(self) -> None:
+        product = build_product(name="AB" + " " * 65 + "CD")
+        report = await run([product])
+        assert "product_name_too_short" in codes(report, PrecheckIssueLevel.warning)
+        assert plan_product_imports([product], "usd")[product.source_id].skip
+
     async def test_short_name_does_not_double_report_with_one_time(self) -> None:
         # A one-time product is already dropped for a more fundamental reason;
         # the name check must not add a redundant warning.
@@ -415,6 +428,23 @@ class TestPrecheckEngine:
         )
         assert "duplicate_product_name" in codes(report, PrecheckIssueLevel.warning)
         assert report.can_start is True
+
+    async def test_names_that_match_once_cut_warn_as_duplicates(self) -> None:
+        report = await run(
+            [
+                build_product(
+                    source_id="prod_1:month:1",
+                    product_source_id="prod_1",
+                    name="A" * 64 + " monthly",
+                ),
+                build_product(
+                    source_id="prod_2:month:1",
+                    product_source_id="prod_2",
+                    name="A" * 64 + " yearly",
+                ),
+            ]
+        )
+        assert "duplicate_product_name" in codes(report, PrecheckIssueLevel.warning)
 
     async def test_existing_polar_product_warns_without_blocking(self) -> None:
         report = await run(
@@ -978,6 +1008,7 @@ class TestClassifyRecords:
             CanonicalPaymentMethodType.link,
             CanonicalPaymentMethodType.sepa_debit,
             CanonicalPaymentMethodType.us_bank_account,
+            CanonicalPaymentMethodType.paypal,
         ],
     )
     def test_payment_method_reentry_is_importable_with_info(
@@ -1004,6 +1035,59 @@ class TestClassifyRecords:
         assert "another card copied" in items[0].reason
         assert items[0].reason_level == PrecheckReasonLevel.info
         assert items[0].payment_method_type == payment_method_type
+        assert items[0].payment_method_assessment == (
+            PaymentMethodAssessment.paypal
+            if payment_method_type == CanonicalPaymentMethodType.paypal
+            else PaymentMethodAssessment.not_copyable
+        )
+
+    @pytest.mark.parametrize(
+        ("card_country", "billing_country", "assessment", "reason_code"),
+        [
+            (
+                "IN",
+                "US",
+                PaymentMethodAssessment.india_card,
+                "payment_method_india_card",
+            ),
+            (
+                None,
+                "IN",
+                PaymentMethodAssessment.india_card,
+                "payment_method_india_card",
+            ),
+            ("US", "IN", PaymentMethodAssessment.copyable, None),
+            (None, None, PaymentMethodAssessment.copyable, None),
+        ],
+    )
+    def test_india_card_is_importable_with_info(
+        self,
+        card_country: str | None,
+        billing_country: str | None,
+        assessment: PaymentMethodAssessment,
+        reason_code: str | None,
+    ) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            build_subscription(
+                source_id="sub_1",
+                payment_method=CanonicalPaymentMethod(
+                    source_id="pm_1",
+                    type=CanonicalPaymentMethodType.card,
+                    card_country=card_country,
+                    billing_country=billing_country,
+                ),
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].payment_method_assessment == assessment
+        assert items[0].reason_code == reason_code
 
     def test_skipped_record_carries_its_level(self) -> None:
         records: list[CanonicalRecord] = [

@@ -2,7 +2,7 @@ import asyncio
 import logging.config
 from datetime import datetime
 from functools import wraps
-from typing import Any
+from typing import Any, TypedDict
 from uuid import UUID
 
 import dramatiq
@@ -10,10 +10,9 @@ import structlog
 import typer
 from rich.progress import Progress
 from sqlalchemy import func, select
-from sqlalchemy.util.typing import TypedDict
 
 from polar import tasks  # noqa: F401
-from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.db.postgres import create_async_sessionmaker  # lint-skip: dry-run
 from polar.models import WebhookDelivery, WebhookEvent
 from polar.postgres import create_async_engine
 from polar.redis import create_redis

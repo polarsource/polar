@@ -3,11 +3,11 @@ import {
   resolveBenefitIcon,
 } from '@/components/Benefit/utils'
 import { useBenefit } from '@/hooks/queries'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { schemas } from '@polar-sh/client'
 import { Status, type StatusColor } from '@polar-sh/orbit'
 import Link from 'next/link'
-import { useContext, useMemo } from 'react'
+import { useMemo } from 'react'
 import { EventCardBase } from './EventCardBase'
 import { UserEventCard } from './UserEventCard'
 
@@ -17,10 +17,13 @@ export interface BenefitGrantEventCardProps {
     | schemas['BenefitCycledEvent']
     | schemas['BenefitUpdatedEvent']
     | schemas['BenefitRevokedEvent']
+    | schemas['BenefitManuallyGrantedEvent']
+    | schemas['BenefitManuallyRevokedEvent']
+    | schemas['BenefitUnrevokedEvent']
 }
 
 export const BenefitEventCard = ({ event }: BenefitGrantEventCardProps) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const { data: benefit, isLoading: isLoadingBenefit } = useBenefit(
     event.metadata.benefit_id,
   )
@@ -35,6 +38,12 @@ export const BenefitEventCard = ({ event }: BenefitGrantEventCardProps) => {
         return ['Updated', 'blue']
       case 'benefit.revoked':
         return ['Revoked', 'red']
+      case 'benefit.manually_granted':
+        return ['Manually Granted', 'green']
+      case 'benefit.manually_revoked':
+        return ['Manually Revoked', 'red']
+      case 'benefit.unrevoked':
+        return ['Unrevoked', 'green']
       default:
         return null
     }

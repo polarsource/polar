@@ -1,25 +1,26 @@
-import type { AppliedEntry } from '@/schemas/BillingConfig'
-import { name, record } from '@/utils/billing-config/describe'
-import { MARKS, formatRows } from '@/utils/billing-config/entries'
+import type { AppliedEntry, RemovalReason } from '@/schemas/BillingConfig'
+import { entryKey, name, record } from '@/utils/billing-config/describe'
+import { MARKS, formatRows, updatedIds } from '@/utils/billing-config/entries'
 import {
   type MeterUse,
   benefitSentence,
+  customFieldSentence,
   meterSentence,
   meterUnit,
   productMeters,
   productSentence,
   shownDiff,
-  webhookSentence,
+  usedMeters,
 } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
 
-type Section = 'meters' | 'benefits' | 'products' | 'webhooks'
+type Section = 'meters' | 'custom_fields' | 'benefits' | 'products'
 
 const SECTIONS: ReadonlyArray<Section> = [
   'meters',
+  'custom_fields',
   'benefits',
   'products',
-  'webhooks',
 ]
 
 type Sentence = ReadonlyArray<string>
@@ -29,23 +30,26 @@ const isSection = (section: string): section is Section =>
 
 const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
   meters: meterSentence,
+  custom_fields: customFieldSentence,
   benefits: benefitSentence,
   products: productSentence,
-  webhooks: webhookSentence,
 }
 
 const COVERED: Record<Section, ReadonlySet<string>> = {
   meters: new Set(['name', 'filter', 'aggregation', 'unit', 'custom_label']),
+  custom_fields: new Set(['type', 'name', 'properties']),
   benefits: new Set(['description', 'type', 'properties', 'visibility']),
   products: new Set([
     'name',
     'visibility',
     'recurring_interval',
     'recurring_interval_count',
+    'meter_interval',
+    'meter_interval_count',
     'prices',
     'benefits',
+    'custom_fields',
   ]),
-  webhooks: new Set(['url', 'format', 'events', 'api_version']),
 }
 
 const TOP = ui.INDENT
@@ -58,15 +62,49 @@ export const documents = (input: unknown, section: Section) => {
   const items = record(input)?.[section]
   const byId = new Map<string, unknown>()
   for (const item of Array.isArray(items) ? items : []) {
-    const id = record(item)?.['external_id']
-    if (typeof id === 'string') byId.set(name(id), item)
+    const id = entryKey(item)
+    if (id !== undefined) byId.set(name(id), item)
   }
   return byId
 }
 
-type Grant = { id: string; status: 'kept' | 'added' | 'removed' }
+// A benefit, meter or custom field that a product points at
+type Reference = {
+  id: string
+  status: 'kept' | 'added' | 'removed' | 'updated'
+  required?: boolean
+}
 
-const grants = (entry: AppliedEntry, product: unknown): Grant[] => {
+type Listed = Omit<Reference, 'status'>
+
+const listed = (ids: ReadonlyArray<string>): Listed[] =>
+  ids.map((id) => ({ id }))
+
+const compared = (
+  before: ReadonlyArray<Listed>,
+  after: ReadonlyArray<Listed>,
+  updated: ReadonlySet<string>,
+): Reference[] => {
+  const previous = new Map(before.map((item) => [item.id, item]))
+  const kept = new Set(after.map(({ id }) => id))
+  return [
+    ...after.map((item): Reference => {
+      const old = previous.get(item.id)
+      if (old === undefined) return { ...item, status: 'added' }
+      const changed = updated.has(item.id) || old.required !== item.required
+      return { ...item, status: changed ? 'updated' : 'kept' }
+    }),
+    ...before
+      .filter(({ id }) => !kept.has(id))
+      .map((item): Reference => ({ ...item, status: 'removed' })),
+  ]
+}
+
+const grants = (
+  entry: AppliedEntry,
+  product: unknown,
+  updated: ReadonlySet<string>,
+): Reference[] => {
   const change = entry.diff.find(({ field }) => field === 'benefits')
   if (change === undefined) {
     return ids(record(product)?.['benefits']).map((id) => ({
@@ -74,19 +112,43 @@ const grants = (entry: AppliedEntry, product: unknown): Grant[] => {
       status: entry.action === 'created' ? 'added' : 'kept',
     }))
   }
-  const before = ids(change.before)
-  const after = ids(change.after)
-  return [
-    ...after.map(
-      (id): Grant => ({ id, status: before.includes(id) ? 'kept' : 'added' }),
-    ),
-    ...before
-      .filter((id) => !after.includes(id))
-      .map((id): Grant => ({ id, status: 'removed' })),
-  ]
+  return compared(
+    listed(ids(change.before)),
+    listed(ids(change.after)),
+    updated,
+  )
+}
+
+const attachments = (input: unknown): Listed[] =>
+  (Array.isArray(input) ? input : []).map((item) => ({
+    id: name(record(item)?.['field']),
+    required: record(item)?.['required'] === true,
+  }))
+
+const attachedFields = (
+  entry: AppliedEntry,
+  updated: ReadonlySet<string>,
+): Reference[] => {
+  const change = entry.diff.find(({ field }) => field === 'custom_fields')
+  return change === undefined
+    ? []
+    : compared(attachments(change.before), attachments(change.after), updated)
+}
+
+// The config may leave out a price's currency, the planned prices carry it
+const withPlannedPrices = (document: unknown, entry: AppliedEntry) => {
+  const prices = entry.diff.find(({ field }) => field === 'prices')
+  return prices === undefined
+    ? document
+    : { ...record(document), prices: prices.after }
 }
 
 type Block = { readonly head: string; readonly body: ReadonlyArray<string> }
+
+const REASONS: Record<RemovalReason, string> = {
+  missing: 'not in config',
+  deprecated: 'deprecated',
+}
 
 // Facts describe what is new; an update is told by its diff rows alone.
 const describe = (
@@ -122,25 +184,37 @@ const rows = (
 ) =>
   formatRows(
     indent,
-    shownDiff(section, entry.diff, document).filter(({ field }) =>
-      entry.action === 'created'
-        ? !(isSection(section) && COVERED[section].has(field))
-        : field !== 'benefits',
+    shownDiff(
+      section,
+      entry.diff.filter(({ field }) =>
+        entry.action === 'created'
+          ? !(isSection(section) && COVERED[section].has(field))
+          : field !== 'benefits' && field !== 'custom_fields',
+      ),
+      document,
     ),
     entry.action,
     section,
   )
 
-const GRANT_MARKS: Record<Grant['status'], string> = {
+const REFERENCE_MARKS: Record<Reference['status'], string> = {
   added: ui.green('+'),
   removed: ui.red('-'),
   kept: ui.dim('='),
+  updated: ui.yellow('~'),
 }
 
-const reference = ({ id, status }: Grant): Block => ({
-  head: `${GRANT_MARKS[status]} ${ui.dim('benefit')} ${status === 'kept' ? ui.dim(id) : ui.bold(id)}`,
-  body: [],
-})
+const reference =
+  (kind: string) =>
+  ({ id, status, required }: Reference): Block => ({
+    head: [
+      REFERENCE_MARKS[status],
+      ui.dim(kind),
+      status === 'kept' ? ui.dim(id) : ui.bold(id),
+      ...(required === false ? [ui.dim('optional')] : []),
+    ].join(' '),
+    body: [],
+  })
 
 export const formatTree = (
   input: unknown,
@@ -151,30 +225,59 @@ export const formatTree = (
     entries.filter((entry) => entry.section === section)
   const docs = {
     meters: documents(input, 'meters'),
+    custom_fields: documents(input, 'custom_fields'),
     benefits: documents(input, 'benefits'),
     products: documents(input, 'products'),
-    webhooks: documents(input, 'webhooks'),
   }
 
+  const updatedBenefits = updatedIds(entries, 'benefits')
+  const updatedMeters = updatedIds(entries, 'meters')
+  const updatedCustomFields = updatedIds(entries, 'custom_fields')
+  const meterUses = (entry: AppliedEntry) => {
+    const before = usedMeters(entry, 'before')
+    const after = usedMeters(entry, 'after')
+    if (!after.some((id) => updatedMeters.has(id))) return []
+    return compared(listed(before), listed(after), updatedMeters).map(
+      reference('meter'),
+    )
+  }
+
+  const width = Math.max(
+    0,
+    ...entries
+      .filter(({ action }) => action === 'unchanged' || action === 'removed')
+      .map((entry) => entry.id.length),
+  )
+
+  const removal = ({ id, reason }: AppliedEntry) => [
+    `${TOP}${MARKS.removed} ${ui.bold(id.padEnd(width))}  ${reason ? ui.dim(REASONS[reason]) : ''}`,
+  ]
+
   const product = (entry: AppliedEntry) => {
+    if (entry.action === 'removed') return removal(entry)
     const document = docs.products.get(entry.id)
-    const granted = grants(entry, document)
+    const granted = grants(entry, document, updatedBenefits)
     const regranted = granted.some(({ status }) => status !== 'kept')
+    const fields = attachedFields(entry, updatedCustomFields)
+    const fieldsChanged = fields.some(({ status }) => status !== 'kept')
     if (entry.action === 'unchanged' && !regranted) return undefined
     const fresh = entry.action === 'created'
+    const planned = withPlannedPrices(document, entry)
     const own = describe(
       MARKS[entry.action],
       entry.id,
-      productSentence(document),
+      productSentence(planned),
       fresh,
     )
     const children = [
       ...(fresh
-        ? productMeters(document, (id) => meterUnit(docs.meters.get(id))).map(
+        ? productMeters(planned, (id) => meterUnit(docs.meters.get(id))).map(
             meterUse,
           )
         : []),
-      ...(fresh || regranted ? granted.map(reference) : []),
+      ...meterUses(entry),
+      ...(fresh || regranted ? granted.map(reference('benefit')) : []),
+      ...(fieldsChanged ? fields.map(reference('custom field')) : []),
     ]
     return [
       `${TOP}${own.head}`,
@@ -186,6 +289,7 @@ export const formatTree = (
 
   const plain = (entry: AppliedEntry, section: string) => {
     if (entry.action === 'unchanged') return undefined
+    if (entry.action === 'removed') return removal(entry)
     const document = isSection(section)
       ? docs[section].get(entry.id)
       : undefined
@@ -199,6 +303,7 @@ export const formatTree = (
       `${TOP}${own.head}`,
       ...own.body.map((line) => `${NESTED}${line}`),
       ...rows(NESTED, entry, section, document),
+      ...branches(meterUses(entry)),
     ]
   }
 
@@ -212,12 +317,6 @@ export const formatTree = (
     .flatMap((section) => {
       const own = bySection(section)
       if (own.length === 0) return []
-      const width = Math.max(
-        0,
-        ...own
-          .filter((entry) => entry.action === 'unchanged')
-          .map((entry) => entry.id.length),
-      )
       const rendered = own.map((entry) => ({
         entry,
         lines: section === 'products' ? product(entry) : plain(entry, section),

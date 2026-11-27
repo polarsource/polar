@@ -121,7 +121,8 @@ customer_state = polar.customers.get_state_external(
 )
 ```
 
-Pass an `httpx.Timeout` instance to configure connect, read, write, and pool timeouts separately.
+Pass an `httpx2.Timeout` or `httpx.Timeout` instance to configure connect, read, write, and pool timeouts separately.
+If your application uses `httpx`, declare it as a direct dependency.
 
 ## Organizations
 
@@ -209,7 +210,11 @@ In high throughput scenarios, Outpost can return you accurate meter reads only m
 
 Outpost needs an `external_id` on every event; `track()` rejects an event without one.
 
-An event counts locally until Polar confirms it stored it, or until the buffer gives it up, so a meter read never loses an event Polar is still ingesting.
+A first read of a customer waits up to `snapshot_timeout` for Polar's snapshot. If it does not arrive in time, the read raises `NotReadyError` from `polar.outpost`; the next read asks again.
+
+An event counts locally until Polar confirms it stored it, or refuses it, so a meter read never loses an event Polar is still ingesting.
+
+Outpost delivers the events itself, instead of the buffer: it queues them in Redis and sends them to Polar in batches of up to 1,000 events, shared by every client, on `flush()` and every second on a long-running server. Pass `buffered` or `outpost`, not both.
 
 Pass a dictionary instead of `True` to configure it.
 
@@ -218,24 +223,56 @@ Pass a dictionary instead of `True` to configure it.
 The metering helper queues events in memory and sends them in batches of up to `batch_size`
 events, or every `batch_interval` seconds. `track()` never waits for the HTTP request.
 
-On a long-running server, let the interval deliver. Leaving the `async with polar.metering()`
-block drains the queue; it waits up to `shutdown_timeout`.
+On a long-running server, keep one metering context open for the application's lifetime
+and let background batching deliver events. Share it between requests on the same event loop.
+Leaving the context drains the queue within `shutdown_timeout` (30 seconds by default) and
+raises if any earlier, unacknowledged events could not be confirmed.
 
-In serverless environments such as Vercel or AWS Lambda, the process may stop when the handler
-returns. Call `flush()` once per request before returning. `flush()` returns once every event
-queued before it is delivered or reported to `on_dropped`. Events queued by other requests in
-the meantime share the same HTTP requests, so concurrent handlers don't send one event each.
+In serverless environments such as Vercel or AWS Lambda, await `flush(timeout=30)` before
+returning from each request, so the function does not freeze with events in the queue. It
+waits for events queued before the call without closing the shared helper. A newer flush
+releases older ones whose deadline is no later than its own and waits for their events too,
+so concurrent handlers do not each wait for a round trip to Polar. Concurrent handlers share
+HTTP batches.
 
 ```python
 async def handle_request() -> dict[str, bool]:
     await metering.track(name="api_request", external_customer_id="customer_123")
-    await metering.flush()
+    await metering.flush(timeout=30)
     return {"ok": True}
 ```
 
-When Polar answers `429 Too Many Requests`, the helper keeps the events, waits for the
-`Retry-After` delay, then sends them in full batches. A `flush()` in flight returns after that
-wait. The rate limit counts requests, not events, so batching is what keeps you under it.
+For a handler that owns its own helper, context exit drains automatically:
+
+```python
+async def handle_request() -> dict[str, bool]:
+    async with polar.metering(buffered={"shutdown_timeout": 30}) as metering:
+        await metering.track(name="api_request", external_customer_id="customer_123")
+    return {"ok": True}
+```
+
+A `flush()` confirms delivery unless a newer flush released it. Failed delivery raises
+`MeteringDeliveryError`, importable from `polar.metering`. Its `events` contains the unconfirmed events; each item in
+`failures` includes `events`, a `reason`, and the original `cause`. Drops are still logged
+and passed to `on_dropped`. A completed flush acknowledges the reported failures, so a later
+flush reports only subsequent outcomes. The newest overlapping flush reports the failures of
+the ones it released.
+Periodically flush long-running helpers to observe failures and release their retained records.
+
+If the wait expires, `flush()` raises `MeteringTimeoutError`. Timeout and caller cancellation
+do not stop background delivery or other callers, and leave failures observable by a later
+flush or context exit. The flush timeout bounds the caller's wait; `shutdown_timeout` bounds
+context cleanup. Both are independent of the HTTP client's request timeout. Shutdown may
+interrupt delivery callbacks when its deadline expires. If both the context body and delivery
+fail, exit raises an exception group preserving both errors.
+
+When Polar answers `429 Too Many Requests`, the helper waits for `Retry-After`, then sends
+full batches. A flush waits for this delivery only up to its timeout. The rate limit counts
+requests, not events, so batching keeps request volume down.
+
+The buffer is in memory: forced process termination can still lose events. Choose deadlines
+that fit within the function's execution limit; use durable storage when delivery must survive
+termination. A timeout means delivery is unconfirmed, so blindly retrying may duplicate events.
 
 ### Options
 
@@ -247,17 +284,20 @@ The metering helper buffers events in memory and sends them in batches to Polar.
 | ------------------ | ------- | ---------------------------------------------------------- |
 | `batch_size`       | `100`   | Maximum events per HTTP request.                           |
 | `batch_interval`   | `1.0`   | Seconds to collect a batch, starting with its first event. |
-| `shutdown_timeout` | `5.0`   | Seconds allowed to drain on context exit.                  |
+| `shutdown_timeout` | `30.0`   | Seconds allowed to drain on context exit.                  |
 | `max_attempts`     | `3`     | Total attempts per batch, including the first.             |
 | `on_delivered`     | `None`  | Async callback receiving the events Polar accepted.        |
 | `on_dropped`       | `None`  | Async callback receiving the dropped events and reason.    |
 
 #### Outpost
 
-| Option      | Default                          | Meaning                                   |
-| ----------- | -------------------------------- | ----------------------------------------- |
-| `redis_url` | `REDIS_URL` environment variable | Redis instance used by Outpost.           |
-| `telemetry` | `True`                           | Send Outpost metrics and traces to Polar. |
+| Option         | Default                          | Meaning                                                  |
+| -------------- | -------------------------------- | -------------------------------------------------------- |
+| `redis_url`    | `REDIS_URL` environment variable | Redis instance used by Outpost.                          |
+| `telemetry`    | `True`                           | Send Outpost metrics and traces to Polar.                |
+| `snapshot_timeout` | `5`                          | Seconds a cold read waits for its initial snapshot.      |
+| `on_delivered` | `None`                           | Async callback receiving the events Polar accepted.      |
+| `on_dropped`   | `None`                           | Async callback receiving the refused events and reason.  |
 
 Telemetry can also be disabled with the `POLAR_OUTPOST_TELEMETRY=0` environment variable.
 

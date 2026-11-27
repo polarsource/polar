@@ -22,13 +22,14 @@ export const CustomerOverview = ({
   const { dateRange, interval } = useCustomerMetricsParams(customer)
 
   return (
-    <Box flexDirection="column" rowGap="2xl">
+    <Box flexDirection="column" rowGap="5xl">
       <CustomerMetricsOverview
         organization={organization}
         customer={customer}
         dateRange={dateRange}
         interval={interval}
       />
+      <CustomerDetailsSection organization={organization} customer={customer} />
       <CustomerSubscriptionsTable
         organization={organization}
         customer={customer}
@@ -36,10 +37,10 @@ export const CustomerOverview = ({
       <CustomerOrdersTable organization={organization} customer={customer} />
       <CustomerPaymentsTable organization={organization} customer={customer} />
       <CustomerBenefitGrantsTable
+        key={customer.id}
         organization={organization}
         customer={customer}
       />
-      <CustomerDetailsSection customer={customer} />
     </Box>
   )
 }

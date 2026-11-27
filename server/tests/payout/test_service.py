@@ -30,6 +30,7 @@ from polar.models.organization import (
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.models.transaction import Processor, TransactionType
+from polar.organization_email.service import SupportEmailNotVerified
 from polar.payout.repository import PayoutRepository
 from polar.payout.schemas import PayoutGenerateInvoice
 from polar.payout.service import (
@@ -159,6 +160,21 @@ class TestCreate:
         )
 
         with pytest.raises(PayoutAccountNotReady):
+            await payout_service.create(session, locker, organization)
+
+    async def test_support_email_not_verified(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.email = "other@example.com"
+        await save_fixture(organization)
+        await create_payout_account(save_fixture, organization, user)
+
+        with pytest.raises(SupportEmailNotVerified):
             await payout_service.create(session, locker, organization)
 
     @pytest.mark.parametrize(
@@ -552,6 +568,20 @@ class TestCreate:
 
 @pytest.mark.anyio
 class TestEstimate:
+    async def test_support_email_not_verified(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.email = "other@example.com"
+        await save_fixture(organization)
+        await create_payout_account(save_fixture, organization, user)
+
+        with pytest.raises(SupportEmailNotVerified):
+            await payout_service.estimate(session, organization)
+
     async def test_regular_currency(
         self,
         mocker: MockerFixture,

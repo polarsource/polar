@@ -20,6 +20,7 @@ from polar.integrations.polar.tasks import (
     create_customer,
     delete_customer,
     remove_member,
+    revoke_subscription,
     track_event_ingestion,
     track_organization_review_usage,
     update_customer_slug,
@@ -412,6 +413,32 @@ class TestDeleteCustomer:
         await delete_customer(external_id="org-123")
 
         client.delete_customer.assert_called_once_with(external_id="org-123")
+
+
+@pytest.mark.anyio
+class TestRevokeSubscription:
+    async def test_revokes_active_subscription(self, mocker: MockerFixture) -> None:
+        client = AsyncMock(spec=PolarSelfClient)
+        client.get_active_subscription.return_value = MagicMock(id="sub-123")
+        mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
+
+        await revoke_subscription(external_customer_id="org-123")
+
+        client.get_active_subscription.assert_called_once_with(
+            external_customer_id="org-123"
+        )
+        client.revoke_subscription.assert_called_once_with(subscription_id="sub-123")
+
+    async def test_noop_without_active_subscription(
+        self, mocker: MockerFixture
+    ) -> None:
+        client = AsyncMock(spec=PolarSelfClient)
+        client.get_active_subscription.return_value = None
+        mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
+
+        await revoke_subscription(external_customer_id="org-123")
+
+        client.revoke_subscription.assert_not_called()
 
 
 @pytest.mark.anyio

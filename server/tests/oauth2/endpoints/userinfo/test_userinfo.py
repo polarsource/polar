@@ -1,5 +1,5 @@
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.models import Agent, OAuth2Client, User
 from tests.fixtures.database import SaveFixture

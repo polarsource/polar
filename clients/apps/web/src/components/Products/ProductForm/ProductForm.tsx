@@ -37,6 +37,10 @@ export type ProductFormType = Omit<
   schemas['ProductCreate'] | schemas['ProductUpdate'],
   'metadata' | 'prices'
 > &
+  Pick<
+    schemas['ProductCreate'],
+    'recurring_interval' | 'recurring_interval_count'
+  > &
   ProductFullMediasMixin &
   ProductMeterCycleMixin &
   MetadataFormValues & {
@@ -48,17 +52,17 @@ const ProductForm = ({
   update,
   benefitsSlot,
   hasMeterCreditBenefit,
-  nameFlagged,
+  flaggedCategory,
 }: {
   organization: schemas['Organization']
   update?: boolean
   benefitsSlot: React.ReactNode
   hasMeterCreditBenefit?: boolean
-  nameFlagged?: boolean
+  flaggedCategory?: string
 }) => {
   return (
     <div className="dark:divide-polar-700 flex flex-col divide-y">
-      <ProductInfoSection nameFlagged={nameFlagged} />
+      <ProductInfoSection flaggedCategory={flaggedCategory} />
 
       <ProductPricingSection
         organization={organization}

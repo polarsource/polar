@@ -1,11 +1,11 @@
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { Checkbox } from '@polar-sh/orbit'
 import { Label } from '@polar-sh/ui/components/ui/label'
-import { useContext, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from '../Toast/use-toast'
 import { CheckoutLinkForm } from './CheckoutLinkForm'
 
@@ -14,7 +14,7 @@ interface CheckoutLinkPageProps {
 }
 
 export const CheckoutLinkPage = ({ checkoutLink }: CheckoutLinkPageProps) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
 
   const [darkmode, setDarkmode] = useState<boolean>(true)
   const [embedType, setEmbedType] = useState<string>('link')

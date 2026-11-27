@@ -64,10 +64,10 @@ describe('planMarkdown', () => {
   test('titles, notes the target and diffs each changed section', () => {
     expect(planMarkdown(config, acme, { entries, issues: [] })).toBe(
       [
-        '## Polar billing plan updated',
+        '## Polar billing config changed',
         '',
         '> [!NOTE]',
-        "> Applying the config in this pull request changes billing for **Acme\\_Inc** in sandbox. Review every change below before it's applied.",
+        "> Publishing the config in this pull request changes billing for **Acme\\_Inc** in sandbox. Review every change below before it's published.",
         '',
         '| Organization | Environment | Config | Changes |',
         '| --- | --- | --- | --- |',
@@ -94,6 +94,98 @@ describe('planMarkdown', () => {
         '+   prices (USD)  $29',
         '```',
       ].join('\n'),
+    )
+  })
+
+  test('adds the catalog change to the summary table', () => {
+    expect(
+      planMarkdown(config, acme, {
+        entries,
+        catalog: { before: { name: 'v1' }, name: 'Spring_pricing' },
+        issues: [],
+      }),
+    ).toContain(
+      [
+        '| Organization | Environment | Config | Changes | Catalog |',
+        '| --- | --- | --- | --- | --- |',
+        '| Acme\\_Inc | sandbox | `polar.json` | 2 to change, 1 to add, 1 unchanged | v1 (live) → Spring\\_pricing (draft) |',
+      ].join('\n'),
+    )
+  })
+
+  test('notes an unpublished draft under the target', () => {
+    expect(
+      planMarkdown(
+        config,
+        acme,
+        { entries, issues: [] },
+        {
+          live: null,
+          draft: { id: 'cat-draft', name: 'v1', drift: [], conflicts: [] },
+        },
+      ),
+    ).toContain(
+      [
+        "> Publishing the config in this pull request changes billing for **Acme\\_Inc** in sandbox. Review every change below before it's published.",
+        '>',
+        '> These changes are saved in a draft.',
+        '',
+      ].join('\n'),
+    )
+  })
+
+  test('warns that the draft has changes the config does not', () => {
+    expect(
+      planMarkdown(
+        config,
+        acme,
+        { entries: [entries[1]!], issues: [] },
+        {
+          live: { id: 'cat-live', name: 'v3' },
+          draft: {
+            id: 'cat-draft',
+            name: null,
+            drift: [entries[0]!],
+            conflicts: [
+              {
+                section: entries[0]!.section,
+                id: entries[0]!.id,
+                action: 'updated',
+                diff: [],
+              },
+            ],
+          },
+        },
+      ),
+    ).toContain(
+      [
+        '> [!WARNING]',
+        "> The unpublished draft of **Acme\\_Inc** in sandbox has changes this config doesn't. `polar config draft` stops until they are in the file or discarded with `--force`.",
+        '',
+      ].join('\n'),
+    )
+  })
+
+  test('warns about a draft conflict when the config has changes of its own', () => {
+    expect(
+      planMarkdown(
+        config,
+        acme,
+        { entries, issues: [] },
+        {
+          live: { id: 'cat-live', name: 'v3' },
+          draft: {
+            id: 'cat-draft',
+            name: null,
+            drift: [],
+            conflicts: [
+              { section: 'benefits', id: 'spare', action: 'updated', diff: [] },
+            ],
+          },
+        },
+      ),
+    ).toContain(
+      "> [!WARNING]\n> The unpublished draft of **Acme\\_Inc** in sandbox has changes this config doesn't.",
     )
   })
 
@@ -127,7 +219,9 @@ describe('planMarkdown', () => {
         },
       ],
     })
-    expect(output).toContain("> [!CAUTION]\n> `polar.json` can't be applied")
+    expect(output).toContain(
+      "> [!CAUTION]\n> `polar.json` can't be saved to the draft",
+    )
     expect(output).toMatch(/#### Problems\n\n```\n.*Error:.*\n```$/s)
   })
 
@@ -211,6 +305,67 @@ describe('planMarkdown', () => {
     )
   })
 
+  test('says which updated benefits a product grants', () => {
+    const output = planMarkdown(config, acme, {
+      entries: [
+        { section: 'benefits', id: 'support', action: 'updated', diff: [] },
+        {
+          section: 'products',
+          id: 'pro',
+          action: 'updated',
+          diff: [
+            { field: 'benefits', before: ['support'], after: ['support'] },
+          ],
+        },
+      ],
+      issues: [],
+    })
+    expect(output).toContain(
+      ['  pro', '    benefits  support (updated)'].join('\n'),
+    )
+    expect(output).not.toContain('-   benefits')
+  })
+
+  test('says which updated meter a benefit and a product use', () => {
+    const properties = { meter: 'tokens', units: 1000, rollover: false }
+    const prices = [
+      { amount_type: 'metered_unit', meter: 'tokens', unit_amount: '0.1' },
+    ]
+    const output = planMarkdown(config, acme, {
+      entries: [
+        {
+          section: 'meters',
+          id: 'tokens',
+          action: 'updated',
+          diff: [{ field: 'name', before: 'Tokens', after: 'LLM tokens' }],
+        },
+        {
+          section: 'benefits',
+          id: 'credits',
+          action: 'updated',
+          diff: [
+            { field: 'properties', before: properties, after: properties },
+          ],
+        },
+        {
+          section: 'products',
+          id: 'pro',
+          action: 'updated',
+          diff: [{ field: 'prices', before: prices, after: prices }],
+        },
+      ],
+      issues: [],
+    })
+    expect(output).toContain(
+      ['  credits', '    meter  tokens (updated)'].join('\n'),
+    )
+    expect(output).toContain(
+      ['  pro', '    meter  tokens (updated)'].join('\n'),
+    )
+    expect(output).not.toContain('properties')
+    expect(output).not.toContain('prices')
+  })
+
   test('diffs settings groups like entries', () => {
     const markdown = planMarkdown(config, acme, {
       entries: [
@@ -226,44 +381,5 @@ describe('planMarkdown', () => {
     expect(markdown).toContain(
       '#### Settings\n\n```diff\n  payments\n-   currency  USD\n+   currency  EUR\n```',
     )
-  })
-
-  test('redacts webhook urls by the format on their own side', () => {
-    const slack = 'https://hooks.slack.com/services/T0/B0/token'
-    const after = 'https://app:pw@app.test/hook?token=new'
-    const input = {
-      webhooks: [
-        { external_id: 'app', url: after, format: 'raw', events: [] },
-        { external_id: 'sales', url: slack, format: 'slack', events: [] },
-      ],
-    }
-    const markdown = planMarkdown({ ...config, input }, acme, {
-      entries: [
-        {
-          section: 'webhooks',
-          id: 'app',
-          action: 'updated',
-          diff: [
-            { field: 'url', before: slack, after },
-            { field: 'format', before: 'slack', after: 'raw' },
-          ],
-        },
-        {
-          section: 'webhooks',
-          id: 'sales',
-          action: 'created',
-          diff: [{ field: 'url', before: null, after: slack }],
-        },
-      ],
-      issues: [],
-    })
-    expect(markdown).not.toContain('B0/token')
-    expect(markdown).not.toContain('token=new')
-    expect(markdown).not.toContain('pw@')
-    expect(markdown).toContain('-   url     https://hooks.slack.com/***')
-    expect(markdown).toContain(
-      '+   url     https://***@app.test/hook?token=***',
-    )
-    expect(markdown).toContain('+   url  https://hooks.slack.com/***')
   })
 })

@@ -23,10 +23,7 @@ export const DisputeOrderContextCard = ({
     </Text>
     <Box flexDirection="column">
       <DetailRow label="Product" value={order.product?.name ?? '—'} />
-      <DetailRow
-        label="Status"
-        value={<OrderStatus size="small" status={order.status} />}
-      />
+      <DetailRow label="Status" value={<OrderStatus status={order.status} />} />
       <DetailRow
         label="Amount"
         value={format(order.total_amount, order.currency)}

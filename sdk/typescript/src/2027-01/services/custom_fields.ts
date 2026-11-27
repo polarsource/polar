@@ -1,5 +1,6 @@
 import type { ClientBase, RequestOptions } from "../../base";
 import type {
+  CatalogStatus,
   CustomField,
   CustomFieldCreate,
   CustomFieldSortProperty,
@@ -29,6 +30,8 @@ export const listCustomFields = (client: ClientBase) => {
       organization_id?: string | string[] | null;
       query?: string | null;
       type?: CustomFieldType | CustomFieldType[] | null;
+      catalog_id?: string | string[] | null;
+      catalog_status?: CatalogStatus | CatalogStatus[] | null;
       page?: number;
       limit?: number;
       sorting?: CustomFieldSortProperty[] | null;
@@ -40,6 +43,8 @@ export const listCustomFields = (client: ClientBase) => {
       organization_id: query?.organization_id,
       query: query?.query,
       type: query?.type,
+      catalog_id: query?.catalog_id,
+      catalog_status: query?.catalog_status,
       page: query?.page ?? 1,
       limit: query?.limit ?? 10,
       sorting: query?.sorting ?? ["slug"],
@@ -76,6 +81,8 @@ export const iterListCustomFields = (client: ClientBase) => {
       organization_id?: string | string[] | null;
       query?: string | null;
       type?: CustomFieldType | CustomFieldType[] | null;
+      catalog_id?: string | string[] | null;
+      catalog_status?: CatalogStatus | CatalogStatus[] | null;
       page?: number;
       limit?: number;
       sorting?: CustomFieldSortProperty[] | null;

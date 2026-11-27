@@ -18,6 +18,16 @@ variable "tailscale_oauth_secret_arn" {
   type        = string
 }
 
+variable "tailscale_version" {
+  description = "Tailscale release to install."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+$", var.tailscale_version))
+    error_message = "tailscale_version must be a release version such as 1.104.4."
+  }
+}
+
 variable "tailscale_oauth_secret_kms_key_arn" {
   description = "Customer-managed KMS key encrypting the OAuth client secret, if used."
   type        = string
@@ -63,6 +73,12 @@ variable "advertise_routes" {
     condition     = alltrue([for route in var.advertise_routes : can(cidrnetmask(route))])
     error_message = "advertise_routes must contain valid IPv4 CIDRs."
   }
+}
+
+variable "advertise_connector" {
+  description = "Advertise the subnet router as a Tailscale App Connector."
+  type        = bool
+  default     = false
 }
 
 variable "advertise_tags" {

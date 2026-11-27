@@ -3,7 +3,7 @@
 import { useCustomerPortalSessionRequest } from '@/hooks/queries/customerPortal'
 import { TURNSTILE_SCRIPT_URL, useTurnstile } from '@/hooks/useTurnstile'
 import { setValidationErrors } from '@/utils/api/errors'
-import { Button } from '@polar-sh/orbit'
+import { Alert, Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
@@ -40,9 +40,11 @@ const TURNSTILE_ACTION = 'customer-portal-otp'
 const ClientPage = ({
   organization,
   email,
+  loggedOut = false,
 }: {
   organization: schemas['CustomerOrganization']
   email?: string
+  loggedOut?: boolean
 }) => {
   const router = useRouter()
   const form = useForm<{ email: string }>({
@@ -213,6 +215,12 @@ const ClientPage = ({
               title="Sign in"
               description="Enter your email address to access your purchases. We'll send you a verification code."
             />
+            {loggedOut ? (
+              <Alert
+                variant="success"
+                title="You have been logged out successfully"
+              />
+            ) : null}
             <Form {...form}>
               <form
                 className="flex w-full flex-col gap-y-4"

@@ -627,6 +627,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-portal/customer-session/logout': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Log Out of Customer Portal
+     * @description Expire the current customer portal session.
+     *
+     *     **Scopes**: `customer_portal:read` `customer_portal:write`
+     */
+    post: operations['customer_portal:customer-session:logout']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customer-portal/customer-session/start': {
     parameters: {
       query?: never
@@ -49539,6 +49561,24 @@ export interface operations {
         content: {
           'application/json': components['schemas']['PortalAuthenticatedUser']
         }
+      }
+    }
+  }
+  'customer_portal:customer-session:logout': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
     }
   }

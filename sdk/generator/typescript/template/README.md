@@ -246,7 +246,7 @@ const metering = polar.metering({
 ```
 
 `RedisEventQueue` from `@polar-sh/sdk/metering/queue/redis` uses a Redis stream for persistent
-delivery. Either queue can be used with Outpost.
+delivery. Outpost needs it: an event Outpost has counted stays in Redis until Polar takes it.
 
 ```typescript
 import { RedisEventQueue } from "@polar-sh/sdk/metering/queue/redis";

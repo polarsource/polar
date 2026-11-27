@@ -2,84 +2,52 @@
 title: "Zero-latency metering"
 sidebarTitle: "Zero-latency metering"
 tag: "Beta"
-description: "Read a customer's balance from your own Redis, right after you track an event."
+description: "Check a customer's balance on every request without calling Polar, with Outpost and your own Redis."
 ---
 
-Outpost is the Polar SDK's zero-latency metering. It gives you two things:
+**Outpost** is the part of the Polar SDK that answers meter reads from your own Redis. It gives you two things:
 
-- Balance checks in the hot path of every request.
-- Event delivery that rides out network issues between you and Polar.
+- Balance checks on every request, without a call to Polar.
+- Event delivery that survives network issues between you and Polar.
 
-Outpost keeps a copy of each customer's meter usage in a Redis database you own. It updates that copy when you track an event, and answers balance reads from it. A Redis event queue in the same database batches your events and retries their delivery to Polar.
+Outpost keeps a copy of each customer's meter usage in a Redis database you own. It updates that copy when you track an event, and answers balance reads from it. A queue in the same Redis batches your events and delivers them to Polar.
 
-Polar stays the source of truth. When its totals change, Outpost pulls them and replaces the local copy, so the two converge.
+Polar stays the source of truth. When its totals change, Outpost pulls them and replaces its copy.
 
-Use Outpost when you check a balance on every request, and a round trip to Polar on each check is too slow. In our load test at 10,000 events/s, a read took 1.7 ms at the median: see [Performance and sizing](#performance-and-sizing).
+Use Outpost when you check a balance on every request, and a round trip to Polar on each check is too slow. In our load test at 10,000 events per second, a read took 1.7 ms at the median.
 
-## How it works
-
-### What to expect
+## What to expect
 
 - A read sees every event tracked on any instance that shares the Redis, as soon as `track()` returns.
-- Once Outpost knows a customer, reads stay in your Redis. They don't call Polar.
-- Outpost counts an event locally until Polar has stored it, so your local balance is never higher than Polar's.
+- Once Outpost knows a customer, reads stay in your Redis.
 - A credit granted in Polar reaches local reads within 30 seconds.
-- Outpost reports the balance. Your code decides whether to serve the request, as it does without Outpost.
-- Polar's own meter reads catch up with Outpost within minutes, once the events are delivered and ingested.
-
-### The flow
-
-```mermaid
-sequenceDiagram
-    participant App as Your app
-    participant SDK as Polar SDK
-    participant Redis as Your Redis
-    participant Polar
-
-    App->>SDK: track(event)
-    SDK->>Redis: queue the event for Polar
-    SDK->>Redis: update the meters matching the event
-    SDK-->>Polar: deliver the queue, in batches
-    Polar-->>SDK: accepted
-    SDK->>Redis: mark the events as stored
-    App->>SDK: meter(customer)
-    SDK->>Redis: read the local state of the customer
-    SDK-->>App: consumed, credited, balance
-    loop Synchronize local and remote state
-        SDK->>Polar: pull the latest changes
-        Polar-->>SDK: Polar's totals
-        SDK->>Redis: replace the local counts Polar now covers
-    end
-```
-
-Every instance of your application that runs the SDK with the same Redis shares state and queued events. A read goes to Redis, so it sees the writes of every other instance at once. One instance at a time pulls Polar's changes for the whole fleet.
+- Polar's own meter reads catch up within minutes, once Polar has ingested the events.
+- Outpost reports the balance. Your code decides whether to serve the request.
 
 ## Configuration
 
 ### Prepare Redis
 
-Outpost needs a Redis reachable from every instance of your application. Give it a database of its own, and one per environment: a sandbox and a production deployment must not share one.
+Outpost needs a Redis that every instance of your application can reach. Give it a database of its own, and one per environment: sandbox and production must not share one.
 
-The queue holds your events until Polar takes them, so configure Redis to keep them:
+The queue holds your events until Polar has them, so configure Redis to keep them:
 
-- **Turn on AOF persistence** (`appendonly yes`). With snapshots (RDB) alone, a Redis restart loses the events queued since the last snapshot. With AOF and `appendfsync everysec`, it loses at most a second of writes. See Redis's [persistence guide](https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/).
-- **Set `maxmemory-policy` to `noeviction`.** An evicting policy can drop queued events. With `noeviction`, a full Redis refuses new writes, and `track()` fails where you can see it.
+- **Turn on AOF persistence** (`appendonly yes`). With snapshots alone, a restart loses the events queued since the last snapshot. With AOF and `appendfsync everysec`, it loses at most one second. See Redis's [persistence guide](https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/).
+- **Set `maxmemory-policy` to `noeviction`.** Other policies can delete queued events. With `noeviction`, a full Redis refuses new events and `track()` fails, so you see it.
 
 ### Use an access token with events:write
 
-Outpost and the queue call Polar with the token your client uses: an organization access token with the `events:write` scope, the same one event ingestion needs.
+Outpost uses your client's token: an organization access token with the `events:write` scope, the one event ingestion already needs.
 
-### Use RedisEventQueue
+### Use the Redis queue
 
-Outpost needs `RedisEventQueue`, on every runtime. `metering()` defaults to `MemoryEventQueue`, so pass the Redis queue yourself.
+Outpost needs `RedisEventQueue`, on every runtime. `metering()` uses `MemoryEventQueue` by default, so pass the Redis queue yourself.
 
-`RedisEventQueue` keeps each event in Redis until Polar takes it. An event Outpost has counted reaches Polar even when the process dies, or when a serverless function freezes before its next flush.
+`RedisEventQueue` keeps each event in Redis until Polar has it. An event Outpost has counted reaches Polar even if the process dies, or a serverless function freezes before it sends its events.
 
-It also delivers better. Every instance shares one stream, so the queue batches events across the fleet, and when Polar is busy the whole fleet backs off together.
+Your instances share one queue: they send events to Polar in shared batches, and wait together when Polar is busy. Pass the queue and Outpost the same Redis URL, and they share one connection.
 
-Outpost already needs Redis, so the queue costs nothing extra: pass both the same Redis URL and they share one client.
-
-### Start Metering
+### Start metering
 
 Outpost is off by default. Pass the queue and Outpost to `metering()`.
 
@@ -160,23 +128,15 @@ Outpost is off by default. Pass the queue and Outpost to `metering()`.
   </Tab>
 </Tabs>
 
-The queue and Outpost share a connection only when you pass both the same URL string. Pass two clients you own, or two different URLs, and each keeps its own.
-
-Without Outpost, `metering()` uses `MemoryEventQueue` by default. It takes `batchSize`, `batchIntervalMs` and `maxAttempts` in TypeScript, or `batch_size`, `batch_interval`, `shutdown_timeout` and `max_attempts` in Python.
-
 ### Track and read
 
-Outpost counts each event once per `external_id` while Polar has not confirmed it. `track()` gives an event without an `external_id` a random one, and dates an event without a `timestamp`. Set your own `external_id` when you might track the same event twice, such as on a retried request.
+Give each event an `external_id`, such as your request ID. Outpost counts an event once per `external_id`, so a retried request doesn't count twice. Without one, `track()` makes one up, and a retry counts again.
 
 <Note>
-  Polar discards an event it already has with the same `external_id`, but an event tracked again after Polar confirmed it counts again locally. Outpost corrects this the next time it reconciles with Polar, a few minutes later at most.
+  If you track an event again after Polar has stored it, Polar ignores it, but Outpost counts it once more. Outpost corrects this the next time it syncs with Polar, within a few minutes.
 </Note>
 
-In Python, `RedisEventQueue` rejects a NaN or an infinity anywhere in the event, and `track()` raises.
-
-The first read of a customer waits for Polar's totals, up to `snapshotTimeout` (5 seconds by default). `meter()` reads Polar's API instead when Outpost can't answer: the totals haven't arrived, Redis is unreachable, or Outpost doesn't know the meter. That read takes a round trip to Polar.
-
-Call `actor()` when a session, a conversation or an agent run starts. It waits for Polar's totals the same way, so the reads that decide whether to serve find the customer ready.
+Call `actor()` when a session, a conversation or an agent run starts. The first read of a customer waits for Polar's totals, up to 5 seconds. `actor()` does that wait up front, so the reads that decide whether to serve answer from Redis.
 
 <Tabs>
   <Tab title="TypeScript">
@@ -206,11 +166,13 @@ Call `actor()` when a session, a conversation or an agent run starts. It waits f
   </Tab>
 </Tabs>
 
-A read returns the customer's `consumed_units`, `credited_units` and `balance` for one meter, computed as Polar does: credits minus consumption.
+A read returns `consumed_units`, `credited_units` and `balance` for one meter. The balance is credits minus consumption, as in Polar.
 
-### Flush
+When Outpost can't answer, `meter()` asks Polar's API instead, with a round trip: the customer's totals haven't arrived yet, Redis is down, or Outpost doesn't know the meter.
 
-A long-running server delivers on its own, every second. A serverless function freezes once it answers, so flush `Metering` after each response:
+### Flush in serverless functions
+
+A long-running server sends its events every second on its own. A serverless function freezes once it answers, so flush after each response:
 
 <Tabs>
   <Tab title="TypeScript">
@@ -231,19 +193,15 @@ A long-running server delivers on its own, every second. A serverless function f
   </Tab>
 </Tabs>
 
-`flush()` delivers this instance's events, or waits for this instance's delivery in flight. It never waits for the rest of the fleet's queue. When flushes overlap, a newer one releases each older one that would end before it: one waiter keeps the function alive until the delivery ends, the others return.
-
-`flush()` does not fail when a delivery does: the events stay queued, and the next flush takes them. It can still time out.
+`flush()` sends this instance's events and doesn't wait for the rest of your instances. If a delivery fails, the events stay queued for the next flush.
 
 ### Delivery callbacks
 
-`onAck` and `onRejected` run on the instance that delivered the batch. A batch mixes events from every instance, so it does not map to one request, and a callback can run twice for the same events if an instance stops before it acknowledges them. Keep them short: the instance waits for them before it delivers its next batch, and `flush()` and `close()` wait for them too. An error a callback throws goes to your logs and stops nothing.
-
-`onRejected` receives the reason `permanent_error`: Polar refused the events, and a retry cannot succeed. The queue keeps every other event until Polar takes it.
+`onAck` runs with each batch Polar accepted, and `onRejected` with the events Polar refused for good. They run on whichever instance sent the batch, so a batch can hold events from other instances' requests. An instance that stops mid-batch can run them twice on the same events: make them safe to repeat. Keep them short, because the instance waits for them before it sends its next batch. An error they throw goes to your logs.
 
 ## Performance and sizing
 
-A local read took 1.7 ms at the median at 10,000 events per second:
+A local read at 10,000 events per second:
 
 | Local read (`meter()`) | Latency |
 | ---------------------- | ------- |
@@ -251,54 +209,60 @@ A local read took 1.7 ms at the median at 10,000 events per second:
 | p95                    | 14 ms   |
 | p99                    | 25 ms   |
 
-Measured on Polar's test environment with the TypeScript SDK on Vercel and one Redis instance. Redis was the limit, near 12,000 events per second.
+Measured on Polar's test environment, with the TypeScript SDK on Vercel and one Redis instance. Redis set the ceiling, near 12,000 events per second.
 
 If you hit limits on Outpost performance, reach out [to the team](/support).
 
 ## Technical details
 
+### How it works
+
+```mermaid
+sequenceDiagram
+    participant App as Your app
+    participant SDK as Polar SDK
+    participant Redis as Your Redis
+    participant Polar
+
+    App->>SDK: track(event)
+    SDK->>Redis: queue the event for Polar
+    SDK->>Redis: update the meters matching the event
+    SDK-->>Polar: deliver the queue, in batches
+    App->>SDK: meter(customer)
+    SDK->>Redis: read the local state of the customer
+    SDK-->>App: consumed, credited, balance
+    loop Synchronize local and remote state
+        SDK->>Polar: pull the latest changes
+        SDK->>Redis: replace the local counts Polar now covers
+    end
+```
+
+Every instance of your application that uses the same Redis shares the same state and the same queue. One instance at a time pulls Polar's changes for all of them.
+
 ### When something is down
 
-**Redis is unreachable.** `track()` fails and the event is not queued for Polar. It throws the Redis client's own error (ioredis or redis-py): at once when the connection is down, after 5 seconds when Redis stops answering. Your code decides whether to serve the request, and whether to track the event again. If the queue took the event but Outpost could not count it, `track()` logs a warning and returns: Polar gets the event, and local reads miss it until Outpost next reconciles with Polar. `meter()` reads Polar's API instead. Outpost reconnects on its own.
+**Redis is down.** `track()` throws the Redis client's error, at once if the connection is lost, or after 5 seconds if Redis stops answering. The event is not queued. Your code decides whether to serve the request, and whether to track the event again. `meter()` asks Polar's API instead. Outpost reconnects on its own.
 
-**Polar is unreachable or overloaded.** Reads keep answering, with the last totals Polar sent plus every event tracked since. The queue keeps the events, and every instance waits before it tries again: as long as Polar asks with `Retry-After`, otherwise 1 second, doubling up to a minute. A first read of a customer Outpost has never seen falls back to Polar's API, which fails too.
+**Only Outpost fails.** `track()` logs a warning and returns. The event still reaches Polar, and local reads catch up at the next sync.
 
-**Polar stays unreachable for a long time.** The queue grows with every event you track, and Redis memory is the limit. With `noeviction`, a full Redis refuses writes and `track()` fails. Watch your Redis memory, and size it for the outage you want to ride out.
+**Polar is down or busy.** Reads keep answering, with Polar's last totals plus every event tracked since. The queue keeps the events and retries, waiting longer each time, up to a minute. A customer Outpost has never seen can't be read until Polar answers.
 
-**Polar refuses events.** A `4xx` other than `401`, `403`, `408` or `429` means a retry cannot succeed. When Polar names the events it refuses, the queue drops those, reports them to `onRejected` with `permanent_error`, and sends the rest of the batch again. Otherwise it drops the whole batch. Polar never bills a dropped event, and Outpost stops counting it locally. Polar accepts a timestamp up to 5 seconds ahead of its clock.
+**Polar is down for a long time.** The queue grows until Redis is full, then `track()` fails. Size your Redis memory for the outage you want to survive, and watch it.
 
-**Polar refuses the token.** On a `401` or a `403`, the queue keeps the events and tries again. Outpost can't pull Polar's changes either, so `meter()` falls back to Polar's API, which refuses the token too.
+**Polar refuses an event.** When Polar can never accept an event, an invalid one for example, the queue drops it and passes it to `onRejected`. Polar doesn't bill it, and Outpost stops counting it.
 
-**The queue holds an entry it cannot read.** The queue drops it with a warning in your logs and delivers the rest.
+**Your access token stops working.** The queue keeps the events and retries. Reads fall back to Polar's API, which refuses the token too. Fix the token and delivery resumes.
 
-**An instance restarts.** Nothing to rebuild: the state and the queue live in Redis. A new instance reads them, and asks Polar for the totals of each customer it touches for the first time.
+**An instance restarts.** Nothing to rebuild: the state and the queue live in Redis.
 
-**Redis restarts.** With AOF persistence, Redis keeps the queue and the state. Without it, the events queued since the last save are lost, and Outpost rebuilds each customer's state from Polar's totals at their next read.
+**Redis restarts.** With AOF, Redis keeps everything. Without it, the events queued since the last save are lost, and Outpost reloads each customer's totals from Polar at their next read.
 
 ### Telemetry
 
-Outpost sends Polar the latency of local writes and reads, their outcomes, connection events, and the difference between local and Polar totals at each reconciliation. Polar uses it to improve Outpost and to see how it runs in your deployment. It holds numbers, reducer IDs and customer identities, never your events' metadata. Each instance queues its exports in Redis, and the instance that pulls sends them to Polar, over the same token.
+Outpost sends Polar the latency and outcome of reads and writes, connection events, and the gap between local and Polar totals. Polar uses it to improve Outpost. It holds numbers, meter IDs and customer IDs, never your events' metadata.
 
-To turn it off, pass `telemetry: false`, or set `POLAR_OUTPOST_TELEMETRY=0`.
+To turn it off, pass `telemetry: false` to `outpost()` (`"telemetry": False` in Python), or set `POLAR_OUTPOST_TELEMETRY=0`.
 
 ### What Outpost stores in Redis
 
-Outpost counts usage in 5-minute buckets per customer and meter. Polar's totals replace a bucket once Polar has stored every event in it.
-
-Every Outpost key starts with `outpost:v1:` and your organization ID, which the table leaves out. One key is the exception: `outpost:v1:configuration:<hash>` holds your meters' configuration under a hash of the access token, with no expiry.
-
-| Key                                      | Content                                                                         | Lifetime                                        |
-| ---------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `state:<customer>:<reducer>`             | One hash per customer and meter: Polar's totals and the local 5-minute buckets | 24 hours after the last read, write or snapshot |
-| `pending:<customer>:<reducer>:<bucket>`  | The events of a bucket Polar has not confirmed yet                              | 65 minutes after the last write                 |
-| `rejected:<customer>:<reducer>:<bucket>` | The events of a bucket Polar refused                                            | 65 minutes after the last write                 |
-| `pull`, `configuration`                  | The position in Polar's changes, and your meters' configuration                 | No expiry                                       |
-| `telemetry:<kind>`                       | Telemetry exports waiting to be sent                                            | The newest 1,000 exports                        |
-
-Locks, queues and backoffs (`pull:lock`, `cold`, `fetch:…`, `missing:…`) coordinate the instances. They expire within a minute, or once their work is done.
-
-`RedisEventQueue` keeps its keys under the stream key you choose: the stream itself, which holds each event until Polar takes it, usually within a second, plus `<stream>:flusher:<slot>` and `<stream>:backoff`, which expire within a minute.
-
-A customer who stops sending events disappears from Redis after a day. A hash holds a few hundred bytes per bucket, and Polar's totals fold buckets into one every five minutes, so a customer costs a few kilobytes.
-
-The `v1` in each key names the layout. A future layout takes a new version and starts from Polar's totals; it never reads the previous keys, which expire on their own.
+Outpost's keys start with `outpost:v1:`, and the queue's keys with the stream key you chose. A customer costs a few kilobytes, and leaves Redis a day after their last event or read.

@@ -20,8 +20,8 @@ Use Outpost when you check a balance on every request, and a round trip to Polar
 
 - A read sees every event tracked on any instance that shares the Redis, as soon as `track()` returns.
 - Once Outpost knows a customer, reads stay in your Redis.
-- A credit granted in Polar reaches local reads within 30 seconds.
-- Polar's own meter reads catch up within minutes, once Polar has ingested the events.
+- Outpost checks Polar for changes every 30 seconds: a credit granted in Polar reaches local reads at the next check.
+- Polar's own meter reads count an event once the queue has delivered it and Polar has processed it.
 - Outpost reports the balance. Your code decides whether to serve the request.
 
 ## Configuration

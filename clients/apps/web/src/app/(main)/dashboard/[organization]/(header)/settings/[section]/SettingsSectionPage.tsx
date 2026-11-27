@@ -1,6 +1,5 @@
 'use client'
 
-import { ManagedAsCodeBadge } from '@/components/Dashboard/ManagedAsCodeBadge'
 import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import FeatureSettings from '@/components/Settings/FeatureSettings'
@@ -28,6 +27,13 @@ import {
   ProfileSettings,
   SecuritySettings,
 } from './PersonalSettingsSections'
+
+const MANAGED_AS_CODE_SECTIONS: SettingsSectionSlug[] = [
+  'payments',
+  'subscriptions',
+  'customer-portal',
+  'customer-notifications',
+]
 
 const SectionContent = ({
   section,
@@ -169,10 +175,17 @@ export default function SettingsSectionPage({
       title={SETTINGS_SECTIONS[section].title}
     >
       <Box flexDirection="column" rowGap="2xl">
-        {section === 'payments' && managedAsCode && (
-          <Box>
-            <ManagedAsCodeBadge />
-          </Box>
+        {managedAsCode && MANAGED_AS_CODE_SECTIONS.includes(section) && (
+          <Alert
+            title="Managed in code"
+            description={
+              <>
+                These settings come from your{' '}
+                <code className="font-mono text-[0.9em]">polar.config.ts</code>.
+                Change them there and publish a new version.
+              </>
+            }
+          />
         )}
         <SectionContent
           section={section}

@@ -23,7 +23,10 @@ interface OrganizationCustomerPortalSettingsProps {
 
 const OrganizationCustomerPortalSettings: React.FC<
   OrganizationCustomerPortalSettingsProps
-> = ({ organization, readOnly }) => {
+> = ({ organization, readOnly: _readOnly }) => {
+  const readOnly =
+    _readOnly ||
+    (organization.feature_settings?.config_as_code_enabled ?? false)
   const form = useForm<schemas['OrganizationCustomerPortalSettings']>({
     defaultValues: {
       ...organization.customer_portal_settings,

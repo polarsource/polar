@@ -57,15 +57,30 @@ Outpost is off by default. Pass the queue and Outpost to `metering()`.
 
     <CodeGroup>
     ```bash npm
-    npm install ioredis @opentelemetry/api @opentelemetry/otlp-transformer @opentelemetry/resources @opentelemetry/sdk-metrics @opentelemetry/sdk-trace
+    # Outpost and the Redis queue
+    npm install ioredis
+
+    # Outpost's telemetry, not needed with POLAR_OUTPOST_TELEMETRY=0. If you skip it on
+    # Next.js with Turbopack, add @polar-sh/sdk to serverExternalPackages in next.config.
+    npm install @opentelemetry/api @opentelemetry/otlp-transformer @opentelemetry/resources @opentelemetry/sdk-metrics @opentelemetry/sdk-trace
     ```
 
     ```bash yarn
-    yarn add ioredis @opentelemetry/api @opentelemetry/otlp-transformer @opentelemetry/resources @opentelemetry/sdk-metrics @opentelemetry/sdk-trace
+    # Outpost and the Redis queue
+    yarn add ioredis
+
+    # Outpost's telemetry, not needed with POLAR_OUTPOST_TELEMETRY=0. If you skip it on
+    # Next.js with Turbopack, add @polar-sh/sdk to serverExternalPackages in next.config.
+    yarn add @opentelemetry/api @opentelemetry/otlp-transformer @opentelemetry/resources @opentelemetry/sdk-metrics @opentelemetry/sdk-trace
     ```
 
     ```bash pnpm
-    pnpm add ioredis @opentelemetry/api @opentelemetry/otlp-transformer @opentelemetry/resources @opentelemetry/sdk-metrics @opentelemetry/sdk-trace
+    # Outpost and the Redis queue
+    pnpm add ioredis
+
+    # Outpost's telemetry, not needed with POLAR_OUTPOST_TELEMETRY=0. If you skip it on
+    # Next.js with Turbopack, add @polar-sh/sdk to serverExternalPackages in next.config.
+    pnpm add @opentelemetry/api @opentelemetry/otlp-transformer @opentelemetry/resources @opentelemetry/sdk-metrics @opentelemetry/sdk-trace
     ```
     </CodeGroup>
 
@@ -97,7 +112,6 @@ Outpost is off by default. Pass the queue and Outpost to `metering()`.
     | Option            | Default                          | Meaning                                                               |
     | ----------------- | -------------------------------- | --------------------------------------------------------------------- |
     | `redis`           | `REDIS_URL` environment variable | A Redis URL, or an `ioredis` client you own.                          |
-    | `telemetry`       | `true`                           | Send Outpost metrics and traces to Polar.                             |
     | `snapshotTimeout` | `5000`                           | Milliseconds the first read of a customer waits for Polar's totals.   |
 
     `new RedisEventQueue(redis, { stream })` takes a Redis URL or an `ioredis` client you own, and the stream's key. Use one stream per Polar environment and organization.
@@ -139,7 +153,6 @@ Outpost is off by default. Pass the queue and Outpost to `metering()`.
     | Option             | Default                          | Meaning                                                            |
     | ------------------ | -------------------------------- | ------------------------------------------------------------------ |
     | `redis`            | `REDIS_URL` environment variable | A Redis URL, or an asynchronous `redis` client you own.            |
-    | `telemetry`        | `True`                           | Send Outpost metrics and traces to Polar.                          |
     | `snapshot_timeout` | `5`                              | Seconds the first read of a customer waits for Polar's totals.     |
 
     `RedisEventQueue(redis, stream=...)` takes a Redis URL or an asynchronous `redis` client you own, and the stream's key. Use one stream per Polar environment and organization.
@@ -279,7 +292,7 @@ Every instance of your application that uses the same Redis shares the same stat
 
 Outpost sends Polar the latency and outcome of reads and writes, connection events, and the gap between local and Polar totals. Polar uses it to improve Outpost. It holds numbers, meter IDs and customer IDs, never your events' metadata.
 
-To turn it off, pass `telemetry: false` to `outpost()` (`"telemetry": False` in Python), or set `POLAR_OUTPOST_TELEMETRY=0`.
+To turn it off, set `POLAR_OUTPOST_TELEMETRY=0`.
 
 ### What Outpost stores in Redis
 

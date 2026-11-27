@@ -376,7 +376,6 @@ class Order(
         if self.status not in {OrderStatus.draft, OrderStatus.pending}:
             return False
         if self.subscription_id is None:
-            # A draft without a subscription is a merchant's off-session charge
             return self.status == OrderStatus.pending or self.is_off_session_purchase
         subscription = self.subscription
         assert subscription is not None

@@ -2277,13 +2277,14 @@ class OrderService:
                         await self._mark_intent_as_failed_sync(e)
                         # Off-session, Stripe declines a 3DS challenge instead of
                         # returning `requires_action`
-                        declined_intent = getattr(e.error, "payment_intent", None)
+                        error = e.error
                         if (
                             e.code == "authentication_required"
-                            and declined_intent is not None
+                            and error is not None
+                            and error.payment_intent is not None
                         ):
                             raise PaymentActionRequired(
-                                order, declined_intent.id
+                                order, error.payment_intent.id
                             ) from e
                     raise PaymentFailed(PaymentFailedReason.card_error) from e
                 except stripe_lib.InvalidRequestError as e:

@@ -813,6 +813,8 @@ class ReducerService:
         """The aggregation function and summary of each customer's usage since the
         meter's latest reset, and its credited units, in one query and one Redis
         round trip."""
+        if not customer_meters:
+            return []
         now = utc_now()
         current_bucket_start = get_reducer_bucket_start(now)
         previous_bucket_start = current_bucket_start - REDUCER_BUCKET_SIZE
@@ -866,8 +868,6 @@ class ReducerService:
                             unsplit_identities.append(
                                 (customer_id, external_customer_id)
                             )
-            if usage is not None and isinstance(usage[1], UniqueAggregation):
-                usage = None
             if usage is not None:
                 reducer_id, aggregation, since = usage
                 hot_requests.append(

@@ -75,13 +75,26 @@ export const tanStackAIMethods = (
     model: adapter.model,
   }
 
-  const meter = async function* (chunks: AsyncIterable<TanStackChunk>) {
-    for await (const chunk of chunks) {
-      if (chunk.type === 'RUN_FINISHED') {
-        await ingest(identity, tanStackAIUsage(chunk.usage))
-      }
+  // An adapter that fails after the provider answered throws with the billed usage
+  const ingestAndRethrow = async (error: unknown): Promise<never> => {
+    await ingest(
+      identity,
+      tanStackAIUsage((error as { usage?: unknown } | null)?.usage),
+    )
+    throw error
+  }
 
-      yield chunk
+  const meter = async function* (chunks: AsyncIterable<TanStackChunk>) {
+    try {
+      for await (const chunk of chunks) {
+        if (chunk.type === 'RUN_FINISHED' || chunk.type === 'RUN_ERROR') {
+          await ingest(identity, tanStackAIUsage(chunk.usage))
+        }
+
+        yield chunk
+      }
+    } catch (error) {
+      await ingestAndRethrow(error)
     }
   }
 
@@ -90,7 +103,9 @@ export const tanStackAIMethods = (
   return {
     chatStream: (options: never) => meter(adapter.chatStream(options)),
     structuredOutput: async (options: never) => {
-      const result = await adapter.structuredOutput(options)
+      const result = await adapter
+        .structuredOutput(options)
+        .then(undefined, ingestAndRethrow)
       await ingest(identity, tanStackAIUsage(result.usage))
 
       return result

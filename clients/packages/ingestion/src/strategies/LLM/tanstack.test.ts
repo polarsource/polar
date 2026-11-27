@@ -18,7 +18,15 @@ const specUsage = [
   { inputTokens: 4, outputTokens: 2, totalTokens: 6 },
 ]
 
-type Turn = { text?: string; toolCall?: string; usage: unknown }
+type Turn = {
+  text?: string
+  toolCall?: string
+  usage: unknown
+  fail?: 'event' | 'throw'
+}
+
+const failure = (usage: unknown) =>
+  Object.assign(new Error('Maximum tokens reached'), { usage })
 
 // A class like the real adapters, so the strategy must keep its prototype and private fields
 class MockAdapter {
@@ -36,6 +44,21 @@ class MockAdapter {
     const ids = { runId: 'run', threadId: 'thread', model: this.model }
 
     yield { type: 'RUN_STARTED', ...ids, timestamp: Date.now() }
+
+    if (turn.fail === 'throw') {
+      throw failure(turn.usage)
+    }
+
+    if (turn.fail === 'event') {
+      yield {
+        type: 'RUN_ERROR',
+        ...ids,
+        timestamp: Date.now(),
+        message: 'Maximum tokens reached',
+        usage: turn.usage,
+      }
+      return
+    }
 
     if (turn.toolCall) {
       const toolCallId = 'call-1'
@@ -60,7 +83,11 @@ class MockAdapter {
   }
 
   async structuredOutput() {
-    const { usage } = this.#turns.shift()!
+    const { usage, fail } = this.#turns.shift()!
+
+    if (fail) {
+      throw failure(usage)
+    }
 
     return { data: { answer: 'Hi' }, rawText: '{"answer":"Hi"}', usage }
   }
@@ -153,6 +180,53 @@ describe('LLMStrategy with a TanStack AI adapter', () => {
     })
 
     expect(result).toEqual({ answer: 'Hi' })
+    expect(execute).toHaveBeenCalledExactlyOnceWith(...tenTokens)
+  })
+
+  it('should ingest the usage of a run that ends with an error', async () => {
+    const { adapter, execute } = track([
+      { usage: tanStackUsage, fail: 'event' },
+    ])
+
+    const types: string[] = []
+    for await (const chunk of chat({ adapter, threadId, messages })) {
+      types.push(chunk.type)
+    }
+
+    expect(types).toContain('RUN_ERROR')
+    expect(execute).toHaveBeenCalledExactlyOnceWith(...tenTokens)
+  })
+
+  it('should ingest the usage of a stream that throws', async () => {
+    const { adapter, execute } = track([
+      { usage: tanStackUsage, fail: 'throw' },
+    ])
+
+    await expect(
+      chat({ adapter, threadId, messages, stream: false }),
+    ).rejects.toThrow('Maximum tokens reached')
+
+    expect(execute).toHaveBeenCalledExactlyOnceWith(...tenTokens)
+  })
+
+  it('should ingest the usage of structured output that throws', async () => {
+    const { adapter, execute } = track([
+      { usage: tanStackUsage, fail: 'throw' },
+    ])
+
+    await expect(
+      chat({
+        adapter,
+        threadId,
+        messages,
+        outputSchema: {
+          type: 'object',
+          properties: { answer: { type: 'string' } },
+          required: ['answer'],
+        },
+      }),
+    ).rejects.toThrow('Maximum tokens reached')
+
     expect(execute).toHaveBeenCalledExactlyOnceWith(...tenTokens)
   })
 

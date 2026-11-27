@@ -12,6 +12,7 @@ from sqlalchemy import event as sqlalchemy_event
 from sqlalchemy.ext.asyncio import AsyncSession as SQLAlchemyAsyncSession
 from typer.testing import CliRunner
 
+from polar.auth.scope import Scope
 from polar.event.repository import EventRepository
 from polar.integrations.tinybird.client import client as tinybird_client
 from polar.integrations.tinybird.service import DATASOURCE_EVENTS
@@ -30,6 +31,7 @@ from polar.models import (
     Member,
     Meter,
     MeterEvent,
+    OAuth2Client,
     Order,
     Organization,
     Payment,
@@ -46,6 +48,7 @@ from polar.redis import Redis
 from scripts.seed_polar_for_polar import BENEFITS as POLAR_SELF_BENEFITS
 from scripts.seed_polar_for_polar import PRODUCTS as POLAR_SELF_PRODUCTS
 from scripts.seeds_load import (
+    CLI_OAUTH2_CLIENT_ID,
     EXPECTED_ORGANIZATION_SLUGS,
     SIMPLE_COMPLEMENT_EVENT_NAMESPACE,
     SIMPLE_COMPLEMENT_EVENT_PREFIX,
@@ -55,6 +58,7 @@ from scripts.seeds_load import (
     create_simple_complement_seed_data,
     create_simple_seed_data,
     create_single_org_seed,
+    ensure_cli_oauth2_client,
 )
 
 
@@ -545,3 +549,25 @@ class TestSeedsLoad:
             )
             == 0
         )
+
+
+@pytest.mark.anyio
+class TestEnsureCLIOAuth2Client:
+    async def test_existing_client_gains_new_scopes(
+        self, session: AsyncSession
+    ) -> None:
+        await ensure_cli_oauth2_client(session)
+        oauth2_client = await session.scalar(
+            select(OAuth2Client).where(OAuth2Client.client_id == CLI_OAUTH2_CLIENT_ID)
+        )
+        assert oauth2_client is not None
+        oauth2_client.set_client_metadata(
+            {**oauth2_client.client_metadata, "scope": Scope.products_write}
+        )
+        await session.commit()
+
+        await ensure_cli_oauth2_client(session)
+
+        await session.refresh(oauth2_client)
+        assert set(oauth2_client.scope.split()) == set(Scope)
+        assert oauth2_client.redirect_uris == ["http://127.0.0.1:3333/oauth/callback"]

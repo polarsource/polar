@@ -2771,7 +2771,12 @@ async def ensure_cli_oauth2_client(session: AsyncSession) -> None:
     existing = await session.scalar(
         select(OAuth2Client).where(OAuth2Client.client_id == CLI_OAUTH2_CLIENT_ID)
     )
+    scope = " ".join(Scope)
     if existing is not None:
+        # A scope added since the client was seeded is silently dropped from logins
+        if existing.scope != scope:
+            existing.set_client_metadata({**existing.client_metadata, "scope": scope})
+            await session.commit()
         return
     oauth2_client = OAuth2Client(client_id=CLI_OAUTH2_CLIENT_ID, user=None)
     oauth2_client.set_client_metadata(
@@ -2781,7 +2786,7 @@ async def ensure_cli_oauth2_client(session: AsyncSession) -> None:
             "token_endpoint_auth_method": "none",
             "grant_types": ["authorization_code", "refresh_token"],
             "response_types": ["code"],
-            "scope": " ".join(scope.value for scope in Scope),
+            "scope": scope,
         }
     )
     session.add(oauth2_client)

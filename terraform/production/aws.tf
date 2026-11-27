@@ -310,6 +310,12 @@ data "aws_iam_policy_document" "lambda_worker_deploy" {
       "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:${function_name}"
     ]
   }
+
+  statement {
+    sid       = "UpdatePlanetScaleAuditLogCode"
+    actions   = ["lambda:UpdateFunctionCode"]
+    resources = [module.planetscale_audit_log.function_arn]
+  }
 }
 
 resource "aws_iam_policy" "lambda_worker_deploy" {

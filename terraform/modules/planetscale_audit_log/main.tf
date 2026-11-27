@@ -1,7 +1,13 @@
-data "archive_file" "export" {
+# Placeholder until .github/workflows/deploy_planetscale_audit_log.yml
+# uploads lambda/planetscale-audit-log, which owns the code from then on.
+data "archive_file" "placeholder" {
   type        = "zip"
-  source_file = "${path.module}/export.py"
   output_path = "${path.root}/${var.name}.zip"
+
+  source {
+    filename = "handler.py"
+    content  = "def handler(event, context):\n    raise RuntimeError(\"Not deployed yet\")\n"
+  }
 }
 
 data "aws_iam_policy_document" "assume" {
@@ -46,9 +52,9 @@ resource "aws_lambda_function" "export" {
   function_name    = var.name
   role             = aws_iam_role.export.arn
   runtime          = "python3.13"
-  handler          = "export.handler"
-  filename         = data.archive_file.export.output_path
-  source_code_hash = data.archive_file.export.output_base64sha256
+  handler          = "handler.handler"
+  filename         = data.archive_file.placeholder.output_path
+  source_code_hash = data.archive_file.placeholder.output_base64sha256
   timeout          = 300
 
   environment {
@@ -57,6 +63,10 @@ resource "aws_lambda_function" "export" {
       PLANETSCALE_TOKEN        = var.token
       BUCKET                   = var.bucket_name
     }
+  }
+
+  lifecycle {
+    ignore_changes = [filename, source_code_hash]
   }
 }
 

@@ -50,7 +50,7 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       matrix:
-        lambda: [image-resizer]
+        lambda: [image-resizer, planetscale-audit-log]
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
@@ -89,7 +89,7 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       matrix:
-        lambda: [image-resizer]
+        lambda: [image-resizer, planetscale-audit-log]
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4

@@ -1,0 +1,47 @@
+name: Deploy PlanetScale Audit Log
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "lambda/planetscale-audit-log/handler.py"
+      - ".github/workflows/deploy_planetscale_audit_log.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-planetscale-audit-log
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: "Deploy Lambda"
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build deployment package
+        working-directory: ./lambda/planetscale-audit-log
+        run: zip package.zip handler.py
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ secrets.PRODUCTION_AWS_ROLE_ARN }}
+          aws-region: us-east-2
+
+      - name: Deploy
+        run: |
+          aws lambda update-function-code \
+            --function-name polar-production-planetscale-audit-log \
+            --zip-file fileb://lambda/planetscale-audit-log/package.zip > /dev/null

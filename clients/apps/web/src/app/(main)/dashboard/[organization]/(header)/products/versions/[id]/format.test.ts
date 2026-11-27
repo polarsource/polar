@@ -87,6 +87,7 @@ it('names settings like their config keys', () => {
         prevent_trial_abuse: false,
         proration_behavior: 'next_period',
         benefit_revocation_grace_period: 7,
+        trial_ended_reactivation_period: 14,
       },
       customer_portal: {
         allow_plan_changes: true,
@@ -120,6 +121,7 @@ it('names settings like their config keys', () => {
     prevent_trial_abuse: 'No',
     proration_behavior: 'Schedule for next cycle',
     benefit_revocation_grace_period: 'After 7 Days',
+    trial_ended_reactivation_period: 'After 14 Days',
     allow_plan_changes: 'Yes',
     allow_unit_changes: 'No',
     allow_seat_management: 'No',

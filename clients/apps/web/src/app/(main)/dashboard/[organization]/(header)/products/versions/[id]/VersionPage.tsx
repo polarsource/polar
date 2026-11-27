@@ -3,6 +3,7 @@
 import { DraftGlyph } from '@/components/Layout/Dashboard/CatalogHoverCard'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { PublishDraftButton } from '@/components/Products/PublishDraftButton'
+import { DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD } from '@/components/Settings/OrganizationSubscriptionSettings'
 import { useCatalog, useCatalogConfig } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import { Grid, Text } from '@polar-sh/orbit'
@@ -206,7 +207,11 @@ export default function VersionPage({
             currency: organization.default_presentment_currency,
             tax: organization.default_tax_behavior,
           },
-          subscriptions: organization.subscription_settings,
+          subscriptions: {
+            trial_ended_reactivation_period:
+              DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD,
+            ...organization.subscription_settings,
+          },
           customer_portal: customerPortalSettings(
             organization.customer_portal_settings,
           ),

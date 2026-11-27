@@ -18,7 +18,7 @@ import { ProrationBehavior } from './ProrationBehavior'
 import { Box } from '@polar-sh/orbit/Box'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
-const DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD = 14
+export const DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD = 14
 
 interface OrganizationSubscriptionSettingsProps {
   organization: schemas['Organization']

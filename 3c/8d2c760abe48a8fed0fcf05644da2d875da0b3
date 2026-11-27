@@ -1,0 +1,29 @@
+sdk/generator/python/template/polar/base.py
+  s_7671299f8b7483::t_3d4080d40c4e05 280-337
+sdk/generator/python/template/polar/version/client.py
+  s_7671299f8b7483::t_3d4080d40c4e05 3,20,33,39,52
+sdk/python/polar/base.py
+  s_7671299f8b7483::t_db91246b501d4d 282-339
+sdk/python/polar/v2026_04/client.py
+  s_7671299f8b7483::t_418cf0ae4a5fae 3,49,62,91,104
+sdk/python/polar/v2026_10/client.py
+  s_7671299f8b7483::t_d1c94c6e190a7e 3,49,62,91,104
+sdk/python/polar/v2027_01/client.py
+  s_7671299f8b7483::t_41e043d29d99a1 3,49,62,91,104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3c8d2c760abe48a8fed0fcf05644da2d875da0b3",
+  "prompts": {},
+  "sessions": {
+    "s_7671299f8b7483": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21d18-2190-7bb2-991b-09c4eaafbef3",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

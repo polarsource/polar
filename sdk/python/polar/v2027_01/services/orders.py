@@ -13,6 +13,7 @@ from polar.base import (
 from polar.v2027_01.errors import (
     HTTPValidationError,
     MissingInvoiceBillingDetails,
+    OffSessionChargesNotEnabled,
     OrderNotDraft,
     OrderNotEligibleForInvoice,
     OrdersFinalize402Error,
@@ -22,6 +23,9 @@ from polar.v2027_01.errors import (
 from polar.v2027_01.inputs import (
     MetadataQuery,
     OrderCreate,
+    OrderCreateExternal,
+    OrderCreateExternalCustomer,
+    OrderCreateExternalProduct,
     OrderFinalize,
     OrderUpdate,
 )
@@ -218,17 +222,56 @@ class OrdersSync(SyncServiceBase):
                 break
             page += 1
 
+    @typing.overload
     def create(
         self,
         *,
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
         **kwargs: typing.Unpack[OrderCreate],
+    ) -> Order: ...
+
+    @typing.overload
+    def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[OrderCreateExternalCustomer],
+    ) -> Order: ...
+
+    @typing.overload
+    def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[OrderCreateExternalProduct],
+    ) -> Order: ...
+
+    @typing.overload
+    def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[OrderCreateExternal],
+    ) -> Order: ...
+
+    def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
     ) -> Order:
         """
         Create a draft order for an off-session charge against a saved payment
         method. The order is created with `status=draft` and no invoice number;
         call `POST /v1/orders/{id}/finalize` to attempt the charge.
+
+        Reference the customer by `customer_id` or `external_customer_id`, and the
+        product by `product_id` or `external_product_id`.
 
         The organization must have the `off_session_charges_enabled` feature flag.
 
@@ -241,6 +284,7 @@ class OrdersSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            OffSessionChargesNotEnabled: Off-session charges are not enabled for this organization.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -257,6 +301,7 @@ class OrdersSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
+            403: OffSessionChargesNotEnabled,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Order, method_errors)
@@ -775,17 +820,56 @@ class OrdersAsync(AsyncServiceBase):
                 break
             page += 1
 
+    @typing.overload
     async def create(
         self,
         *,
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
         **kwargs: typing.Unpack[OrderCreate],
+    ) -> Order: ...
+
+    @typing.overload
+    async def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[OrderCreateExternalCustomer],
+    ) -> Order: ...
+
+    @typing.overload
+    async def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[OrderCreateExternalProduct],
+    ) -> Order: ...
+
+    @typing.overload
+    async def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[OrderCreateExternal],
+    ) -> Order: ...
+
+    async def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
     ) -> Order:
         """
         Create a draft order for an off-session charge against a saved payment
         method. The order is created with `status=draft` and no invoice number;
         call `POST /v1/orders/{id}/finalize` to attempt the charge.
+
+        Reference the customer by `customer_id` or `external_customer_id`, and the
+        product by `product_id` or `external_product_id`.
 
         The organization must have the `off_session_charges_enabled` feature flag.
 
@@ -798,6 +882,7 @@ class OrdersAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            OffSessionChargesNotEnabled: Off-session charges are not enabled for this organization.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -814,6 +899,7 @@ class OrdersAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
+            403: OffSessionChargesNotEnabled,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Order, method_errors)

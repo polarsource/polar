@@ -946,7 +946,7 @@ export type PaymentTrigger =
   | "retry_admin"
   | "retry_payment_alert";
 /**
- * Permission
+ * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -2103,20 +2103,6 @@ export interface AmbiguousExternalMeterID {
    * error
    */
   error: "AmbiguousExternalMeterID";
-  /**
-   * detail
-   */
-  detail: string;
-}
-
-/**
- * AmbiguousExternalWebhookEndpointID
- */
-export interface AmbiguousExternalWebhookEndpointID {
-  /**
-   * error
-   */
-  error: "AmbiguousExternalWebhookEndpointID";
   /**
    * detail
    */
@@ -8998,6 +8984,10 @@ You can store up to **50 key-value pairs**.
    */
   metadata?: Record<string, string | number | boolean>;
   /**
+   * ID in your system of the product to checkout. Must be present in the checkout's product list. Can't be combined with `product_id`.
+   */
+  external_product_id?: string;
+  /**
    * currency
    */
   currency?: PresentmentCurrency;
@@ -12509,6 +12499,10 @@ export interface CustomerStateBenefitGrant {
    */
   benefit_id: string;
   /**
+   * The external ID of the benefit concerned by this grant, if any. It stays the same across benefit versions.
+   */
+  external_benefit_id: string | null;
+  /**
    * The type of the benefit concerned by this grant.
    */
   benefit_type: BenefitType;
@@ -12644,6 +12638,10 @@ export interface CustomerStateMeter {
    */
   meter_id: string;
   /**
+   * The external ID of the meter, if any. It stays the same across meter versions.
+   */
+  external_meter_id: string | null;
+  /**
    * The number of consumed units.
    */
   consumed_units: number;
@@ -12733,6 +12731,10 @@ export interface CustomerStateSubscription {
    * The ID of the subscribed product.
    */
   product_id: string;
+  /**
+   * The external ID of the subscribed product, if any. It stays the same across product versions.
+   */
+  external_product_id: string | null;
   /**
    * The ID of the applied discount, if any.
    */
@@ -13622,10 +13624,6 @@ export interface CustomerUpdatedMetadata {
  */
 export interface DiscountFixedCreate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
-   */
-  external_id?: string;
-  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -13723,10 +13721,6 @@ export interface DiscountFixedOnceForeverDuration {
    */
   id: string;
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
-  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -13796,10 +13790,6 @@ export interface DiscountFixedOnceForeverDurationBase {
    * The ID of the object.
    */
   id: string;
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
   /**
    * metadata
    */
@@ -13871,10 +13861,6 @@ export interface DiscountFixedRepeatDuration {
    * The ID of the object.
    */
   id: string;
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
   /**
    * metadata
    */
@@ -13950,10 +13936,6 @@ export interface DiscountFixedRepeatDurationBase {
    */
   id: string;
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
-  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -13995,10 +13977,6 @@ export interface DiscountFixedRepeatDurationBase {
  * Schema to create a percentage discount.
  */
 export interface DiscountPercentageCreate {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
-   */
-  external_id?: string;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -14100,10 +14078,6 @@ export interface DiscountPercentageOnceForeverDuration {
    */
   id: string;
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
-  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -14173,10 +14147,6 @@ export interface DiscountPercentageOnceForeverDurationBase {
    * The ID of the object.
    */
   id: string;
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
   /**
    * metadata
    */
@@ -14248,10 +14218,6 @@ export interface DiscountPercentageRepeatDuration {
    * The ID of the object.
    */
   id: string;
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
   /**
    * metadata
    */
@@ -14326,10 +14292,6 @@ export interface DiscountPercentageRepeatDurationBase {
    * The ID of the object.
    */
   id: string;
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
   /**
    * metadata
    */
@@ -14456,10 +14418,6 @@ export interface DiscountRedemptionLimitReached {
  * Schema to update a discount.
  */
 export interface DiscountUpdate {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
-   */
-  external_id?: string;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -18391,6 +18349,22 @@ You can store up to **50 key-value pairs**.
    */
   organization_id?: string | null;
   /**
+   * The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency.
+   */
+  currency?: string | null;
+  /**
+   * A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`.
+   */
+  amount?: number | null;
+  /**
+   * The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`.
+   */
+  units?: number | null;
+  /**
+   * A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name.
+   */
+  description?: string | null;
+  /**
    * The ID of the customer the order is for. Must belong to the order's organization.
    */
   customer_id: string;
@@ -18398,6 +18372,35 @@ You can store up to **50 key-value pairs**.
    * The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.
    */
   product_id: string;
+}
+
+/**
+ * Schema to create a draft order for an off-session charge,
+referencing the customer and product by their external IDs.
+ */
+export interface OrderCreateExternal {
+  /**
+   * Key-value object storing custom field values.
+   */
+  custom_field_data?: Record<string, string | number | boolean | null>;
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | boolean>;
+  /**
+   * The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization.
+   */
+  organization_id?: string | null;
   /**
    * The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency.
    */
@@ -18414,6 +18417,120 @@ You can store up to **50 key-value pairs**.
    * A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name.
    */
   description?: string | null;
+  /**
+   * The ID of the customer in your system the order is for. Must belong to the order's organization.
+   */
+  external_customer_id: string;
+  /**
+   * The ID of the one-time product in your system to charge for. Resolves to the current version of the product. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.
+   */
+  external_product_id: string;
+}
+
+/**
+ * Schema to create a draft order for an off-session charge,
+referencing the customer by its external ID.
+ */
+export interface OrderCreateExternalCustomer {
+  /**
+   * Key-value object storing custom field values.
+   */
+  custom_field_data?: Record<string, string | number | boolean | null>;
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | boolean>;
+  /**
+   * The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization.
+   */
+  organization_id?: string | null;
+  /**
+   * The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency.
+   */
+  currency?: string | null;
+  /**
+   * A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`.
+   */
+  amount?: number | null;
+  /**
+   * The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`.
+   */
+  units?: number | null;
+  /**
+   * A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name.
+   */
+  description?: string | null;
+  /**
+   * The ID of the customer in your system the order is for. Must belong to the order's organization.
+   */
+  external_customer_id: string;
+  /**
+   * The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.
+   */
+  product_id: string;
+}
+
+/**
+ * Schema to create a draft order for an off-session charge,
+referencing the product by its external ID.
+ */
+export interface OrderCreateExternalProduct {
+  /**
+   * Key-value object storing custom field values.
+   */
+  custom_field_data?: Record<string, string | number | boolean | null>;
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | boolean>;
+  /**
+   * The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization.
+   */
+  organization_id?: string | null;
+  /**
+   * The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency.
+   */
+  currency?: string | null;
+  /**
+   * A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`.
+   */
+  amount?: number | null;
+  /**
+   * The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`.
+   */
+  units?: number | null;
+  /**
+   * A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name.
+   */
+  description?: string | null;
+  /**
+   * The ID of the customer the order is for. Must belong to the order's organization.
+   */
+  customer_id: string;
+  /**
+   * The ID of the one-time product in your system to charge for. Resolves to the current version of the product. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.
+   */
+  external_product_id: string;
 }
 
 /**
@@ -19727,10 +19844,6 @@ export interface OrganizationFeatureSettings {
    */
   merchant_migration_enabled?: boolean;
   /**
-   * If this organization's ingested events are queued in `staged_events` and moved to `events` out of band.
-   */
-  staged_events_ingest_enabled?: boolean;
-  /**
    * If this organization can manage its configuration from a declarative config document.
    */
   config_as_code_enabled?: boolean;
@@ -19738,10 +19851,6 @@ export interface OrganizationFeatureSettings {
    * If this organization's metered usage is billed from the reducer instead of the legacy billing entries.
    */
   reducer_billing_enabled?: boolean;
-  /**
-   * If this organization can migrate its billing from Lemon Squeezy to Polar.
-   */
-  lemon_squeezy_migration_enabled?: boolean;
 }
 
 /**
@@ -22661,11 +22770,47 @@ You can store up to **50 key-value pairs**.
   /**
    * The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used.
    */
-  currency?: PresentmentCurrency | null;
+  currency?: PresentmentCurrency;
   /**
    * The ID of the customer to create the subscription for.
    */
   customer_id: string;
+}
+
+/**
+ * Create a subscription using external IDs for the customer and the product.
+ */
+export interface SubscriptionCreateExternal {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | boolean>;
+  /**
+   * The ID of the customer in your system to create the subscription for. It must already exist in Polar.
+   */
+  external_customer_id: string;
+  /**
+   * The ID of the recurring product in your system to subscribe to. Resolves to the current version of the product. Must be a free product or have a trial with no upfront payment setup required. Otherwise, the customer should go through a checkout flow.
+   */
+  external_product_id: string;
+  /**
+   * The ID of the organization owning the customer and product. **Required unless your credential identifies one organization.** Omit this field when using an organization token.
+   */
+  organization_id?: string | null;
+  /**
+   * The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used.
+   */
+  currency?: PresentmentCurrency;
 }
 
 /**
@@ -22693,7 +22838,7 @@ You can store up to **50 key-value pairs**.
   /**
    * The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used.
    */
-  currency?: PresentmentCurrency | null;
+  currency?: PresentmentCurrency;
   /**
    * The ID of the customer in your system to create the subscription for. It must already exist in Polar.
    */

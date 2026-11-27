@@ -3,7 +3,6 @@ import type {
   AlreadyCanceledSubscription as AlreadyCanceledSubscriptionModel,
   AmbiguousExternalCustomerID as AmbiguousExternalCustomerIDModel,
   AmbiguousExternalMeterID as AmbiguousExternalMeterIDModel,
-  AmbiguousExternalWebhookEndpointID as AmbiguousExternalWebhookEndpointIDModel,
   BadRequest as BadRequestModel,
   BenefitGrantAlreadyExists as BenefitGrantAlreadyExistsModel,
   CannotCreateOrganizationError as CannotCreateOrganizationErrorModel,
@@ -834,6 +833,18 @@ export class ProductNotDeletable extends PolarClientError<ProductNotDeletableMod
   }
 }
 /**
+ * Off-session charges are not enabled for this organization.
+ */
+export class OffSessionChargesNotEnabled extends PolarClientError<OffSessionChargesNotEnabledModel> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: OffSessionChargesNotEnabledModel,
+  ) {
+    super(statusCode, error);
+    this.name = "OffSessionChargesNotEnabled";
+  }
+}
+/**
  * The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
  */
 export class OrdersFinalize402Error extends PolarClientError<
@@ -987,18 +998,6 @@ export class RefundPaymentAlreadyRefundedByStripe extends PolarClientError<Refun
   ) {
     super(statusCode, error);
     this.name = "RefundPaymentAlreadyRefundedByStripe";
-  }
-}
-/**
- * The external ID matches webhook endpoints in several accessible organizations.
- */
-export class AmbiguousExternalWebhookEndpointID extends PolarClientError<AmbiguousExternalWebhookEndpointIDModel> {
-  constructor(
-    public readonly statusCode: 409,
-    public readonly error: AmbiguousExternalWebhookEndpointIDModel,
-  ) {
-    super(statusCode, error);
-    this.name = "AmbiguousExternalWebhookEndpointID";
   }
 }
 /**

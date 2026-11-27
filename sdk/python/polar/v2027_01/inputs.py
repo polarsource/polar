@@ -1206,6 +1206,9 @@ The value must be either:
 
 You can store up to **50 key-value pairs**."""
 
+    external_product_id: typing.NotRequired[str]
+    """ID in your system of the product to checkout. Must be present in the checkout's product list. Can't be combined with `product_id`."""
+
     currency: typing.NotRequired[PresentmentCurrency]
 
     discount_id: typing.NotRequired[str | None]
@@ -2141,9 +2144,6 @@ You can store up to **50 key-value pairs**."""
 class DiscountFixedCreate(typing.TypedDict):
     """Schema to create a fixed amount discount."""
 
-    external_id: typing.NotRequired[str]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -2199,9 +2199,6 @@ For example, to apply the discount for 2 years, set this to 24."""
 
 class DiscountPercentageCreate(typing.TypedDict):
     """Schema to create a percentage discount."""
-
-    external_id: typing.NotRequired[str]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -2261,9 +2258,6 @@ For example, to create a 25.5% discount, set this to 2550."""
 
 class DiscountUpdate(typing.TypedDict):
     """Schema to update a discount."""
-
-    external_id: typing.NotRequired[str]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -2798,11 +2792,47 @@ You can store up to **50 key-value pairs**."""
     organization_id: typing.NotRequired[str | None]
     """The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization."""
 
+    currency: typing.NotRequired[str | None]
+    """The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency."""
+
+    amount: typing.NotRequired[int | None]
+    """A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`."""
+
+    units: typing.NotRequired[int | None]
+    """The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`."""
+
+    description: typing.NotRequired[str | None]
+    """A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name."""
+
     customer_id: str
     """The ID of the customer the order is for. Must belong to the order's organization."""
 
     product_id: str
     """The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported."""
+
+
+class OrderCreateExternal(typing.TypedDict):
+    """Schema to create a draft order for an off-session charge,
+    referencing the customer and product by their external IDs."""
+
+    custom_field_data: typing.NotRequired[dict[str, str | int | bool | None]]
+    """Key-value object storing custom field values."""
+
+    metadata: typing.NotRequired[dict[str, str | int | float | bool]]
+    """Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**."""
+
+    organization_id: typing.NotRequired[str | None]
+    """The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization."""
 
     currency: typing.NotRequired[str | None]
     """The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency."""
@@ -2815,6 +2845,96 @@ You can store up to **50 key-value pairs**."""
 
     description: typing.NotRequired[str | None]
     """A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name."""
+
+    external_customer_id: str
+    """The ID of the customer in your system the order is for. Must belong to the order's organization."""
+
+    external_product_id: str
+    """The ID of the one-time product in your system to charge for. Resolves to the current version of the product. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported."""
+
+
+class OrderCreateExternalCustomer(typing.TypedDict):
+    """Schema to create a draft order for an off-session charge,
+    referencing the customer by its external ID."""
+
+    custom_field_data: typing.NotRequired[dict[str, str | int | bool | None]]
+    """Key-value object storing custom field values."""
+
+    metadata: typing.NotRequired[dict[str, str | int | float | bool]]
+    """Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**."""
+
+    organization_id: typing.NotRequired[str | None]
+    """The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization."""
+
+    currency: typing.NotRequired[str | None]
+    """The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency."""
+
+    amount: typing.NotRequired[int | None]
+    """A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`."""
+
+    units: typing.NotRequired[int | None]
+    """The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`."""
+
+    description: typing.NotRequired[str | None]
+    """A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name."""
+
+    external_customer_id: str
+    """The ID of the customer in your system the order is for. Must belong to the order's organization."""
+
+    product_id: str
+    """The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported."""
+
+
+class OrderCreateExternalProduct(typing.TypedDict):
+    """Schema to create a draft order for an off-session charge,
+    referencing the product by its external ID."""
+
+    custom_field_data: typing.NotRequired[dict[str, str | int | bool | None]]
+    """Key-value object storing custom field values."""
+
+    metadata: typing.NotRequired[dict[str, str | int | float | bool]]
+    """Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**."""
+
+    organization_id: typing.NotRequired[str | None]
+    """The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization."""
+
+    currency: typing.NotRequired[str | None]
+    """The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency."""
+
+    amount: typing.NotRequired[int | None]
+    """A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`."""
+
+    units: typing.NotRequired[int | None]
+    """The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`."""
+
+    description: typing.NotRequired[str | None]
+    """A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name."""
+
+    customer_id: str
+    """The ID of the customer the order is for. Must belong to the order's organization."""
+
+    external_product_id: str
+    """The ID of the one-time product in your system to charge for. Resolves to the current version of the product. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported."""
 
 
 class OrderFinalize(typing.TypedDict):
@@ -3983,11 +4103,40 @@ You can store up to **50 key-value pairs**."""
     product_id: str
     """The ID of the recurring product to subscribe to. Must be a free product or have a trial with no upfront payment setup required. Otherwise, the customer should go through a checkout flow."""
 
-    currency: typing.NotRequired[PresentmentCurrency | None]
+    currency: typing.NotRequired[PresentmentCurrency]
     """The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used."""
 
     customer_id: str
     """The ID of the customer to create the subscription for."""
+
+
+class SubscriptionCreateExternal(typing.TypedDict):
+    """Create a subscription using external IDs for the customer and the product."""
+
+    metadata: typing.NotRequired[dict[str, str | int | float | bool]]
+    """Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**."""
+
+    external_customer_id: str
+    """The ID of the customer in your system to create the subscription for. It must already exist in Polar."""
+
+    external_product_id: str
+    """The ID of the recurring product in your system to subscribe to. Resolves to the current version of the product. Must be a free product or have a trial with no upfront payment setup required. Otherwise, the customer should go through a checkout flow."""
+
+    organization_id: typing.NotRequired[str | None]
+    """The ID of the organization owning the customer and product. **Required unless your credential identifies one organization.** Omit this field when using an organization token."""
+
+    currency: typing.NotRequired[PresentmentCurrency]
+    """The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used."""
 
 
 class SubscriptionCreateExternalCustomer(typing.TypedDict):
@@ -4009,7 +4158,7 @@ You can store up to **50 key-value pairs**."""
     product_id: str
     """The ID of the recurring product to subscribe to. Must be a free product or have a trial with no upfront payment setup required. Otherwise, the customer should go through a checkout flow."""
 
-    currency: typing.NotRequired[PresentmentCurrency | None]
+    currency: typing.NotRequired[PresentmentCurrency]
     """The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used."""
 
     external_customer_id: str

@@ -14,9 +14,6 @@ from polar.v2027_01.outputs import (
     AmbiguousExternalMeterID as AmbiguousExternalMeterIDModel,
 )
 from polar.v2027_01.outputs import (
-    AmbiguousExternalWebhookEndpointID as AmbiguousExternalWebhookEndpointIDModel,
-)
-from polar.v2027_01.outputs import (
     BadRequest as BadRequestModel,
 )
 from polar.v2027_01.outputs import (
@@ -795,6 +792,17 @@ class ProductNotDeletable(PolarClientError):
         super().__init__(status_code, error)
 
 
+class OffSessionChargesNotEnabled(PolarClientError):
+    error_type = OffSessionChargesNotEnabledModel
+    error: OffSessionChargesNotEnabledModel
+
+    def __init__(
+        self, status_code: int, error: OffSessionChargesNotEnabledModel
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
 class OrdersFinalize402Error(PolarClientError):
     error_type = PaymentFailedModel | PaymentActionRequiredModel
     error: PaymentFailedModel | PaymentActionRequiredModel
@@ -925,17 +933,6 @@ class RefundPaymentAlreadyRefundedByStripe(PolarClientError):
 
     def __init__(
         self, status_code: int, error: RefundPaymentAlreadyRefundedByStripeModel
-    ) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class AmbiguousExternalWebhookEndpointID(PolarClientError):
-    error_type = AmbiguousExternalWebhookEndpointIDModel
-    error: AmbiguousExternalWebhookEndpointIDModel
-
-    def __init__(
-        self, status_code: int, error: AmbiguousExternalWebhookEndpointIDModel
     ) -> None:
         self.error = error
         super().__init__(status_code, error)

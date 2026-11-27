@@ -5,6 +5,7 @@ import type {
   MetadataQuery,
   Subscription,
   SubscriptionCreateCustomer,
+  SubscriptionCreateExternal,
   SubscriptionCreateExternalCustomer,
   SubscriptionSortProperty,
   SubscriptionStatus,
@@ -164,6 +165,9 @@ export const createSubscriptions = (client: ClientBase) => {
    * upfront payment setup. Paid subscriptions start with the product's configured
    * trial period. For other paid products, use the checkout flow.
    *
+   * Reference the customer by Polar ID or external ID. Reference the product by
+   * Polar ID, or by external ID together with an external customer ID.
+   *
    * No initial order will be created and no confirmation email will be sent.
    *
    * **Scopes**: `subscriptions:write`
@@ -178,7 +182,10 @@ export const createSubscriptions = (client: ClientBase) => {
    * @throws {HTTPValidationError} Validation Error
    */
   return async (
-    body: SubscriptionCreateCustomer | SubscriptionCreateExternalCustomer,
+    body:
+      | SubscriptionCreateCustomer
+      | SubscriptionCreateExternalCustomer
+      | SubscriptionCreateExternal,
     requestOptions?: RequestOptions,
   ): Promise<Subscription> => {
     const pathParams = {};

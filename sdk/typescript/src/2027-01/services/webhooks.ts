@@ -10,11 +10,7 @@ import type {
   WebhookFormat,
 } from "../models";
 
-import {
-  AmbiguousExternalWebhookEndpointID,
-  HTTPValidationError,
-  ResourceNotFound,
-} from "../errors";
+import { HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listWebhookEndpointsWebhooks = (client: ClientBase) => {
   /**
@@ -131,42 +127,6 @@ export const createWebhookEndpointWebhooks = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<WebhookEndpoint>(response, "json", {
-      422: HTTPValidationError,
-    });
-  };
-};
-export const getExternalWebhookEndpointWebhooks = (client: ClientBase) => {
-  /**
-   * Get a webhook endpoint by external ID.
-   *
-   * **Scopes**: `webhooks:read` `webhooks:write`
-   *
-   * @param external_id
-   * @param requestOptions - Request options
-   * @returns {WebhookEndpoint}
-   * @throws {PolarNetworkError} When a network error occurs
-   * @throws {PolarRateLimitError} When the rate limit is exceeded
-   * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {ResourceNotFound} Webhook endpoint not found.
-   * @throws {AmbiguousExternalWebhookEndpointID} The external ID matches webhook endpoints in several accessible organizations.
-   * @throws {HTTPValidationError} Validation Error
-   */
-  return async (external_id: string, requestOptions?: RequestOptions): Promise<WebhookEndpoint> => {
-    const pathParams = {
-      external_id: external_id,
-    };
-    const queryParams = {};
-    const request = client.buildRequest(
-      "GET",
-      "/v1/webhooks/endpoints/external/{external_id}",
-      pathParams,
-      queryParams,
-      undefined,
-    );
-    const response = await client.sendRequest(request, requestOptions);
-    return client.parseResponse<WebhookEndpoint>(response, "json", {
-      404: ResourceNotFound,
-      409: AmbiguousExternalWebhookEndpointID,
       422: HTTPValidationError,
     });
   };
@@ -456,7 +416,6 @@ export function createWebhooksService(client: ClientBase) {
   return {
     listWebhookEndpoints: listWebhookEndpointsWebhooks(client),
     createWebhookEndpoint: createWebhookEndpointWebhooks(client),
-    getExternalWebhookEndpoint: getExternalWebhookEndpointWebhooks(client),
     getWebhookEndpoint: getWebhookEndpointWebhooks(client),
     deleteWebhookEndpoint: deleteWebhookEndpointWebhooks(client),
     updateWebhookEndpoint: updateWebhookEndpointWebhooks(client),

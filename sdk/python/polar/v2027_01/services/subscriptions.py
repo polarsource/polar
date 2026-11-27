@@ -23,6 +23,7 @@ from polar.v2027_01.inputs import (
     MetadataQuery,
     SubscriptionCancel,
     SubscriptionCreateCustomer,
+    SubscriptionCreateExternal,
     SubscriptionCreateExternalCustomer,
     SubscriptionPause,
     SubscriptionResume,
@@ -253,6 +254,15 @@ class SubscriptionsSync(SyncServiceBase):
         **kwargs: typing.Unpack[SubscriptionCreateExternalCustomer],
     ) -> Subscription: ...
 
+    @typing.overload
+    def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[SubscriptionCreateExternal],
+    ) -> Subscription: ...
+
     def create(
         self,
         *,
@@ -266,6 +276,9 @@ class SubscriptionsSync(SyncServiceBase):
         Supports free products and paid products with a trial that does not require
         upfront payment setup. Paid subscriptions start with the product's configured
         trial period. For other paid products, use the checkout flow.
+
+        Reference the customer by Polar ID or external ID. Reference the product by
+        Polar ID, or by external ID together with an external customer ID.
 
         No initial order will be created and no confirmation email will be sent.
 
@@ -740,6 +753,15 @@ class SubscriptionsAsync(AsyncServiceBase):
         **kwargs: typing.Unpack[SubscriptionCreateExternalCustomer],
     ) -> Subscription: ...
 
+    @typing.overload
+    async def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[SubscriptionCreateExternal],
+    ) -> Subscription: ...
+
     async def create(
         self,
         *,
@@ -753,6 +775,9 @@ class SubscriptionsAsync(AsyncServiceBase):
         Supports free products and paid products with a trial that does not require
         upfront payment setup. Paid subscriptions start with the product's configured
         trial period. For other paid products, use the checkout flow.
+
+        Reference the customer by Polar ID or external ID. Reference the product by
+        Polar ID, or by external ID together with an external customer ID.
 
         No initial order will be created and no confirmation email will be sent.
 

@@ -55,9 +55,10 @@ stay as they are.
   such as refunds. It doesn't help where scopes are shared: the payout-account, member-invite and
   review-submission routes need `organizations:write`, like editing the org itself, so only the
   allowlist keeps agents out of them.
-- After the claim, the agent's tokens carry every scope an OAuth app can be granted, across all of
+- After the claim, the agent's tokens carry every scope an OAuth app gets by default, across all of
   the claiming user's organizations. Unlike with an OAuth app, the user sees no scope list: the
-  claim page is the consent.
+  claim page is the consent. That leaves out `catalog:publish`, which a token only gets when it is
+  asked for: a claimed agent drafts catalog changes, and a human publishes them.
 - No placeholder users: the users table, login, emails and user metrics only ever see people, and
   nothing moves between users at the claim.
 - The org-access helpers and authz policies resolve an `Agent` to its one org, so it behaves like a

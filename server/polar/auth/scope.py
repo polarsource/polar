@@ -183,7 +183,8 @@ SCOPES_SUPPORTED = [
 ]
 
 # Publishing catalogs is granted to a token deliberately, so it's left out of
-# OAuth clients' default scope and of claimed agents' tokens (ADR-0014).
+# OAuth clients' default scope and of claimed agents' tokens, which carry that
+# default (ADR-0014).
 DEFAULT_CLIENT_SCOPES = [s for s in SCOPES_SUPPORTED if s != Scope.catalog_publish]
 
 CLAIMED_AGENT_SCOPES: set[Scope] = {Scope(scope) for scope in DEFAULT_CLIENT_SCOPES}

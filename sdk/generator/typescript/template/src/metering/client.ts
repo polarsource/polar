@@ -9,8 +9,8 @@ import type { CustomerMeter, MeterInput } from "./meter";
 
 import { type ClientBase } from "../base";
 import { PolarOutpostError } from "../outpost/errors";
-import { MemoryOutbox, type MeteringClient } from "./outbox/memory";
-import type { Outbox } from "./outbox/index";
+import { MemoryEventQueue, type MeteringClient } from "./queue/memory";
+import type { EventQueue } from "./queue/index";
 import {
   MeteringError,
   InvalidActorError,
@@ -64,12 +64,12 @@ export interface ActorMetering {
 export type MeteringOutpost = (client: ClientBase) => Outpost;
 
 export interface MeteringOptions {
-  outbox?: Outbox;
+  queue?: EventQueue;
   outpost?: MeteringOutpost;
 }
 
 export class Metering {
-  private readonly running: Pick<Outbox, "close">[] = [];
+  private readonly running: Pick<EventQueue, "close">[] = [];
   private starting?: Promise<void>;
   private closing?: Promise<void>;
   private shutdownDeadline?: number;
@@ -78,7 +78,7 @@ export class Metering {
   private onDrained?: () => void;
   constructor(
     private readonly client: ClientBase,
-    readonly outbox: Outbox,
+    readonly queue: EventQueue,
     readonly outpost?: Outpost,
   ) {}
 
@@ -87,7 +87,7 @@ export class Metering {
    *
    * @param event Event fields with exactly one customer_id or external_customer_id.
    * Member IDs must match the identifier kind. An event without a timestamp is dated now,
-   * once, before the outbox sees it. A missing external ID is also assigned here.
+   * once, before the queue sees it. A missing external ID is also assigned here.
    * @throws InvalidActorError if customer or member identifiers are inconsistent.
    */
   async track(event: EventInput): Promise<void> {
@@ -100,7 +100,7 @@ export class Metering {
     const starting = this.begin();
     try {
       await starting;
-      await this.outbox.enqueue(queued);
+      await this.queue.enqueue(queued);
       try {
         await this.outpost?.track(queued);
       } catch (error) {
@@ -199,7 +199,7 @@ export class Metering {
     try {
       await waitForDelivery(starting, timeout);
       const remaining = Math.max(0, deadline - Date.now());
-      await waitForDelivery(this.outbox.flush({ timeoutMs: remaining }), remaining);
+      await waitForDelivery(this.queue.flush({ timeoutMs: remaining }), remaining);
       if (this.outpost)
         await waitForDelivery(this.outpost.flush(), Math.max(0, deadline - Date.now()));
     } finally {
@@ -236,11 +236,11 @@ export class Metering {
         this.running.push(this.outpost);
         checkDeadline();
       }
-      await this.outbox.start(this.outpost && {
+      await this.queue.start(this.outpost && {
         onAck: this.outpost.onAck.bind(this.outpost),
         onRejected: this.outpost.onRejected.bind(this.outpost),
       });
-      this.running.push(this.outbox);
+      this.running.push(this.queue);
       checkDeadline();
     } catch (error) {
       try {
@@ -319,6 +319,6 @@ export const createMetering = (
   options: MeteringOptions = {},
 ): Metering => new Metering(
   client,
-  options.outbox ?? new MemoryOutbox(polar),
+  options.queue ?? new MemoryEventQueue(polar),
   options.outpost?.(client),
 );

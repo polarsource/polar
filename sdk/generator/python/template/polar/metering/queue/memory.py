@@ -26,7 +26,7 @@ from polar.metering.errors import (
     validate_timeout,
 )
 from polar.metering.events import EventInput
-from polar.metering.outbox import OnAck, OnRejected
+from polar.metering.queue import OnAck, OnRejected
 
 log = get_logger(__name__)
 
@@ -61,7 +61,7 @@ class _FlushRequest:
     error: BaseException | None = None
 
 
-class MemoryOutbox:
+class MemoryEventQueue:
     """Batch events in memory and deliver them through Polar's HTTP API."""
 
     def __init__(
@@ -115,7 +115,7 @@ class MemoryOutbox:
         on_rejected: OnRejected | None = None,
     ) -> collections.abc.AsyncGenerator[typing.Self, None]:
         if self._started:
-            raise PolarError("Memory outbox has already started")
+            raise PolarError("Memory queue has already started")
         self._started = True
         try:
             self._worker_task_group = await self._stack.enter_async_context(
@@ -149,7 +149,7 @@ class MemoryOutbox:
         if self._failure is not None:
             raise self._failure
         if self._flush_cancel_scope is None:
-            raise PolarError("Memory outbox has not started")
+            raise PolarError("Memory queue has not started")
         self._sequence += 1
         self._send_queue.send_nowait(_QueuedEvent(self._sequence, event))
         self._pending[self._sequence] = event
@@ -172,7 +172,7 @@ class MemoryOutbox:
         """
         validate_timeout(timeout)
         if self._flush_cancel_scope is None:
-            raise PolarError("Memory outbox has not started")
+            raise PolarError("Memory queue has not started")
         if self._closed:
             raise anyio.ClosedResourceError
         request = self._barrier()
@@ -309,12 +309,12 @@ class MemoryOutbox:
                             elif outcome is not None and outcome.reason == "permanent_error" and on_rejected is not None:
                                 await on_rejected(events, outcome.reason)
                         except Exception as error:  # noqa: BLE001
-                            log.warning("Memory outbox delivery hook failed (%s)", type(error).__name__)
+                            log.warning("Memory queue delivery hook failed (%s)", type(error).__name__)
                         for request in requests:
                             self._finish(request)
                         requests = []
                 if cancel_scope.cancelled_caught:
-                    failure = TimeoutError("Memory outbox shutdown timed out")
+                    failure = TimeoutError("Memory queue shutdown timed out")
                     if not self._pending:
                         self._failure = MeteringTimeoutError(self.shutdown_timeout)
             except BaseException as error:  # noqa: BLE001

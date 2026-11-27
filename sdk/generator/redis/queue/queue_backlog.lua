@@ -1,5 +1,5 @@
--- The outbox's length, how many of its entries flushers hold, and when the fleet may send it
--- again after Polar failed: KEYS[1] is the outbox, KEYS[2] its backoff, ARGV[1] the consumer group.
+-- The queue's length, how many of its entries flushers hold, and when the fleet may send it
+-- again after Polar failed: KEYS[1] is the queue, KEYS[2] its backoff, ARGV[1] the consumer group.
 -- ARGV[2], optional, is the retry the caller read before it delivered: Polar takes batches
 -- again, so that backoff ends, unless a flusher failed since and set a later one.
 if ARGV[2] and redis.call('HGET', KEYS[2], 'retry_at') == ARGV[2] then

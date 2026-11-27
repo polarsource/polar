@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { setTimeout as sleep } from "node:timers/promises";
 
 import type { EventInput } from "../event";
-import type { Outbox, OutboxHooks } from "./index";
+import type { EventQueue, EventQueueHooks } from "./index";
 
 import { type ClientBase, PolarClientError, PolarError } from "../../base";
 import {
@@ -23,20 +23,20 @@ import {
   waitForDelivery,
 } from "../errors";
 
-const OUTBOX_BATCH = 1000;
+const QUEUE_BATCH = 1000;
 const FLUSHERS = 32;
-const OUTBOX_CLAIM_IDLE = 60000;
+const QUEUE_CLAIM_IDLE = 60000;
 const FLUSHER_LOCK_TTL = 30000;
 const FLUSH_TENURE = 5000;
 const DRAIN_INTERVAL = 1000;
-const OUTBOX_RETRY_DELAY = 1000;
-const MAX_OUTBOX_RETRY_DELAY = 60000;
-// The consumer group the flushers read the outbox through.
-const OUTBOX_GROUP = "polar";
+const QUEUE_RETRY_DELAY = 1000;
+const MAX_QUEUE_RETRY_DELAY = 60000;
+// The consumer group the flushers read the queue through.
+const QUEUE_GROUP = "polar";
 
-const OUTBOX_BACKLOG_SCRIPT = `
--- The outbox's length, how many of its entries flushers hold, and when the fleet may send it
--- again after Polar failed: KEYS[1] is the outbox, KEYS[2] its backoff, ARGV[1] the consumer group.
+const QUEUE_BACKLOG_SCRIPT = `
+-- The queue's length, how many of its entries flushers hold, and when the fleet may send it
+-- again after Polar failed: KEYS[1] is the queue, KEYS[2] its backoff, ARGV[1] the consumer group.
 -- ARGV[2], optional, is the retry the caller read before it delivered: Polar takes batches
 -- again, so that backoff ends, unless a flusher failed since and set a later one.
 if ARGV[2] and redis.call('HGET', KEYS[2], 'retry_at') == ARGV[2] then
@@ -58,8 +58,8 @@ if redis.call('GET', KEYS[2]) == ARGV[2] then
 end
 `;
 
-interface OutboxRedis extends Redis {
-  outboxAcknowledge(
+interface QueueRedis extends Redis {
+  queueAcknowledge(
     stream: string,
     lockKey: string,
     group: string,
@@ -67,7 +67,7 @@ interface OutboxRedis extends Redis {
     ttl: number,
     ...ids: string[]
   ): Promise<void>;
-  outboxBacklog(
+  queueBacklog(
     key: string,
     backoffKey: string,
     group: string,
@@ -75,7 +75,7 @@ interface OutboxRedis extends Redis {
   ): Promise<[number, number, string]>;
 }
 
-// The outbox entries a flusher delivered, and the slot it holds.
+// The queue entries a flusher delivered, and the slot it holds.
 interface Delivery {
   entries: string[];
   lockKey: string;
@@ -118,16 +118,16 @@ const holdsNoInfinity = (value: unknown): boolean => {
   return Object.values(value).every(holdsNoInfinity);
 };
 
-export interface RedisOutboxOptions {
+export interface RedisEventQueueOptions {
   client: Pick<ClientBase, "sendRequest" | "buildRequest" | "parseResponse">;
   /** Use a distinct stream per Polar environment and organization. */
   stream: string;
 }
 
-export class RedisOutbox implements Outbox {
-  private hooks?: OutboxHooks;
+export class RedisEventQueue implements EventQueue {
+  private hooks?: EventQueueHooks;
 
-  private redis?: OutboxRedis;
+  private redis?: QueueRedis;
   private timer?: ReturnType<typeof setInterval>;
   private draining?: Promise<void>;
   private drainUntil = Infinity;
@@ -136,18 +136,18 @@ export class RedisOutbox implements Outbox {
 
   constructor(
     private readonly redisUrl: string,
-    private readonly options: RedisOutboxOptions,
+    private readonly options: RedisEventQueueOptions,
   ) {}
 
-  async start(hooks: OutboxHooks = {}): Promise<this> {
-    if (this.redis) throw new PolarError("Redis outbox is already connected");
+  async start(hooks: EventQueueHooks = {}): Promise<this> {
+    if (this.redis) throw new PolarError("Redis queue is already connected");
     const redis = createRedis(this.redisUrl);
-    this.redis = redis as OutboxRedis;
+    this.redis = redis as QueueRedis;
     try {
       await connectRedis(redis);
-      redis.defineCommand("outboxBacklog", { numberOfKeys: 2, lua: OUTBOX_BACKLOG_SCRIPT });
-      redis.defineCommand("outboxAcknowledge", { numberOfKeys: 2, lua: ACKNOWLEDGE_SCRIPT });
-      await this.createOutboxGroup();
+      redis.defineCommand("queueBacklog", { numberOfKeys: 2, lua: QUEUE_BACKLOG_SCRIPT });
+      redis.defineCommand("queueAcknowledge", { numberOfKeys: 2, lua: ACKNOWLEDGE_SCRIPT });
+      await this.createQueueGroup();
       this.hooks = hooks;
       this.timer = setInterval(() => void this.drain().catch(() => {}), DRAIN_INTERVAL);
       return this;
@@ -212,8 +212,9 @@ export class RedisOutbox implements Outbox {
     }
   }
 
-  private requireRedis(): OutboxRedis {
-    if (!this.redis) throw new PolarError("Call RedisOutbox.start() before using RedisOutbox");
+  private requireRedis(): QueueRedis {
+    if (!this.redis)
+      throw new PolarError("Call RedisEventQueue.start() before using RedisEventQueue");
     return this.redis;
   }
 
@@ -221,16 +222,16 @@ export class RedisOutbox implements Outbox {
     return `${this.options.stream}:backoff`;
   }
 
-  // A flusher reads the outbox through the group, which tracks each batch until Polar has it.
-  private async createOutboxGroup(): Promise<void> {
+  // A flusher reads the queue through the group, which tracks each batch until Polar has it.
+  private async createQueueGroup(): Promise<void> {
     await this.requireRedis()
-      .xgroup("CREATE", this.options.stream, OUTBOX_GROUP, "0", "MKSTREAM")
+      .xgroup("CREATE", this.options.stream, QUEUE_GROUP, "0", "MKSTREAM")
       .catch((error: unknown) => {
         if (!String(error).includes("BUSYGROUP")) throw error;
       });
   }
 
-  // One flusher per OUTBOX_BATCH events waiting, up to FLUSHERS across the fleet. Once its
+  // One flusher per QUEUE_BATCH events waiting, up to FLUSHERS across the fleet. Once its
   // flushers let go of their slots, the instance looks again: an event queued while they held
   // them is not left behind.
   // One drain at a time per instance: a flush during one waits for it, and asks for one more round
@@ -244,9 +245,9 @@ export class RedisOutbox implements Outbox {
       do {
         this.drainAgain = false;
         this.undrained = false;
-        await this.drainOutbox().catch((error: unknown) => {
+        await this.drainEventQueue().catch((error: unknown) => {
           this.undrained = true;
-          console.warn("Redis outbox drain failed", error);
+          console.warn("Redis queue drain failed", error);
           throw error;
         });
       } while (this.drainAgain);
@@ -262,7 +263,7 @@ export class RedisOutbox implements Outbox {
     this.drainUntil = Math.min(this.drainUntil, Date.now() + FLUSH_TENURE);
   }
 
-  private async drainOutbox(): Promise<void> {
+  private async drainEventQueue(): Promise<void> {
     const redis = this.requireRedis();
     try {
       // The backoff a round delivered past: the next round's read ends it.
@@ -272,21 +273,21 @@ export class RedisOutbox implements Outbox {
           this.undrained = true;
           return;
         }
-        const [length, delivering, retryAt] = await redis.outboxBacklog(
+        const [length, delivering, retryAt] = await redis.queueBacklog(
           this.options.stream,
           this.backoffKey,
-          OUTBOX_GROUP,
+          QUEUE_GROUP,
           ...ended,
         );
         // The first round also takes back the batches that wait on a failed or frozen flusher.
         if (!length || (round && length === delivering)) return;
-        // Polar failed to take a batch: the fleet waits before sending the outbox again.
+        // Polar failed to take a batch: the fleet waits before sending the queue again.
         if (Number(retryAt) > Date.now()) {
           this.undrained = true;
           return;
         }
         // A partial batch goes only when no flusher delivers: the last one in flight takes it.
-        const full = Math.floor((length - delivering) / OUTBOX_BATCH);
+        const full = Math.floor((length - delivering) / QUEUE_BATCH);
         const slots = Math.min(FLUSHERS, full || (round && delivering ? 0 : 1));
         if (!slots) return;
         const outcomes = await Promise.all(
@@ -302,7 +303,7 @@ export class RedisOutbox implements Outbox {
       }
     } catch (error) {
       // Redis lost the group, with the rest of its keys: the next flush reads a new one.
-      if (String(error).includes("NOGROUP")) await this.createOutboxGroup();
+      if (String(error).includes("NOGROUP")) await this.createQueueGroup();
       throw error;
     }
   }
@@ -319,12 +320,12 @@ export class RedisOutbox implements Outbox {
       if (slot === 0)
         await redis.xautoclaim(
           this.options.stream,
-          OUTBOX_GROUP,
+          QUEUE_GROUP,
           consumer,
-          OUTBOX_CLAIM_IDLE,
+          QUEUE_CLAIM_IDLE,
           "0-0",
           "COUNT",
-          OUTBOX_BATCH,
+          QUEUE_BATCH,
           "JUSTID",
         );
       for (let from = "0"; ; ) {
@@ -333,25 +334,25 @@ export class RedisOutbox implements Outbox {
             this.undrained = true;
             return "drained";
           }
-          const [length, delivering] = await redis.outboxBacklog(
+          const [length, delivering] = await redis.queueBacklog(
             this.options.stream,
             this.backoffKey,
-            OUTBOX_GROUP,
+            QUEUE_GROUP,
           );
           if (length === delivering) return "drained";
           // The flusher still in flight takes a partial batch; if it let go meanwhile, the next
           // drain does.
-          if (delivering && length - delivering < OUTBOX_BATCH) {
+          if (delivering && length - delivering < QUEUE_BATCH) {
             this.undrained = true;
             return "drained";
           }
         }
         const read = (await redis.xreadgroup(
           "GROUP",
-          OUTBOX_GROUP,
+          QUEUE_GROUP,
           consumer,
           "COUNT",
-          OUTBOX_BATCH,
+          QUEUE_BATCH,
           "STREAMS",
           this.options.stream,
           from,
@@ -364,7 +365,7 @@ export class RedisOutbox implements Outbox {
             // does not wait for a drain large enough to start this slot again.
             if (slot)
               await redis
-                .xclaim(this.options.stream, OUTBOX_GROUP, "flusher-0", 0, ...ids, "JUSTID")
+                .xclaim(this.options.stream, QUEUE_GROUP, "flusher-0", 0, ...ids, "JUSTID")
                 .catch(() => {});
             return "failed";
           }
@@ -380,7 +381,7 @@ export class RedisOutbox implements Outbox {
     entries: [string, string[] | null][],
     delivery: Delivery,
   ): Promise<boolean> {
-    // An entry that is not JSON can never be sent: it leaves the outbox with the batch.
+    // An entry that is not JSON can never be sent: it leaves the queue with the batch.
     let events = entries.flatMap(([, fields]) => {
       if (!fields) return [];
       try {
@@ -388,7 +389,7 @@ export class RedisOutbox implements Outbox {
         if (!holdsNoInfinity(event)) throw new TypeError("An infinity is not JSON");
         return [event];
       } catch {
-        console.warn("Redis outbox dropped an outbox entry it cannot read");
+        console.warn("Redis queue dropped an unreadable entry");
         return [];
       }
     });
@@ -423,17 +424,17 @@ export class RedisOutbox implements Outbox {
         // As long as Polar asks, or longer after each failure in a row.
         const wait = retryAfterMs(error);
         await backOff(this.redis, this.backoffKey, {
-          first: wait ?? OUTBOX_RETRY_DELAY,
-          max: wait ?? MAX_OUTBOX_RETRY_DELAY,
+          first: wait ?? QUEUE_RETRY_DELAY,
+          max: wait ?? MAX_QUEUE_RETRY_DELAY,
         });
         return false;
       }
     if (refused.length) await this.hooks?.onRejected?.(refused, "permanent_error");
     if (events.length) await this.hooks?.onAck?.(events);
-    await this.requireRedis().outboxAcknowledge(
+    await this.requireRedis().queueAcknowledge(
       this.options.stream,
       delivery.lockKey,
-      OUTBOX_GROUP,
+      QUEUE_GROUP,
       delivery.token,
       FLUSHER_LOCK_TTL,
       ...delivery.entries,

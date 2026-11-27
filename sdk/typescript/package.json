@@ -46,14 +46,14 @@
         "default": "./dist/metering/index.cjs"
       }
     },
-    "./metering/outbox/redis": {
+    "./metering/queue/redis": {
       "import": {
-        "types": "./dist/metering/outbox/redis.d.mts",
-        "default": "./dist/metering/outbox/redis.mjs"
+        "types": "./dist/metering/queue/redis.d.mts",
+        "default": "./dist/metering/queue/redis.mjs"
       },
       "require": {
-        "types": "./dist/metering/outbox/redis.d.cts",
-        "default": "./dist/metering/outbox/redis.cjs"
+        "types": "./dist/metering/queue/redis.d.cts",
+        "default": "./dist/metering/queue/redis.cjs"
       }
     },
     "./outpost": {

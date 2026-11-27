@@ -31,23 +31,23 @@ from polar.metering.errors import (
     validate_timeout,
 )
 from polar.metering.events import EventInput
-from polar.metering.outbox import OnAck, OnRejected
+from polar.metering.queue import OnAck, OnRejected
 
 log = get_logger(__name__)
 
-OUTBOX_BATCH = 1000
+QUEUE_BATCH = 1000
 FLUSHERS = 32
-OUTBOX_CLAIM_IDLE = 60.0
+QUEUE_CLAIM_IDLE = 60.0
 FLUSHER_LOCK_TTL = 30.0
 FLUSH_TENURE = 5.0
 DRAIN_INTERVAL = 1.0
-OUTBOX_RETRY_DELAY = 1.0
-MAX_OUTBOX_RETRY_DELAY = 60.0
-OUTBOX_GROUP = "polar"
+QUEUE_RETRY_DELAY = 1.0
+MAX_QUEUE_RETRY_DELAY = 60.0
+QUEUE_GROUP = "polar"
 
-OUTBOX_BACKLOG_SCRIPT = """
--- The outbox's length, how many of its entries flushers hold, and when the fleet may send it
--- again after Polar failed: KEYS[1] is the outbox, KEYS[2] its backoff, ARGV[1] the consumer group.
+QUEUE_BACKLOG_SCRIPT = """
+-- The queue's length, how many of its entries flushers hold, and when the fleet may send it
+-- again after Polar failed: KEYS[1] is the queue, KEYS[2] its backoff, ARGV[1] the consumer group.
 -- ARGV[2], optional, is the retry the caller read before it delivered: Polar takes batches
 -- again, so that backoff ends, unless a flusher failed since and set a later one.
 if ARGV[2] and redis.call('HGET', KEYS[2], 'retry_at') == ARGV[2] then
@@ -111,14 +111,14 @@ def _refused_indexes(response: httpx2.Response) -> set[int] | None:
 
 @dataclasses.dataclass
 class _Delivery:
-    """The outbox entries a flusher delivered, and the slot it holds."""
+    """The queue entries a flusher delivered, and the slot it holds."""
 
     entries: list[str]
     lock_key: str
     token: str
 
 
-class RedisOutbox:
+class RedisEventQueue:
     """Deliver events from a Redis stream shared by workers using the same Polar account.
 
     Use a distinct stream per Polar environment and organization. Delivery hooks can be
@@ -141,7 +141,7 @@ class RedisOutbox:
         self._on_rejected: OnRejected | None = None
         self._redis: Redis | None = None
         self._tasks: anyio.abc.TaskGroup | None = None
-        self._outbox_backlog: AsyncScript | None = None
+        self._queue_backlog: AsyncScript | None = None
         self._acknowledge: AsyncScript | None = None
         self._draining: anyio.Event | None = None
         self._drain_until = math.inf
@@ -170,12 +170,12 @@ class RedisOutbox:
         on_rejected: OnRejected | None = None,
     ) -> collections.abc.AsyncGenerator[typing.Self, None]:
         if self._opening:
-            raise RuntimeError("Redis outbox is already running")
+            raise RuntimeError("Redis queue is already running")
         self._opening = True
         try:
             async with connect_redis(self._redis_url) as redis:
-                await self._create_outbox_group(redis)
-                self._outbox_backlog = redis.register_script(OUTBOX_BACKLOG_SCRIPT)
+                await self._create_queue_group(redis)
+                self._queue_backlog = redis.register_script(QUEUE_BACKLOG_SCRIPT)
                 self._acknowledge = redis.register_script(ACKNOWLEDGE_SCRIPT)
                 async with anyio.create_task_group() as tasks:
                     self._redis = redis
@@ -188,7 +188,7 @@ class RedisOutbox:
                     finally:
                         try:
                             with anyio.move_on_after(30):
-                                await self._drain_outbox_quietly(limited=True)
+                                await self._drain_queue_quietly(limited=True)
                         finally:
                             tasks.cancel_scope.cancel()
         finally:
@@ -232,23 +232,23 @@ class RedisOutbox:
 
     def _require_redis(self) -> Redis:
         if self._redis is None:
-            raise RuntimeError("Use RedisOutbox inside an open() context")
+            raise RuntimeError("Use RedisEventQueue inside an open() context")
         return self._redis
 
     async def _enqueue_encoded(self, event: str) -> None:
         await self._require_redis().xadd(self._stream, {"event": event})
         self._undrained = True
 
-    async def _create_outbox_group(self, redis: Redis) -> None:
-        """A flusher reads the outbox through the group, which tracks each batch until
+    async def _create_queue_group(self, redis: Redis) -> None:
+        """A flusher reads the queue through the group, which tracks each batch until
         Polar has it."""
         try:
-            await redis.xgroup_create(self._stream, OUTBOX_GROUP, id="0", mkstream=True)
+            await redis.xgroup_create(self._stream, QUEUE_GROUP, id="0", mkstream=True)
         except RedisResponseError as error:
             if "BUSYGROUP" not in str(error):
                 raise
 
-    async def _drain_outbox_quietly(self, *, limited: bool = False) -> None:
+    async def _drain_queue_quietly(self, *, limited: bool = False) -> None:
         """Redis keeps what a drain fails to deliver: the next flush takes it. Without an
         event of its own to deliver, a flush waits for the drain in flight, if any."""
         if self._redis is None:
@@ -278,12 +278,12 @@ class RedisOutbox:
             while self._drain_again:
                 self._drain_again = False
                 self._undrained = False
-                await self._drain_outbox()
+                await self._drain_queue()
         # Whatever a drain raises, it must not end the task group, and with it the
-        # task that started the outbox.
+        # task that started the queue.
         except* Exception:
             self._undrained = True
-            log.exception("Redis outbox drain failed")
+            log.exception("Redis queue drain failed")
         finally:
             self._draining = None
             self._drain_until = math.inf
@@ -297,12 +297,12 @@ class RedisOutbox:
             await anyio.sleep(DRAIN_INTERVAL)
             await self._drain()
 
-    async def _drain_outbox(self) -> None:
-        """One flusher per OUTBOX_BATCH events waiting, up to FLUSHERS across the fleet.
+    async def _drain_queue(self) -> None:
+        """One flusher per QUEUE_BATCH events waiting, up to FLUSHERS across the fleet.
         Once its flushers let go of their slots, the instance looks again: an event
         queued while they held them is not left behind."""
         redis = self._require_redis()
-        assert self._outbox_backlog is not None
+        assert self._queue_backlog is not None
         first = True
         # The backoff a round delivered past: the next round's read ends it.
         ended: list[bytes] = []
@@ -311,22 +311,22 @@ class RedisOutbox:
                 if anyio.current_time() >= self._drain_until:
                     self._undrained = True
                     return
-                length, delivering, retry_at = await self._outbox_backlog(
+                length, delivering, retry_at = await self._queue_backlog(
                     keys=[self._stream, self._backoff_key],
-                    args=[OUTBOX_GROUP, *ended],
+                    args=[QUEUE_GROUP, *ended],
                 )
                 # The first round also takes back the batches that wait on a failed or
                 # frozen flusher.
                 if not length or (not first and length == delivering):
                     return
                 # Polar failed to take a batch: the fleet waits before sending the
-                # outbox again.
+                # queue again.
                 if retry_at and float(retry_at) > time.time() * 1000:
                     self._undrained = True
                     return
                 # A partial batch goes only when no flusher delivers: the last one in
                 # flight takes it.
-                full = (length - delivering) // OUTBOX_BATCH
+                full = (length - delivering) // QUEUE_BATCH
                 slots = min(FLUSHERS, full or (0 if delivering and not first else 1))
                 if not slots:
                     return
@@ -351,7 +351,7 @@ class RedisOutbox:
             # one.
             errors = error.exceptions if isinstance(error, ExceptionGroup) else (error,)
             if any("NOGROUP" in str(each) for each in errors):
-                await self._create_outbox_group(redis)
+                await self._create_queue_group(redis)
             raise
 
     async def _flush_slot(self, slot: int) -> str:
@@ -367,10 +367,10 @@ class RedisOutbox:
             if slot == 0:
                 await redis.xautoclaim(
                     self._stream,
-                    OUTBOX_GROUP,
+                    QUEUE_GROUP,
                     consumer,
-                    int(OUTBOX_CLAIM_IDLE * 1000),
-                    count=OUTBOX_BATCH,
+                    int(QUEUE_CLAIM_IDLE * 1000),
+                    count=QUEUE_BATCH,
                     justid=True,
                 )
             start = "0"
@@ -379,25 +379,25 @@ class RedisOutbox:
                     if anyio.current_time() >= self._drain_until:
                         self._undrained = True
                         return "drained"
-                    assert self._outbox_backlog is not None
-                    length, delivering, _ = await self._outbox_backlog(
+                    assert self._queue_backlog is not None
+                    length, delivering, _ = await self._queue_backlog(
                         keys=[self._stream, self._backoff_key],
-                        args=[OUTBOX_GROUP],
+                        args=[QUEUE_GROUP],
                     )
                     if length == delivering:
                         return "drained"
                     # The flusher still in flight takes a partial batch; if it let go
                     # meanwhile, the next drain does.
-                    if delivering and length - delivering < OUTBOX_BATCH:
+                    if delivering and length - delivering < QUEUE_BATCH:
                         self._undrained = True
                         return "drained"
                 read = typing.cast(
                     list[typing.Any],
                     await redis.xreadgroup(
-                        OUTBOX_GROUP,
+                        QUEUE_GROUP,
                         consumer,
                         {self._stream: start},
-                        count=OUTBOX_BATCH,
+                        count=QUEUE_BATCH,
                     ),
                 )
                 entries = read[0][1] if read else []
@@ -414,7 +414,7 @@ class RedisOutbox:
                             with contextlib.suppress(RedisError):
                                 await redis.xclaim(
                                     self._stream,
-                                    OUTBOX_GROUP,
+                                    QUEUE_GROUP,
                                     "flusher-0",
                                     0,
                                     ids,
@@ -426,13 +426,13 @@ class RedisOutbox:
         finally:
             await release_lock(redis, lock_key, token)
 
-    async def _back_off_outbox(self, wait: float | None) -> None:
+    async def _back_off_queue(self, wait: float | None) -> None:
         """As long as Polar asks, or longer after each failure in a row."""
         await back_off(
             self._require_redis(),
             self._backoff_key,
-            first=wait if wait is not None else OUTBOX_RETRY_DELAY,
-            maximum=wait if wait is not None else MAX_OUTBOX_RETRY_DELAY,
+            first=wait if wait is not None else QUEUE_RETRY_DELAY,
+            maximum=wait if wait is not None else MAX_QUEUE_RETRY_DELAY,
         )
 
     async def _deliver(self, entries: list[typing.Any], delivery: _Delivery) -> bool:
@@ -449,8 +449,8 @@ class RedisOutbox:
                     )
                 )
             except ValueError:
-                # It can never be sent: it leaves the outbox with the batch.
-                log.warning("Redis outbox dropped an outbox entry it cannot read")
+                # It can never be sent: it leaves the queue with the batch.
+                log.warning("Redis queue dropped an unreadable entry")
         refused: list[EventInput] = []
         resent = 0
         while events:
@@ -461,7 +461,7 @@ class RedisOutbox:
                     timeout=DEFAULT_TIMEOUT,
                 )
             except httpx2.TransportError:
-                await self._back_off_outbox(None)
+                await self._back_off_queue(None)
                 return False
             # Only a 2xx means Polar has the batch.
             if response.is_success:
@@ -484,7 +484,7 @@ class RedisOutbox:
                 refused += events
                 events = []
                 break
-            await self._back_off_outbox(retry_after_response(response))
+            await self._back_off_queue(retry_after_response(response))
             return False
         if refused and self._on_rejected is not None:
             await self._on_rejected(refused, "permanent_error")
@@ -494,7 +494,7 @@ class RedisOutbox:
         await self._acknowledge(
             keys=[self._stream, delivery.lock_key],
             args=[
-                OUTBOX_GROUP,
+                QUEUE_GROUP,
                 delivery.token,
                 int(FLUSHER_LOCK_TTL * 1000),
                 *delivery.entries,

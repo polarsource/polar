@@ -167,7 +167,7 @@ async def record_usage() -> None:
 ```
 
 An event without a `timestamp` is dated when you call `track()`, not when its batch reaches Polar.
-Metering uses an in-memory outbox by default. Pass `outbox=` to use a different outbox or customize its settings.
+Metering uses an in-memory queue by default. Pass `queue=` to use a different queue or customize its settings.
 
 ### Actor context
 
@@ -201,24 +201,24 @@ if meter is not None:
 
 ### Local reduction with Outpost
 
-Pass `outpost=True` to enable local reduction using `REDIS_URL`, or pass Outpost options with an explicit `redis_url`. The outbox handles delivery. Outpost applies events locally after enqueue succeeds. If Outpost cannot answer a read, metering queries the Polar API.
+Pass `outpost=True` to enable local reduction using `REDIS_URL`, or pass Outpost options with an explicit `redis_url`. The queue handles delivery. Outpost applies events locally after enqueue succeeds. If Outpost cannot answer a read, metering queries the Polar API.
 
-`track()` assigns a timestamp and external ID when omitted, so the outbox and Outpost use the same event.
+`track()` assigns a timestamp and external ID when omitted, so the queue and Outpost use the same event.
 
-For durable delivery, install the `outpost` extra with `uv add "polar-sdk[outpost]"` and use a Redis outbox. Use a different stream for each Polar environment and organization.
+For durable delivery, install the `outpost` extra with `uv add "polar-sdk[outpost]"` and use a Redis queue. Use a different stream for each Polar environment and organization.
 
 ```python
-from polar.metering.outbox.redis import RedisOutbox
+from polar.metering.queue.redis import RedisEventQueue
 
 redis_url = "redis://localhost:6379"
-outbox = RedisOutbox.create(polar, redis_url, stream="my-app:production:org:events")
-async with polar.metering(outbox=outbox, outpost={"redis_url": redis_url}) as metering:
+queue = RedisEventQueue.create(polar, redis_url, stream="my-app:production:org:events")
+async with polar.metering(queue=queue, outpost={"redis_url": redis_url}) as metering:
     await metering.track(name="api_request", external_customer_id="customer_123")
 ```
 
 ### Delivery
 
-The in-memory outbox queues events in memory and sends them in batches of up to `batch_size`
+The in-memory queue queues events in memory and sends them in batches of up to `batch_size`
 events, or every `batch_interval` seconds. `track()` never waits for the HTTP request.
 
 On a long-running server, keep one metering context open for the application's lifetime
@@ -243,12 +243,12 @@ async def handle_request() -> dict[str, bool]:
 For a handler that owns its own helper, context exit drains automatically:
 
 ```python
-from polar.metering.outbox.memory import MemoryOutbox
+from polar.metering.queue.memory import MemoryEventQueue
 
 
 async def handle_request() -> dict[str, bool]:
-    outbox = MemoryOutbox(polar, shutdown_timeout=30)
-    async with polar.metering(outbox=outbox) as metering:
+    queue = MemoryEventQueue(polar, shutdown_timeout=30)
+    async with polar.metering(queue=queue) as metering:
         await metering.track(name="api_request", external_customer_id="customer_123")
     return {"ok": True}
 ```
@@ -256,7 +256,7 @@ async def handle_request() -> dict[str, bool]:
 A `flush()` confirms delivery unless a newer flush released it. Failed delivery raises
 `MeteringDeliveryError`, importable from `polar.metering`. Its `events` contains the unconfirmed events; each item in
 `failures` includes `events`, a `reason`, and the original `cause`. Drops are still logged
-and permanent rejections are passed to the outbox session's rejection hook. A completed flush acknowledges the reported failures, so a later
+and permanent rejections are passed to the queue session's rejection hook. A completed flush acknowledges the reported failures, so a later
 flush reports only subsequent outcomes. The newest overlapping flush reports the failures of
 the ones it released.
 Periodically flush long-running helpers to observe failures and release their retained records.
@@ -280,7 +280,7 @@ termination. A timeout means delivery is unconfirmed, so blindly retrying may du
 
 #### Memory
 
-The in-memory outbox sends events in batches to Polar. It retries network errors, HTTP 408 responses, and server errors with exponential backoff and jitter. On a rate limit it waits out `Retry-After`, for up to five minutes per batch. Other Polar API errors drop the batch.
+The in-memory queue sends events in batches to Polar. It retries network errors, HTTP 408 responses, and server errors with exponential backoff and jitter. On a rate limit it waits out `Retry-After`, for up to five minutes per batch. Other Polar API errors drop the batch.
 
 | Option             | Default | Meaning                                                    |
 | ------------------ | ------- | ---------------------------------------------------------- |
@@ -289,7 +289,7 @@ The in-memory outbox sends events in batches to Polar. It retries network errors
 | `shutdown_timeout` | `30.0`   | Seconds allowed to drain on context exit.                  |
 | `max_attempts`     | `3`     | Total attempts per batch, including the first.             |
 
-Metering opens the outbox and supplies Outpost's delivery hooks when enabled. When using an outbox directly, open it with `async with outbox.open()`. Pass `on_ack` or `on_rejected` to `open()` to handle delivery outcomes for that session.
+Metering opens the queue and supplies Outpost's delivery hooks when enabled. When using a queue directly, open it with `async with queue.open()`. Pass `on_ack` or `on_rejected` to `open()` to handle delivery outcomes for that session.
 
 #### Outpost
 

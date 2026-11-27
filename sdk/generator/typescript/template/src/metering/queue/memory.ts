@@ -1,5 +1,5 @@
 import type { EventInput } from "../event";
-import type { Outbox, OutboxHooks } from "./index";
+import type { EventQueue, EventQueueHooks } from "./index";
 
 import {
   PolarClientError,
@@ -48,7 +48,7 @@ export interface MeteringClient {
 /**
  * Configure in-memory batching and delivery to Polar.
  */
-export interface MemoryOutboxOptions {
+export interface MemoryEventQueueOptions {
   /**
    * Maximum events per HTTP request. Defaults to 100.
    */
@@ -92,8 +92,8 @@ class FlushRequest {
 /**
  * Batch events in memory and deliver them through Polar's HTTP API.
  */
-export class MemoryOutbox implements Outbox {
-  private readonly options: Required<MemoryOutboxOptions>;
+export class MemoryEventQueue implements EventQueue {
+  private readonly options: Required<MemoryEventQueueOptions>;
   private readonly queue: (QueuedEvent | FlushRequest)[] = [];
   private readonly barriers = new Set<FlushRequest>();
   private readonly abort = new AbortController();
@@ -116,7 +116,7 @@ export class MemoryOutbox implements Outbox {
    */
   constructor(
     private readonly polar: MeteringClient,
-    options: MemoryOutboxOptions = {},
+    options: MemoryEventQueueOptions = {},
   ) {
     this.options = {
       batchSize: options.batchSize ?? 100,
@@ -135,11 +135,11 @@ export class MemoryOutbox implements Outbox {
   /**
    * Start the background delivery worker.
    *
-   * @returns This outbox, ready to accept events.
+   * @returns This queue, ready to accept events.
    * @throws PolarError if the worker has already started.
    */
-  async start(hooks: OutboxHooks = {}): Promise<this> {
-    if (this.worker) throw new PolarError("Memory outbox has already started");
+  async start(hooks: EventQueueHooks = {}): Promise<this> {
+    if (this.worker) throw new PolarError("Memory queue has already started");
     this.worker = this.run(hooks);
     return this;
   }
@@ -169,7 +169,7 @@ export class MemoryOutbox implements Outbox {
    */
   async flush(options?: DeliveryOptions): Promise<void> {
     const timeout = deliveryTimeout(options);
-    if (!this.worker || this.closing) throw new PolarError("Memory outbox is not running");
+    if (!this.worker || this.closing) throw new PolarError("Memory queue is not running");
     const request = this.barrier();
     request.deadline = Date.now() + timeout;
     if (this.finished || this.failure) this.finish(request);
@@ -213,7 +213,7 @@ export class MemoryOutbox implements Outbox {
 
   private assertRunning(): void {
     if (this.failure) throw this.failure;
-    if (!this.worker || this.closing) throw new PolarError("Memory outbox is not running");
+    if (!this.worker || this.closing) throw new PolarError("Memory queue is not running");
   }
 
   private barrier(): FlushRequest {
@@ -302,7 +302,7 @@ export class MemoryOutbox implements Outbox {
     }
   }
 
-  private async run({ onAck, onRejected }: OutboxHooks): Promise<void> {
+  private async run({ onAck, onRejected }: EventQueueHooks): Promise<void> {
     let requests: FlushRequest[] = [];
     try {
       while (!this.closing || this.queue.length) {
@@ -341,7 +341,7 @@ export class MemoryOutbox implements Outbox {
           else if (failure.reason === "permanent_error") await onRejected?.(events, failure.reason);
         } catch (error) {
           console.warn(
-            "Memory outbox delivery hook failed",
+            "Memory queue delivery hook failed",
             error instanceof Error ? error.constructor.name : typeof error,
           );
         }

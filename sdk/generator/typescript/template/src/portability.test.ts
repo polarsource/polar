@@ -3,7 +3,7 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const SRC = import.meta.dirname;
-const NODE_ONLY = new Set(["outpost", "redis.ts", join("metering", "outbox", "redis.ts")]);
+const NODE_ONLY = new Set(["outpost", "redis.ts", join("metering", "queue", "redis.ts")]);
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

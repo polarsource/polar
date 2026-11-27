@@ -2,11 +2,11 @@ import { Redis } from "ioredis";
 import { expect, it, vi } from "vitest";
 
 import type { EventInput } from "../event";
-import type { Outbox } from "./index";
+import type { EventQueue } from "./index";
 
 import { ClientBase } from "../../base";
 import { startRedisServer } from "../../outpost/testing";
-import { RedisOutbox } from "./redis";
+import { RedisEventQueue } from "./redis";
 
 it("keeps an entry until its rejection hook succeeds", async () => {
   const server = await startRedisServer();
@@ -22,18 +22,18 @@ it("keeps an entry until its rejection hook succeeds", async () => {
     attempts.push(JSON.parse(String(request.body)).events[0]);
     return new Response(null, { status: 422 });
   });
-  const stream = "test:outbox";
+  const stream = "test:queue";
   const onAck = vi.fn();
   const onRejected = vi.fn(async () => {
     expect(await redis.xlen(stream)).toBe(1);
     if (attempts.length === 1) throw new Error("Reducer unavailable");
   });
   const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-  const outbox: Outbox = new RedisOutbox(server.socket, { client, stream });
+  const queue: EventQueue = new RedisEventQueue(server.socket, { client, stream });
   try {
-    await outbox.start({ onAck, onRejected });
-    await outbox.enqueue({ name: "call", external_customer_id: "alice" });
-    await outbox.flush();
+    await queue.start({ onAck, onRejected });
+    await queue.enqueue({ name: "call", external_customer_id: "alice" });
+    await queue.flush();
     expect(attempts).toHaveLength(2);
     expect(attempts[0]).toEqual(attempts[1]);
     expect(attempts[0].external_id).toBeTruthy();
@@ -42,10 +42,10 @@ it("keeps an entry until its rejection hook succeeds", async () => {
     expect(onRejected).toHaveBeenCalledWith([attempts[0]], "permanent_error");
     expect(onAck).not.toHaveBeenCalled();
     expect(await redis.xlen(stream)).toBe(0);
-    expect(warn).toHaveBeenCalledWith("Redis outbox drain failed", expect.any(Error));
+    expect(warn).toHaveBeenCalledWith("Redis queue drain failed", expect.any(Error));
   } finally {
     warn.mockRestore();
-    await outbox.close();
+    await queue.close();
     redis.disconnect();
     await server.stop();
   }

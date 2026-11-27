@@ -205,7 +205,7 @@ Pass `outpost=True` to enable local reduction using `REDIS_URL`, or pass a Redis
 
 `track()` assigns a timestamp and external ID when omitted, so the queue and Outpost use the same event.
 
-For durable delivery, install the `outpost` extra with `uv add "polar-sdk[outpost]"` and use a Redis queue. Use a different stream for each Polar environment and organization.
+Outpost needs the `outpost` extra, installed with `uv add "polar-sdk[outpost]"`, and a Redis queue: an event Outpost has counted stays in Redis until Polar takes it. Use a different stream for each Polar environment and organization.
 
 ```python
 from polar.metering.queue.redis import RedisEventQueue

@@ -219,12 +219,18 @@ if (meter !== null) console.log(meter.consumed_units, meter.credited_units, mete
 
 Pass `outpost()` from `@polar-sh/sdk/outpost` to `polar.metering()` to enable Redis-backed
 local reduction. This provides low-latency meter reads across clients. Outpost requires the
-optional `ioredis` and `@opentelemetry/*` peer dependencies.
+optional `ioredis` and `@opentelemetry/*` peer dependencies, and a `RedisEventQueue`: an event
+Outpost has counted stays in Redis until Polar takes it.
 
 ```typescript
+import { RedisEventQueue } from "@polar-sh/sdk/metering/queue/redis";
 import { outpost } from "@polar-sh/sdk/outpost";
 
-const metering = polar.metering({ outpost: outpost() });
+const redis = "redis://localhost:6379";
+const metering = polar.metering({
+  queue: new RedisEventQueue(redis, { stream: "my-app:metering" }),
+  outpost: outpost({ redis }),
+});
 ```
 
 `outpost()` uses `REDIS_URL` by default. Pass a URL explicitly with
@@ -246,18 +252,7 @@ const metering = polar.metering({
 ```
 
 `RedisEventQueue` from `@polar-sh/sdk/metering/queue/redis` uses a Redis stream for persistent
-delivery. Outpost needs it: an event Outpost has counted stays in Redis until Polar takes it.
-
-```typescript
-import { RedisEventQueue } from "@polar-sh/sdk/metering/queue/redis";
-import { outpost } from "@polar-sh/sdk/outpost";
-
-const redis = "redis://localhost:6379";
-const metering = polar.metering({
-  queue: new RedisEventQueue(redis, { stream: "my-app:metering" }),
-  outpost: outpost({ redis }),
-});
-```
+delivery. Outpost needs it, as in the example above.
 
 Metering opens a single Redis client when the queue and Outpost use the same URL. Both also
 accept an existing `ioredis` client, which your application manages and closes.

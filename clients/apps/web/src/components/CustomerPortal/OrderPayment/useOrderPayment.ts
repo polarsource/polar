@@ -112,7 +112,7 @@ export const useOrderPayment = ({
         setState({
           status: 'failed',
           error:
-            'Your payment is still being confirmed. Check your subscription again in a few minutes.',
+            'Your payment is still being confirmed. Check back in a few minutes.',
         })
       }
     }, POLL_INTERVAL_MS)

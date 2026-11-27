@@ -8636,6 +8636,51 @@ class TestFinalizeOrder:
         assert order.status == OrderStatus.draft
         assert order.invoice_number is None
 
+    async def test_authentication_required_decline_requires_action(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+
+        stripe_service_mock.create_payment_intent.side_effect = stripe_lib.CardError(
+            message="Your card requires authentication.",
+            param=None,
+            code="authentication_required",
+            json_body={
+                "error": {
+                    "type": "card_error",
+                    "code": "authentication_required",
+                    "message": "Your card requires authentication.",
+                    "payment_intent": {
+                        "id": "pi_auth",
+                        "object": "payment_intent",
+                        "metadata": {},
+                    },
+                }
+            },
+        )
+
+        with pytest.raises(PaymentActionRequired) as exc_info:
+            await order_service.finalize_order(
+                session, order, payment_method_id=payment_method.id
+            )
+
+        assert exc_info.value.payment_intent_id == "pi_auth"
+        await session.refresh(order)
+        assert order.status == OrderStatus.draft
+
     async def test_explicit_payment_method_must_belong_to_customer(
         self,
         session: AsyncSession,

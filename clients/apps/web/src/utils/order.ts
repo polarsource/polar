@@ -34,6 +34,13 @@ export const isListableCustomerOrder = (
 ): boolean => order.status !== 'draft'
 
 /**
+ * A draft order on a subscription reactivates an ended trial. Other drafts are
+ * a merchant's off-session charge the customer pays themselves.
+ */
+export const isReactivationOrder = (order: schemas['CustomerOrder']): boolean =>
+  order.status === 'draft' && order.subscription !== null
+
+/**
  * A pending subscription order can be paid until its subscription ends:
  * paying it afterwards settles the order but doesn't restore the subscription
  */

@@ -8,6 +8,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
+from polar.config import settings
 from polar.models import Customer, Order, Organization, Product, User, UserOrganization
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderStatus
@@ -214,6 +215,37 @@ class TestListOrders:
             OrderStatus.paid.value,
             OrderStatus.refunded.value,
         }
+
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_payment_url(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        draft = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+        paid = await create_order(save_fixture, product=product, customer=customer)
+
+        response = await client.get("/v1/orders/")
+
+        assert response.status_code == 200
+        payment_urls = {
+            item["id"]: item["payment_url"] for item in response.json()["items"]
+        }
+        assert payment_urls[str(draft.id)] == settings.generate_frontend_url(
+            f"/{organization.slug}/portal/orders/{draft.id}/pay"
+        )
+        assert payment_urls[str(paid.id)] is None
 
     @pytest.mark.auth
     @pytest.mark.api_version(V2027_01)

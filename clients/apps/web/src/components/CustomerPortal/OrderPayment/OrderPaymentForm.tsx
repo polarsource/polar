@@ -2,6 +2,7 @@
 
 import { useCustomerOrderUpdate } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
+import { isReactivationOrder } from '@/utils/order'
 import useDebounce from '@/utils/useDebounce'
 import { MandateText } from '@polar-sh/checkout/components'
 import { type Client, type schemas } from '@polar-sh/client'
@@ -208,7 +209,7 @@ export const OrderPaymentForm = ({
     order.due_amount,
     order.currency,
   )
-  const submitLabel = !isDraft
+  const submitLabel = !isReactivationOrder(order)
     ? `Pay ${formattedDueAmount}`
     : order.is_payment_required
       ? `Pay ${formattedDueAmount} and subscribe`
@@ -283,7 +284,7 @@ export const OrderPaymentForm = ({
         <MandateText
           isPaymentRequired={order.is_payment_required}
           isTrial={false}
-          isRecurring
+          isRecurring={order.subscription !== null}
           buttonLabel={submitLabel}
         />
       </form>

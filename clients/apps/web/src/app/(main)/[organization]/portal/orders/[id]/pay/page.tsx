@@ -35,9 +35,13 @@ export default async function Page(props: {
     {
       404: notFound,
       422: notFound,
+      // Sign in, then come back to pay
       401: () =>
         redirect(
-          `/${organization.slug}/portal/request?${new URLSearchParams(searchParams)}`,
+          `/${organization.slug}/portal/request?${new URLSearchParams({
+            ...searchParams,
+            return_to: `/${organization.slug}/portal/orders/${params.id}/pay`,
+          })}`,
         ),
       403: () =>
         redirect(

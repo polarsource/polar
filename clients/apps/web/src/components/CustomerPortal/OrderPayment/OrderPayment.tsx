@@ -7,6 +7,7 @@ import {
   useCustomerPaymentMethods,
   useCustomerPortalCustomer,
 } from '@/hooks/queries/customerPortal'
+import { isReactivationOrder } from '@/utils/order'
 import { loadPolarStripe } from '@/utils/stripe'
 import { type Client, type schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
@@ -41,14 +42,13 @@ export const OrderPayment = ({
   const { data: customer } = useCustomerPortalCustomer()
   const { data: paymentMethods } = useCustomerPaymentMethods(api)
 
-  // A draft order reactivates an ended trial. A pending one is an unpaid renewal.
-  const isDraft = initialOrder.status === 'draft'
+  const isReactivation = isReactivationOrder(initialOrder)
 
   const handleSucceeded = async () => {
     invalidatePaidOrder()
     await revalidate('customer_portal')
     toast(
-      isDraft
+      isReactivation
         ? {
             title: 'Subscription reactivated',
             description: 'Your subscription is active again.',

@@ -294,6 +294,10 @@ async def finalize(
     before the response returns. On failure (decline, missing payment method,
     SCA challenge), the order stays in `draft` and a 4xx error is returned.
 
+    From API version 2027-01, if the charge requires customer authentication
+    (e.g. a 3DS challenge), send the customer to the order's `payment_url` to
+    authenticate and pay it in the customer portal.
+
     The request fails with 412 if the order is not in `draft` status.
     """
     return await order_service.finalize_order(

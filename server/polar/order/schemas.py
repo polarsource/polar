@@ -321,6 +321,14 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
     description: str = Field(
         description="A summary description of the order.", examples=["Pro Plan"]
     )
+    payment_url: Annotated[str | None, Version(starting_from=V2027_01)] = Field(
+        description=(
+            "Link to pay the order in the customer portal, e.g. when an off-session "
+            "charge requires customer authentication. Customers without an active "
+            "portal session sign in with their email first. "
+            "`null` if the customer can't pay the order."
+        ),
+    )
 
 
 class OrderCreateBase(MetadataInputMixin, CustomFieldDataInputMixin):

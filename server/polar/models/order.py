@@ -32,6 +32,7 @@ from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.kit.utils import utc_now
 from polar.models.order_item import OrderItem
+from polar.models.subscription import SubscriptionStatus
 from polar.product.guard import has_future_charges
 from polar.tax.calculation import TaxBreakdownItem
 from polar.tax.tax_id import TaxID, TaxIDType
@@ -358,6 +359,40 @@ class Order(
     @property
     def is_payment_required(self) -> bool:
         return self.due_amount > 0
+
+    @property
+    def is_off_session_purchase(self) -> bool:
+        """A one-time order created through the draft order API, not a checkout."""
+        return (
+            self.billing_reason == OrderBillingReasonInternal.purchase
+            and self.checkout_id is None
+            and self.subscription_id is None
+            and self.product_id is not None
+        )
+
+    @property
+    def is_payable_by_customer(self) -> bool:
+        """Whether the customer can pay the order themselves in the customer portal."""
+        if self.status not in {OrderStatus.draft, OrderStatus.pending}:
+            return False
+        if self.subscription_id is None:
+            # A draft without a subscription is a merchant's off-session charge
+            return self.status == OrderStatus.pending or self.is_off_session_purchase
+        subscription = self.subscription
+        assert subscription is not None
+        if self.status == OrderStatus.draft:
+            # Reactivates an ended trial
+            return subscription.status == SubscriptionStatus.trial_ended
+        # Paying doesn't revive an ended subscription
+        return subscription.ended_at is None
+
+    @property
+    def payment_url(self) -> str | None:
+        if not self.is_payable_by_customer:
+            return None
+        return settings.generate_frontend_url(
+            f"/{self.organization.slug}/portal/orders/{self.id}/pay"
+        )
 
     @property
     def is_payment_setup_required(self) -> bool:

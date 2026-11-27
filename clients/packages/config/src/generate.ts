@@ -144,9 +144,7 @@ const renderBenefit = (
     helpers.add('custom')
     return [
       `custom(${name})`,
-      ...(benefit.properties.note === null
-        ? []
-        : [`.note(${literal(benefit.properties.note)})`]),
+      ...call('note', benefit.properties.note ?? undefined),
       ...renderMetadata(benefit.metadata),
       ...renderVisibility(benefit.visibility),
       ...renderDeprecated(benefit.deprecated),

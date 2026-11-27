@@ -8,6 +8,7 @@ from decimal import Decimal
 from typing import Any, cast
 
 from polar.benefit.repository import BenefitRepository
+from polar.benefit.strategies.custom.schemas import BenefitCustomProperties
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitMeterCreditProperties,
 )
@@ -779,7 +780,9 @@ def benefit_properties(
             benefit.properties
         ).model_dump(mode="json")
     if benefit.type == BenefitType.custom:
-        return {"note": benefit.properties.get("note")}
+        return BenefitCustomProperties.model_validate(benefit.properties).model_dump(
+            mode="json"
+        )
     if benefit.type != BenefitType.meter_credit:
         return {}
     properties = cast(BenefitMeterCreditProperties, benefit.properties)

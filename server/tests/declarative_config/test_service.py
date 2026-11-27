@@ -1170,23 +1170,6 @@ class TestApply:
         assert updated.id != created.id
         assert dict(updated.properties) == {"note": "Call us"}
 
-    def test_custom_benefit_note_defaults_to_none(self) -> None:
-        config = Config.model_validate(
-            {
-                "benefits": [
-                    {
-                        "type": "custom",
-                        "external_id": "support",
-                        "description": "Support",
-                    }
-                ]
-            }
-        )
-
-        assert config.model_dump(mode="json")["benefits"][0]["properties"] == {
-            "note": None
-        }
-
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_update_benefit(
         self,

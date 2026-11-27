@@ -1,6 +1,7 @@
 import { schemas } from '@polar-sh/client'
 import { expect, it } from 'vitest'
 import {
+  customerEmailSettings,
   customFieldFields,
   meterFields,
   customerPortalSettings,
@@ -95,6 +96,22 @@ it('names settings like their config keys', () => {
         allow_email_changes: false,
         show_metered_usage: true,
       },
+      emails: customerEmailSettings({
+        order_confirmation: false,
+        payment_method_expiration_reminder: false,
+        subscription_cancellation: true,
+        subscription_confirmation: true,
+        subscription_cycled: true,
+        subscription_cycled_after_trial: false,
+        subscription_past_due: true,
+        subscription_paused: true,
+        subscription_resumed: true,
+        subscription_renewal_reminder: true,
+        subscription_revoked: true,
+        subscription_trial_conversion_reminder: true,
+        subscription_uncanceled: true,
+        subscription_updated: true,
+      }),
     }),
   ).toEqual({
     default_payment_currency: 'EUR',
@@ -109,6 +126,20 @@ it('names settings like their config keys', () => {
     allow_pausing: 'Yes',
     allow_email_changes: 'No',
     show_metered_usage: 'Yes',
+    order_confirmation: 'No',
+    subscription_confirmation: 'Yes',
+    trial_conversion_reminder: 'Yes',
+    trial_converted: 'No',
+    renewal_reminder: 'Yes',
+    subscription_cycled: 'Yes',
+    card_expiring: 'No',
+    subscription_past_due: 'Yes',
+    subscription_updated: 'Yes',
+    subscription_paused: 'Yes',
+    subscription_resumed: 'Yes',
+    subscription_canceled: 'Yes',
+    subscription_uncanceled: 'Yes',
+    subscription_revoked: 'Yes',
   })
 })
 

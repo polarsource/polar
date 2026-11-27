@@ -25,6 +25,7 @@ type Settings = {
   payments: { currency: string; tax: schemas['TaxBehaviorOption'] }
   subscriptions: schemas['ConfigSettingsSubscriptionsRead']
   customer_portal: schemas['ConfigSettingsCustomerPortalRead']
+  emails: schemas['ConfigSettingsEmailsRead']
 }
 
 export const plural = (count: number, noun: string) =>
@@ -139,10 +140,30 @@ export const customerPortalSettings = ({
   show_metered_usage: usage.show,
 })
 
+export const customerEmailSettings = (
+  emails: schemas['OrganizationCustomerEmailSettings'],
+): Settings['emails'] => ({
+  order_confirmation: emails.order_confirmation,
+  subscription_confirmation: emails.subscription_confirmation,
+  trial_conversion_reminder: emails.subscription_trial_conversion_reminder,
+  trial_converted: emails.subscription_cycled_after_trial,
+  renewal_reminder: emails.subscription_renewal_reminder,
+  subscription_cycled: emails.subscription_cycled,
+  card_expiring: emails.payment_method_expiration_reminder,
+  subscription_past_due: emails.subscription_past_due,
+  subscription_updated: emails.subscription_updated,
+  subscription_paused: emails.subscription_paused,
+  subscription_resumed: emails.subscription_resumed,
+  subscription_canceled: emails.subscription_cancellation,
+  subscription_uncanceled: emails.subscription_uncanceled,
+  subscription_revoked: emails.subscription_revoked,
+})
+
 export const settingsFields = ({
   payments,
   subscriptions,
   customer_portal,
+  emails,
 }: Settings) => ({
   default_payment_currency: payments.currency.toUpperCase(),
   default_tax_behavior: taxBehaviorOptionDisplayNames[payments.tax],
@@ -162,6 +183,9 @@ export const settingsFields = ({
   allow_pausing: yesNo(customer_portal.allow_pausing),
   allow_email_changes: yesNo(customer_portal.allow_email_changes),
   show_metered_usage: yesNo(customer_portal.show_metered_usage),
+  ...Object.fromEntries(
+    Object.entries(emails).map(([email, enabled]) => [email, yesNo(enabled)]),
+  ),
 })
 
 const listFieldLabels: Record<string, string> = {

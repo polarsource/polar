@@ -14,11 +14,9 @@ let strategy: MemoryEventQueue;
 let next: Promise<void> | undefined;
 
 beforeAll(async () => {
-  strategy = await new MemoryEventQueue({
-    events: {
-      ingest: () => new Promise((resolve) => setTimeout(resolve, POLAR_LATENCY_MS)),
-    },
-  }).start();
+  strategy = await new MemoryEventQueue().start({
+    ingest: () => new Promise((resolve) => setTimeout(resolve, POLAR_LATENCY_MS)),
+  });
 });
 
 afterAll(async () => {

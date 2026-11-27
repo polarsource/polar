@@ -1,19 +1,12 @@
 import type { EventInput } from "../event";
-import type { EventQueue, EventQueueHooks } from "./index";
+import type { EventQueue, EventQueueStartOptions, Ingest } from "./index";
 
-import {
-  PolarClientError,
-  PolarError,
-  PolarNetworkError,
-  PolarRateLimitError,
-  PolarServerError,
-  type RequestOptions,
-} from "../../base";
 import {
   MeteringDeliveryError,
   MeteringTimeoutError,
   deliveryTimeout,
-  retryAfterMs,
+  IngestRejectedError,
+  IngestRetryableError,
   waitForDelivery,
   type DeliveryFailure,
   type DeliveryOptions,
@@ -37,12 +30,6 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
     }, ms);
     signal.addEventListener("abort", onAbort, { once: true });
   });
-}
-
-export interface MeteringClient {
-  events: {
-    ingest(body: { events: EventInput[] }, options?: RequestOptions): Promise<unknown>;
-  };
 }
 
 /**
@@ -110,14 +97,10 @@ export class MemoryEventQueue implements EventQueue {
   /**
    * Configure event delivery and retries.
    *
-   * @param polar Client exposing the events.ingest API.
    * @param options Batch size, collection interval in milliseconds, and retries.
    * @throws RangeError if the batch size, max attempts, or batch interval is invalid.
    */
-  constructor(
-    private readonly polar: MeteringClient,
-    options: MemoryEventQueueOptions = {},
-  ) {
+  constructor(options: MemoryEventQueueOptions = {}) {
     this.options = {
       batchSize: options.batchSize ?? 100,
       batchIntervalMs: options.batchIntervalMs ?? 1000,
@@ -136,11 +119,11 @@ export class MemoryEventQueue implements EventQueue {
    * Start the background delivery worker.
    *
    * @returns This queue, ready to accept events.
-   * @throws PolarError if the worker has already started.
+   * @throws Error if the worker has already started.
    */
-  async start(hooks: EventQueueHooks = {}): Promise<this> {
-    if (this.worker) throw new PolarError("Memory queue has already started");
-    this.worker = this.run(hooks);
+  async start(options: EventQueueStartOptions): Promise<this> {
+    if (this.worker) throw new Error("Memory queue has already started");
+    this.worker = this.run(options);
     return this;
   }
 
@@ -169,7 +152,7 @@ export class MemoryEventQueue implements EventQueue {
    */
   async flush(options?: DeliveryOptions): Promise<void> {
     const timeout = deliveryTimeout(options);
-    if (!this.worker || this.closing) throw new PolarError("Memory queue is not running");
+    if (!this.worker || this.closing) throw new Error("Memory queue is not running");
     const request = this.barrier();
     request.deadline = Date.now() + timeout;
     if (this.finished || this.failure) this.finish(request);
@@ -212,8 +195,8 @@ export class MemoryEventQueue implements EventQueue {
   }
 
   private assertRunning(): void {
+    if (!this.worker || this.closing) throw new Error("Memory queue is not running");
     if (this.failure) throw this.failure;
-    if (!this.worker || this.closing) throw new PolarError("Memory queue is not running");
   }
 
   private barrier(): FlushRequest {
@@ -302,7 +285,7 @@ export class MemoryEventQueue implements EventQueue {
     }
   }
 
-  private async run({ onAck, onRejected }: EventQueueHooks): Promise<void> {
+  private async run({ ingest, onAck, onRejected }: EventQueueStartOptions): Promise<void> {
     let requests: FlushRequest[] = [];
     try {
       while (!this.closing || this.queue.length) {
@@ -329,19 +312,32 @@ export class MemoryEventQueue implements EventQueue {
           if (!(next instanceof FlushRequest)) this.batch.push(next);
           else if (next.active) requests.push(next);
         }
-        const events = this.batch.map((item) => item.event);
-        const failure = await this.processBatch(events);
-        if (failure) {
-          for (const item of this.batch) this.failures.push({ ...item, ...failure });
+        const failures = await this.processBatch(ingest, this.batch);
+        let accepted: EventInput[] | undefined;
+        if (onAck) {
+          const failedSequences = new Set(failures.map((item) => item.sequence));
+          accepted = this.batch
+            .filter((item) => !failedSequences.has(item.sequence))
+            .map((item) => item.event);
         }
+        const rejected = onRejected
+          ? failures.filter((item) => item.reason === "permanent_error").map((item) => item.event)
+          : undefined;
+        this.failures.push(...failures);
         this.batch = [];
-        if (failure) console.warn(`Dropping ${events.length} events: ${failure.reason}`);
         try {
-          if (!failure) await onAck?.(events);
-          else if (failure.reason === "permanent_error") await onRejected?.(events, failure.reason);
+          if (rejected?.length) await onRejected?.(rejected, "permanent_error");
         } catch (error) {
           console.warn(
-            "Memory queue delivery hook failed",
+            "Memory queue rejection hook failed",
+            error instanceof Error ? error.constructor.name : typeof error,
+          );
+        }
+        try {
+          if (accepted?.length) await onAck?.(accepted);
+        } catch (error) {
+          console.warn(
+            "Memory queue acknowledgement hook failed",
             error instanceof Error ? error.constructor.name : typeof error,
           );
         }
@@ -357,7 +353,7 @@ export class MemoryEventQueue implements EventQueue {
       }
       for (const item of pending) this.failures.push({ ...item, reason, cause: error });
       if (!this.abort.signal.aborted)
-        this.failure = error instanceof Error ? error : new PolarError(String(error));
+        this.failure = error instanceof Error ? error : new Error(String(error));
       if (pending.length) console.warn(`Dropping ${pending.length} events: ${reason}`);
     } finally {
       this.finished = true;
@@ -365,42 +361,65 @@ export class MemoryEventQueue implements EventQueue {
     }
   }
 
-  private async processBatch(
-    events: EventInput[],
-  ): Promise<{ reason: DropReason; cause: unknown } | undefined> {
+  private async processBatch(ingest: Ingest, batch: QueuedEvent[]): Promise<FailedEvent[]> {
+    const failures: FailedEvent[] = [];
+    let remaining = batch;
     let attempt = 1;
     let waited = 0;
-    for (;;) {
+    while (remaining.length) {
       try {
-        await this.polar.events.ingest({ events }, { signal: this.abort.signal });
-        return;
+        await ingest(
+          remaining.map((item) => item.event),
+          { signal: this.abort.signal },
+        );
+        break;
       } catch (error) {
         this.abort.signal.throwIfAborted();
-        if (
-          error instanceof PolarNetworkError ||
-          error instanceof PolarRateLimitError ||
-          error instanceof PolarServerError ||
-          (error instanceof PolarClientError && error.statusCode === 408)
-        ) {
-          const retryAfter = retryAfterMs(error);
-          let delay: number;
-          if (retryAfter !== null) {
-            delay = retryAfter;
-            waited += delay;
-            if (waited > RETRY_AFTER_BUDGET_MS) return { reason: "retry_exhausted", cause: error };
-          } else {
-            if (attempt >= this.options.maxAttempts)
-              return { reason: "retry_exhausted", cause: error };
-            delay = 2 ** attempt * 1000 * (1 + (Math.random() * 2 - 1) * 0.1);
-            attempt++;
+        if (error instanceof IngestRejectedError) {
+          const indexes = error.rejectedIndexes;
+          let rejected = remaining.filter((_, index) => indexes?.has(index));
+          if (rejected.length) remaining = remaining.filter((_, index) => !indexes?.has(index));
+          else {
+            rejected = remaining;
+            remaining = [];
           }
-          await sleep(Math.min(delay, 2_147_483_647), this.abort.signal);
-        } else if (error instanceof PolarError) {
-          return { reason: "permanent_error", cause: error };
-        } else {
-          throw error;
+          console.warn(`Dropping ${rejected.length} events: permanent_error`);
+          failures.push(
+            ...rejected.map((item) => ({
+              ...item,
+              reason: "permanent_error" as const,
+              cause: error,
+            })),
+          );
+          continue;
         }
+        if (!(error instanceof IngestRetryableError)) throw error;
+        let delay: number;
+        let retry: boolean;
+        if (error.retryAfterMs !== undefined) {
+          delay = error.retryAfterMs;
+          waited += delay;
+          retry = waited <= RETRY_AFTER_BUDGET_MS;
+        } else {
+          delay = 2 ** attempt * 1000 * (1 + (Math.random() * 2 - 1) * 0.1);
+          retry = attempt < this.options.maxAttempts;
+          attempt++;
+        }
+        if (retry) {
+          await sleep(Math.min(delay, 2_147_483_647), this.abort.signal);
+          continue;
+        }
+        console.warn(`Dropping ${remaining.length} events: retry_exhausted`);
+        failures.push(
+          ...remaining.map((item) => ({
+            ...item,
+            reason: "retry_exhausted" as const,
+            cause: error,
+          })),
+        );
+        break;
       }
     }
+    return failures;
   }
 }

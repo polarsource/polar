@@ -11,11 +11,11 @@ import type { EventQueueHooks } from "../metering/queue/index";
 
 import { createPolar } from "../2026-10/client";
 import { ClientBase, PolarError } from "../base";
-import { Metering } from "../metering/client";
+import { createIngest, Metering } from "../metering/client";
 import { UnknownMeterError } from "../metering/errors";
 import { RedisEventQueue } from "../metering/queue/redis";
 import { Outpost, outpost, type OutpostOptions, isSampled } from "./client";
-import { MissingExternalIdError, PolarOutpostError, UnavailableRedisError } from "./errors";
+import { PolarOutpostError, UnavailableRedisError } from "./errors";
 import { NotReadyError } from "./index";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT, CONFIRM_SCRIPT } from "./scripts";
@@ -465,6 +465,31 @@ it("talks to Redis over one connection", async () => {
   expect(await clients()).toBe(before + 1);
 });
 
+it.each([
+  ["matching URLs", 1],
+  ["different URLs", 2],
+  ["a caller-owned client", 0],
+] as const)("starts Metering with %s", async (mode, connections) => {
+  const clients = async () => ((await redis.client("LIST")) as string).trim().split("\n").length;
+  const before = await clients();
+  const listeners = redis.listenerCount("close");
+  const source = mode === "a caller-owned client" ? redis : redisServer.socket;
+  const queueSource =
+    mode === "different URLs" ? redisServer.socket.replace(/\/([^/]+)$/, "/./$1") : source;
+  const queue = new RedisEventQueue(queueSource, { stream: "outpost:v1:org-1:queue" });
+  const helper = new Metering(core, queue, new Outpost(source, { client: core }));
+  try {
+    await helper.track(usage("shared-redis", 3));
+    await helper.flush();
+    expect(delivered()).toEqual([["shared-redis"]]);
+    expect(await clients()).toBe(before + connections);
+  } finally {
+    await helper.close();
+  }
+  await vi.waitFor(async () => expect(await clients()).toBe(before));
+  expect(redis.listenerCount("close")).toBe(listeners);
+});
+
 it("reads another instance's write at once, with no message to wait for", async () => {
   await seed();
   const [writer, reader] = [await start(), await start()];
@@ -476,7 +501,7 @@ it("reads another instance's write at once, with no message to wait for", async 
 it("rejects an event without an external_id", async () => {
   const outpost = await start();
   await expect(outpost.track({ ...customer, name: "api_call", timestamp })).rejects.toThrow(
-    MissingExternalIdError,
+    TypeError,
   );
 });
 
@@ -1377,10 +1402,7 @@ it("uses the API when a rejected event invalidates a legacy bucket extremum", as
     [`bucket:${bucket}:max`]: 3,
   });
   const local = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
-  const transport = new RedisEventQueue(redisServer.socket, {
-    stream: "outpost:v1:org-1:queue",
-    client: core,
-  });
+  const transport = new RedisEventQueue(redisServer.socket, { stream: "outpost:v1:org-1:queue" });
   const helper = new Metering(core, transport, local);
   const actualFetch = globalThis.fetch;
   const apiResult = {
@@ -1437,12 +1459,9 @@ const queued = async (): Promise<unknown[]> =>
   );
 
 const startQueue = async (hooks?: EventQueueHooks): Promise<RedisEventQueue> => {
-  const queue = new RedisEventQueue(redisServer.socket, {
-    stream: "outpost:v1:org-1:queue",
-    client: core,
-  });
+  const queue = new RedisEventQueue(redisServer.socket, { stream: "outpost:v1:org-1:queue" });
   redisQueues.push(queue);
-  return queue.start(hooks);
+  return queue.start({ ingest: createIngest(core), ...hooks });
 };
 
 // The external_ids Polar received, request by request.
@@ -1468,10 +1487,7 @@ it("delivers the stream to Polar in batches of a thousand, whichever instance fl
 it("settles the events Polar received and reports them", async () => {
   await seed(0);
   const outpost = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
-  const transport = new RedisEventQueue(redisServer.socket, {
-    stream: "outpost:v1:org-1:queue",
-    client: core,
-  });
+  const transport = new RedisEventQueue(redisServer.socket, { stream: "outpost:v1:org-1:queue" });
   const helper = new Metering(core, transport, outpost);
   const events = [usage("event-0", 10), usage("event-1", 10)];
   try {
@@ -1584,10 +1600,7 @@ it("delivers an event another SDK queued in a form it cannot parse", async () =>
 it("drops only the events Polar names when it refuses a batch, and delivers the rest", async () => {
   await seed(0);
   const outpost = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
-  const transport = new RedisEventQueue(redisServer.socket, {
-    stream: "outpost:v1:org-1:queue",
-    client: core,
-  });
+  const transport = new RedisEventQueue(redisServer.socket, { stream: "outpost:v1:org-1:queue" });
   const helper = new Metering(core, transport, outpost);
   const events = [usage("event-0", 10), usage("refused", 10), usage("event-1", 10)];
   try {
@@ -1608,10 +1621,7 @@ it("drops only the events Polar names when it refuses a batch, and delivers the 
 it("drops a batch Polar refuses, settles its events and reports them", async () => {
   await seed(0);
   const outpost = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
-  const transport = new RedisEventQueue(redisServer.socket, {
-    stream: "outpost:v1:org-1:queue",
-    client: core,
-  });
+  const transport = new RedisEventQueue(redisServer.socket, { stream: "outpost:v1:org-1:queue" });
   const helper = new Metering(core, transport, outpost);
   const events = [usage("event-0", 10), usage("event-1", 10)];
   try {
@@ -2532,7 +2542,7 @@ it("delivers each event once, through the default queue with Outpost enabled", a
   const polar = createPolar({ baseUrl, accessToken: "test-token", organizationId: "org" });
   const reader = await start();
   {
-    const metering = polar.metering({ outpost: outpost({ redisUrl: redisServer.socket }) });
+    const metering = polar.metering({ outpost: outpost({ redis: redisServer.socket }) });
     try {
       await metering.track({
         ...customer,

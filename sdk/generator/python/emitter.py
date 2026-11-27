@@ -138,7 +138,6 @@ class PythonEmitter(EmitterBase):
             ("polar", "metering", "__init__.py"),
             ("polar", "metering", "events.py"),
             ("polar", "metering", "meter.py"),
-            ("polar", "metering", "client.py"),
             ("polar", "metering", "errors.py"),
             ("polar", "metering", "queue", "__init__.py"),
             ("polar", "metering", "queue", "memory.py"),

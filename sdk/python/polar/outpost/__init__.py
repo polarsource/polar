@@ -2,7 +2,6 @@ from polar._redis import connect_redis
 from polar.metering import EventInput
 from polar.outpost.client import CustomerMeter, Outpost
 from polar.outpost.errors import (
-    MissingExternalIdError,
     NotReadyError,
     PolarOutpostError,
     UnavailableRedisError,
@@ -28,7 +27,6 @@ __all__ = [
     "EventMatcher",
     "Filter",
     "FilterClause",
-    "MissingExternalIdError",
     "NotReadyError",
     "Outpost",
     "PolarOutpostError",

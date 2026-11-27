@@ -1,16 +1,10 @@
 import { afterEach, expect, it, vi } from "vitest";
 
 import type { EventInput } from "../event";
+import type { Ingest } from "./index";
 
-import {
-  PolarClientError,
-  PolarNetworkError,
-  PolarRateLimitError,
-  PolarServerError,
-  type RequestOptions,
-} from "../../base";
+import { IngestRejectedError, IngestRetryableError, MeteringDeliveryError } from "../errors";
 import { MemoryEventQueue } from "./memory";
-import { MeteringDeliveryError } from "../errors";
 
 const events: EventInput[] = Array.from({ length: 5 }, (_, i) => ({
   name: `usage-${i}`,
@@ -24,20 +18,17 @@ afterEach(() => {
 
 it("flushes empty and bounded batches, then accepts more events", async () => {
   const ingest = vi.fn().mockResolvedValue(undefined);
-  const strategy = new MemoryEventQueue(
-    { events: { ingest } },
-    { batchSize: 2, batchIntervalMs: 60_000 },
-  );
+  const strategy = new MemoryEventQueue({ batchSize: 2, batchIntervalMs: 60_000 });
   try {
     await expect(strategy.enqueue(events[0])).rejects.toThrow("not running");
     await expect(strategy.flush()).rejects.toThrow("not running");
-    await strategy.start();
-    await expect(strategy.start()).rejects.toThrow("already started");
+    await strategy.start({ ingest });
+    await expect(strategy.start({ ingest })).rejects.toThrow("already started");
     await strategy.flush();
     expect(ingest).not.toHaveBeenCalled();
     for (const event of events) await strategy.enqueue(event);
     await strategy.flush();
-    expect(ingest.mock.calls.map(([body]) => body.events)).toEqual([
+    expect(ingest.mock.calls.map(([body]) => body)).toEqual([
       events.slice(0, 2),
       events.slice(2, 4),
       events.slice(4),
@@ -55,10 +46,7 @@ it("flushes empty and bounded batches, then accepts more events", async () => {
 it("starts the batch interval with the first event without resetting it", async () => {
   vi.useFakeTimers();
   const ingest = vi.fn().mockResolvedValue(undefined);
-  const strategy = await new MemoryEventQueue(
-    { events: { ingest } },
-    { batchIntervalMs: 100 },
-  ).start();
+  const strategy = await new MemoryEventQueue({ batchIntervalMs: 100 }).start({ ingest });
   try {
     expect(vi.getTimerCount()).toBe(0);
     await vi.advanceTimersByTimeAsync(50);
@@ -67,10 +55,7 @@ it("starts the batch interval with the first event without resetting it", async 
     await strategy.enqueue(events[1]);
     expect(ingest).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(50);
-    expect(ingest).toHaveBeenCalledExactlyOnceWith(
-      { events: events.slice(0, 2) },
-      expect.anything(),
-    );
+    expect(ingest).toHaveBeenCalledExactlyOnceWith(events.slice(0, 2), expect.anything());
     expect(vi.getTimerCount()).toBe(0);
   } finally {
     await strategy.close().catch(() => {});
@@ -80,15 +65,12 @@ it("starts the batch interval with the first event without resetting it", async 
 it("keeps the newest flush boundary while a batch is in flight", async () => {
   let finishDelivery!: () => void;
   const ingest = vi.fn(
-    (_body: { events: EventInput[] }) =>
+    (_body: EventInput[]) =>
       new Promise<void>((resolve) => {
         finishDelivery = resolve;
       }),
   );
-  const strategy = await new MemoryEventQueue(
-    { events: { ingest } },
-    { batchSize: 1 },
-  ).start();
+  const strategy = await new MemoryEventQueue({ batchSize: 1 }).start({ ingest });
   try {
     try {
       await strategy.enqueue(events[0]);
@@ -107,7 +89,7 @@ it("keeps the newest flush boundary while a batch is in flight", async () => {
       expect(closed).not.toHaveBeenCalled();
       finishDelivery();
       await Promise.all([secondFlush, closing]);
-      expect(ingest.mock.calls.map(([body]) => body.events)).toEqual([[events[0]], [events[1]]]);
+      expect(ingest.mock.calls.map(([body]) => body)).toEqual([[events[0]], [events[1]]]);
     } finally {
       ingest.mockResolvedValue(undefined);
       finishDelivery();
@@ -125,15 +107,14 @@ it.each([
   async ({ batchSize, batches }) => {
     const deliveries: (() => void)[] = [];
     const ingest = vi.fn(
-      (_body: { events: EventInput[] }) =>
+      (_body: EventInput[]) =>
         new Promise<void>((resolve) => {
           deliveries.push(resolve);
         }),
     );
-    const strategy = await new MemoryEventQueue(
-      { events: { ingest } },
-      { batchSize, batchIntervalMs: 60_000 },
-    ).start();
+    const strategy = await new MemoryEventQueue({ batchSize, batchIntervalMs: 60_000 }).start({
+      ingest,
+    });
     try {
       try {
         await strategy.enqueue(events[0]);
@@ -149,7 +130,7 @@ it.each([
         deliveries.shift()!();
         for (const [index, batch] of batches.entries()) {
           await vi.waitFor(() => expect(ingest).toHaveBeenCalledTimes(index + 2));
-          expect(ingest.mock.calls[index + 1][0].events).toEqual(batch.map((i) => events[i]));
+          expect(ingest.mock.calls[index + 1][0]).toEqual(batch.map((i) => events[i]));
           expect(flushed[2]).not.toHaveBeenCalled();
           deliveries.shift()!();
         }
@@ -170,7 +151,7 @@ it.each(["shutdown timeout", "worker error"])(
   async (failure) => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     let failDelivery!: (error: Error) => void;
-    const ingest = vi.fn(async (_body: unknown, options?: RequestOptions) => {
+    const ingest = vi.fn(async (_body: unknown, options?: Parameters<Ingest>[1]) => {
       await new Promise<void>((_, reject) => {
         failDelivery = reject;
         options!.signal!.addEventListener("abort", () => reject(options!.signal!.reason), {
@@ -179,10 +160,10 @@ it.each(["shutdown timeout", "worker error"])(
       });
     });
     const onRejected = vi.fn();
-    const strategy = await new MemoryEventQueue(
-      { events: { ingest } },
-      { batchIntervalMs: 60_000 },
-    ).start({ onRejected });
+    const strategy = await new MemoryEventQueue({ batchIntervalMs: 60_000 }).start({
+      ingest,
+      onRejected,
+    });
     try {
       await strategy.enqueue(events[0]);
       const firstFlush = strategy.flush();
@@ -194,7 +175,7 @@ it.each(["shutdown timeout", "worker error"])(
         failDelivery(new TypeError(error));
         await expect(strategy.close()).rejects.toThrow(error);
         await expect(strategy.flush()).rejects.toThrow("not running");
-        await expect(strategy.enqueue(events[0])).rejects.toThrow(error);
+        await expect(strategy.enqueue(events[0])).rejects.toThrow("not running");
         expect(onRejected).not.toHaveBeenCalled();
       } else {
         await expect(strategy.close({ timeoutMs: 10 })).rejects.toBeInstanceOf(
@@ -220,17 +201,16 @@ it.each(["shutdown timeout", "worker error"])(
 it.each([0, 1, 5])("drains %i events in bounded batches on close", async (count) => {
   const ingest = vi.fn().mockResolvedValue(undefined);
   {
-    const strategy = await new MemoryEventQueue(
-      { events: { ingest } },
-      { batchSize: 2, batchIntervalMs: 60_000 },
-    ).start();
+    const strategy = await new MemoryEventQueue({ batchSize: 2, batchIntervalMs: 60_000 }).start({
+      ingest,
+    });
     try {
       for (const event of events.slice(0, count)) await strategy.enqueue(event);
     } finally {
       await strategy.close().catch(() => {});
     }
   }
-  const batches = ingest.mock.calls.map(([body]) => body.events as EventInput[]);
+  const batches = ingest.mock.calls.map(([body]) => body as EventInput[]);
   expect(batches.flat()).toEqual(events.slice(0, count));
   expect(batches.every((batch) => batch.length <= 2)).toBe(true);
 });
@@ -242,11 +222,11 @@ it.each([
   "automatically sends with batch size $batchSize and interval $batchIntervalMs",
   async (options) => {
     const ingest = vi.fn().mockResolvedValue(undefined);
-    const strategy = await new MemoryEventQueue({ events: { ingest } }, options).start();
+    const strategy = await new MemoryEventQueue(options).start({ ingest });
     try {
       await strategy.enqueue(events[0]);
       await vi.waitFor(() => expect(ingest).toHaveBeenCalledOnce());
-      expect(ingest.mock.calls[0][0]).toEqual({ events: [events[0]] });
+      expect(ingest.mock.calls[0][0]).toEqual([events[0]]);
     } finally {
       await strategy.close().catch(() => {});
     }
@@ -257,11 +237,9 @@ it("honors Retry-After and preserves the batch through retries", async () => {
   const onRejected = vi.fn();
   const ingest = vi
     .fn()
-    .mockRejectedValueOnce(new PolarRateLimitError(429, 0.001))
+    .mockRejectedValueOnce(new IngestRetryableError({ retryAfterMs: 1000 }))
     .mockResolvedValue(undefined);
-  const strategy = await new MemoryEventQueue(
-    { events: { ingest } },
-  ).start({ onRejected });
+  const strategy = await new MemoryEventQueue().start({ ingest, onRejected });
   try {
     await strategy.enqueue(events[0]);
     await strategy.flush();
@@ -278,12 +256,9 @@ it("waits at least a second on Retry-After without spending attempts", async () 
   const calls: number[] = [];
   const ingest = vi.fn(async () => {
     calls.push(performance.now());
-    if (calls.length === 1) throw new PolarRateLimitError(429, 0);
+    if (calls.length === 1) throw new IngestRetryableError({ retryAfterMs: 1000 });
   });
-  const strategy = await new MemoryEventQueue(
-    { events: { ingest } },
-    { maxAttempts: 1 },
-  ).start({ onRejected });
+  const strategy = await new MemoryEventQueue({ maxAttempts: 1 }).start({ ingest, onRejected });
   try {
     await strategy.enqueue(events[0]);
     await strategy.flush();
@@ -298,10 +273,8 @@ it("waits at least a second on Retry-After without spending attempts", async () 
 it("drops the batch when Retry-After exceeds the wait budget", async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const onRejected = vi.fn();
-  const ingest = vi.fn().mockRejectedValue(new PolarRateLimitError(429, 301));
-  const strategy = await new MemoryEventQueue(
-    { events: { ingest } },
-  ).start({ onRejected });
+  const ingest = vi.fn().mockRejectedValue(new IngestRetryableError({ retryAfterMs: 301_000 }));
+  const strategy = await new MemoryEventQueue().start({ ingest, onRejected });
   try {
     await strategy.enqueue(events[0]);
     await expect(strategy.flush()).rejects.toBeInstanceOf(MeteringDeliveryError);
@@ -313,11 +286,8 @@ it("drops the batch when Retry-After exceeds the wait budget", async () => {
 }, 500);
 
 it.each([
-  [new PolarNetworkError("offline"), "retry_exhausted"],
-  [new PolarClientError(408, "timed out"), "retry_exhausted"],
-  [new PolarRateLimitError(429), "retry_exhausted"],
-  [new PolarServerError(503, "unavailable"), "retry_exhausted"],
-  [new PolarClientError(422, "invalid"), "permanent_error"],
+  [new IngestRetryableError(), "retry_exhausted"],
+  [new IngestRejectedError(), "permanent_error"],
 ] as const)("reports delivery failure: %s", async (error, reason) => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const ingest = vi.fn().mockRejectedValue(error);
@@ -328,10 +298,7 @@ it.each([
         finishDrop = resolve;
       }),
   );
-  const strategy = await new MemoryEventQueue(
-    { events: { ingest } },
-    { maxAttempts: 1 },
-  ).start({ onRejected });
+  const strategy = await new MemoryEventQueue({ maxAttempts: 1 }).start({ ingest, onRejected });
   try {
     await strategy.enqueue(events[0]);
     const flushed = vi.fn();
@@ -349,10 +316,35 @@ it.each([
       failures: [{ reason, cause: error }],
     });
     expect(ingest).toHaveBeenCalledOnce();
-    if (reason === "permanent_error") expect(onRejected).toHaveBeenCalledExactlyOnceWith([events[0]], reason);
+    if (reason === "permanent_error")
+      expect(onRejected).toHaveBeenCalledExactlyOnceWith([events[0]], reason);
     else expect(onRejected).not.toHaveBeenCalled();
   } finally {
     await strategy.close().catch(() => {});
+  }
+});
+
+it("resends the rest of a batch after ingest rejects one event", async () => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  const ingest = vi
+    .fn()
+    .mockRejectedValueOnce(new IngestRejectedError({ rejectedIndexes: new Set([1]) }))
+    .mockResolvedValue(undefined);
+  const onAck = vi.fn();
+  const onRejected = vi.fn();
+  const queue = await new MemoryEventQueue().start({ ingest, onAck, onRejected });
+  const [first, rejected, last] = events;
+  try {
+    for (const event of [first, rejected, last]) await queue.enqueue(event);
+    await expect(queue.flush()).rejects.toMatchObject({ events: [rejected] });
+    expect(ingest.mock.calls.map(([batch]) => batch)).toEqual([
+      [first, rejected, last],
+      [first, last],
+    ]);
+    expect(onRejected).toHaveBeenCalledExactlyOnceWith([rejected], "permanent_error");
+    expect(onAck).toHaveBeenCalledExactlyOnceWith([first, last]);
+  } finally {
+    await queue.close();
   }
 });
 
@@ -361,25 +353,20 @@ it.each([false, true])(
   async (dropFirst) => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     const onRejected = vi.fn();
-    const ingest = vi.fn(
-      async ({ events: batch }: { events: EventInput[] }, options?: RequestOptions) => {
-        if (batch[0] === events[0]) {
-          if (dropFirst) throw new PolarClientError(422, "invalid");
-          return;
-        }
-        await new Promise<void>((_, reject) => {
-          options!.signal!.addEventListener("abort", () => reject(options!.signal!.reason), {
-            once: true,
-          });
+    const ingest = vi.fn(async (batch: EventInput[], options?: Parameters<Ingest>[1]) => {
+      if (batch[0] === events[0]) {
+        if (dropFirst) throw new IngestRejectedError();
+        return;
+      }
+      await new Promise<void>((_, reject) => {
+        options!.signal!.addEventListener("abort", () => reject(options!.signal!.reason), {
+          once: true,
         });
-      },
-    );
-    const strategy = await new MemoryEventQueue(
-      { events: { ingest } },
-      {
-        batchSize: 1,
-      },
-    ).start({ onRejected });
+      });
+    });
+    const strategy = await new MemoryEventQueue({
+      batchSize: 1,
+    }).start({ ingest, onRejected });
     try {
       for (const event of events) await strategy.enqueue(event);
       await expect(strategy.close({ timeoutMs: 10 })).rejects.toBeInstanceOf(MeteringDeliveryError);
@@ -393,11 +380,9 @@ it.each([false, true])(
 
 it("cancels a retry wait at the shutdown deadline", async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
-  const ingest = vi.fn().mockRejectedValue(new PolarNetworkError("offline"));
+  const ingest = vi.fn().mockRejectedValue(new IngestRetryableError());
   const onRejected = vi.fn();
-  const strategy = await new MemoryEventQueue(
-    { events: { ingest } },
-  ).start({ onRejected });
+  const strategy = await new MemoryEventQueue().start({ ingest, onRejected });
   try {
     await strategy.enqueue(events[0]);
     await expect(strategy.close({ timeoutMs: 10 })).rejects.toBeInstanceOf(MeteringDeliveryError);
@@ -411,13 +396,13 @@ it("cancels a retry wait at the shutdown deadline", async () => {
 it.each([false, true])("keeps delivering after a hook fails (rejected: %s)", async (rejected) => {
   const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
   const ingest = vi.fn().mockResolvedValue(undefined);
-  const error = new PolarClientError(422, "invalid");
+  const error = new IngestRejectedError();
   const hookError = new Error("private event details");
   const onAck = vi.fn();
   const onRejected = vi.fn().mockRejectedValueOnce(hookError);
   if (rejected) ingest.mockRejectedValueOnce(error);
   else onAck.mockRejectedValueOnce(hookError);
-  const queue = await new MemoryEventQueue({ events: { ingest } }).start({ onAck, onRejected });
+  const queue = await new MemoryEventQueue().start({ ingest, onAck, onRejected });
   try {
     await queue.enqueue(events[0]);
     if (rejected) {
@@ -430,7 +415,10 @@ it.each([false, true])("keeps delivering after a hook fails (rejected: %s)", asy
     await queue.enqueue(events[1]);
     await queue.flush();
     expect(ingest).toHaveBeenCalledTimes(2);
-    expect(warn).toHaveBeenCalledWith("Memory queue delivery hook failed", "Error");
+    expect(warn).toHaveBeenCalledWith(
+      rejected ? "Memory queue rejection hook failed" : "Memory queue acknowledgement hook failed",
+      "Error",
+    );
   } finally {
     await queue.close();
   }
@@ -438,13 +426,10 @@ it.each([false, true])("keeps delivering after a hook fails (rejected: %s)", asy
 
 it("reports background drops to the newest overlapping flush, then recovers", async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
-  const cause = new PolarClientError(422, "invalid");
+  const cause = new IngestRejectedError();
   const ingest = vi.fn().mockRejectedValueOnce(cause).mockResolvedValue(undefined);
   const onRejected = vi.fn();
-  const strategy = await new MemoryEventQueue(
-    { events: { ingest } },
-    { batchSize: 1 },
-  ).start({ onRejected });
+  const strategy = await new MemoryEventQueue({ batchSize: 1 }).start({ ingest, onRejected });
   try {
     await strategy.enqueue(events[0]);
     await vi.waitFor(() => expect(onRejected).toHaveBeenCalledOnce());
@@ -475,11 +460,8 @@ it("does not include later failed events in an earlier flush boundary", async ()
   const ingest = vi
     .fn()
     .mockImplementationOnce(() => gate)
-    .mockRejectedValue(new PolarClientError(422, "invalid"));
-  const strategy = await new MemoryEventQueue(
-    { events: { ingest } },
-    { batchSize: 1 },
-  ).start();
+    .mockRejectedValue(new IngestRejectedError());
+  const strategy = await new MemoryEventQueue({ batchSize: 1 }).start({ ingest });
   try {
     await strategy.enqueue(events[0]);
     const first = strategy.flush();
@@ -500,15 +482,12 @@ it("releases an older flush when a newer one starts, and reports both boundaries
   const gate = new Promise<void>((resolve) => {
     release = resolve;
   });
-  const cause = new PolarClientError(422, "invalid");
+  const cause = new IngestRejectedError();
   const ingest = vi.fn(async () => {
     await gate;
     throw cause;
   });
-  const strategy = await new MemoryEventQueue(
-    { events: { ingest } },
-    { batchSize: 1 },
-  ).start();
+  const strategy = await new MemoryEventQueue({ batchSize: 1 }).start({ ingest });
   try {
     await strategy.enqueue(events[0]);
     const older = strategy.flush().then(() => "released");
@@ -530,10 +509,8 @@ it("a newer flush with a shorter timeout does not release an older one", async (
   const gate = new Promise<void>((resolve) => {
     release = resolve;
   });
-  const strategy = await new MemoryEventQueue(
-    { events: { ingest: () => gate } },
-    { batchSize: 1 },
-  ).start();
+  const ingest = () => gate;
+  const strategy = await new MemoryEventQueue({ batchSize: 1 }).start({ ingest });
   try {
     await strategy.enqueue(events[0]);
     const olderDone = vi.fn();
@@ -555,16 +532,13 @@ it("a flush timeout does not cancel delivery or acknowledge unseen drops", async
     release = resolve;
   });
   let signal: AbortSignal | undefined;
-  const cause = new PolarClientError(422, "invalid");
-  const ingest = vi.fn(async (_body: unknown, options?: RequestOptions) => {
+  const cause = new IngestRejectedError();
+  const ingest = vi.fn(async (_body: unknown, options?: Parameters<Ingest>[1]) => {
     signal = options?.signal;
     await gate;
     throw cause;
   });
-  const strategy = await new MemoryEventQueue(
-    { events: { ingest } },
-    { batchSize: 1 },
-  ).start();
+  const strategy = await new MemoryEventQueue({ batchSize: 1 }).start({ ingest });
   try {
     await strategy.enqueue(events[0]);
     const timedOut = strategy.flush({ timeoutMs: 10 }).catch((error) => error);
@@ -589,18 +563,12 @@ it("an abandoned flush leaves its eventual failure observable", async () => {
     release = resolve;
   });
   const onRejected = vi.fn();
-  const cause = new PolarClientError(422, "invalid");
-  const strategy = await new MemoryEventQueue(
-    {
-      events: {
-        ingest: async () => {
-          await gate;
-          throw cause;
-        },
-      },
-    },
-    { batchSize: 1 },
-  ).start({ onRejected });
+  const cause = new IngestRejectedError();
+  const ingest = async () => {
+    await gate;
+    throw cause;
+  };
+  const strategy = await new MemoryEventQueue({ batchSize: 1 }).start({ ingest, onRejected });
   try {
     await strategy.enqueue(events[0]);
     await expect(strategy.flush({ timeoutMs: 10 })).rejects.toBeInstanceOf(MeteringDeliveryError);
@@ -618,9 +586,8 @@ it("reports a worker error without calling onRejected", async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const cause = new TypeError("broken transport");
   const onRejected = vi.fn();
-  const queue = await new MemoryEventQueue({
-    events: { ingest: vi.fn().mockRejectedValue(cause) },
-  }, { batchSize: 1 }).start({ onRejected });
+  const ingest = vi.fn().mockRejectedValue(cause);
+  const queue = await new MemoryEventQueue({ batchSize: 1 }).start({ ingest, onRejected });
   try {
     await queue.enqueue(events[0]);
     await expect(queue.flush()).rejects.toMatchObject({

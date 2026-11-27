@@ -63,7 +63,7 @@ export const ProductInfoSection = ({
                   <strong className="font-semibold">{flaggedCategory}</strong>,
                   which is not permitted under our{' '}
                   <a
-                    href="https://polar.sh/legal/acceptable-use-policy"
+                    href="https://polar.sh/docs/acceptable-use"
                     className="underline"
                     target="_blank"
                     rel="noopener noreferrer"

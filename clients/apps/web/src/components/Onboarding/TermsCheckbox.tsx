@@ -64,7 +64,7 @@ export function TermsCheckbox<T extends FieldValues>({
                     </a>{' '}
                     &amp;{' '}
                     <a
-                      href="https://polar.sh/legal/acceptable-use-policy"
+                      href="https://polar.sh/docs/acceptable-use"
                       className="text-gray-900 underline dark:text-white"
                       target="_blank"
                       rel="noopener noreferrer"

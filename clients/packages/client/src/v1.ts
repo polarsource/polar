@@ -18631,6 +18631,8 @@ export interface components {
       customer_portal?:
         | components['schemas']['ConfigSettingsCustomerPortal']
         | null
+      /** @description Which emails Polar sends your customers. */
+      emails?: components['schemas']['ConfigSettingsEmails'] | null
     }
     /** ConfigSettingsChange */
     ConfigSettingsChange: {
@@ -18690,6 +18692,110 @@ export interface components {
       /** Show Metered Usage */
       show_metered_usage: boolean
     }
+    /** ConfigSettingsEmails */
+    ConfigSettingsEmails: {
+      /**
+       * Order Confirmation
+       * @description Whether customers get an email when a customer completes a one-time purchase.
+       */
+      order_confirmation?: boolean | null
+      /**
+       * Subscription Confirmation
+       * @description Whether customers get an email when a customer starts a new subscription.
+       */
+      subscription_confirmation?: boolean | null
+      /**
+       * Trial Conversion Reminder
+       * @description Whether customers get an email when a trial is about to end and convert to a paid subscription.
+       */
+      trial_conversion_reminder?: boolean | null
+      /**
+       * Trial Converted
+       * @description Whether customers get an email when a trial ends and the subscription becomes paid.
+       */
+      trial_converted?: boolean | null
+      /**
+       * Renewal Reminder
+       * @description Whether customers get an email when a subscription with a long billing cycle renews in 7 days.
+       */
+      renewal_reminder?: boolean | null
+      /**
+       * Subscription Cycled
+       * @description Whether customers get an email when a subscription renews or is invoiced for usage.
+       */
+      subscription_cycled?: boolean | null
+      /**
+       * Card Expiring
+       * @description Whether customers get an email when a card backing an active subscription is about to expire.
+       */
+      card_expiring?: boolean | null
+      /**
+       * Subscription Past Due
+       * @description Whether customers get an email when a subscription payment fails and becomes overdue.
+       */
+      subscription_past_due?: boolean | null
+      /**
+       * Subscription Updated
+       * @description Whether customers get an email when a customer changes their subscription to another product.
+       */
+      subscription_updated?: boolean | null
+      /**
+       * Subscription Paused
+       * @description Whether customers get an email when a customer pauses their subscription.
+       */
+      subscription_paused?: boolean | null
+      /**
+       * Subscription Resumed
+       * @description Whether customers get an email when a paused subscription resumes and billing restarts.
+       */
+      subscription_resumed?: boolean | null
+      /**
+       * Subscription Canceled
+       * @description Whether customers get an email when a customer cancels their subscription.
+       */
+      subscription_canceled?: boolean | null
+      /**
+       * Subscription Uncanceled
+       * @description Whether customers get an email when a customer reactivates a canceled subscription.
+       */
+      subscription_uncanceled?: boolean | null
+      /**
+       * Subscription Revoked
+       * @description Whether customers get an email when a canceled subscription ends at the end of its billing cycle.
+       */
+      subscription_revoked?: boolean | null
+    }
+    /** ConfigSettingsEmailsRead */
+    ConfigSettingsEmailsRead: {
+      /** Order Confirmation */
+      order_confirmation: boolean
+      /** Subscription Confirmation */
+      subscription_confirmation: boolean
+      /** Trial Conversion Reminder */
+      trial_conversion_reminder: boolean
+      /** Trial Converted */
+      trial_converted: boolean
+      /** Renewal Reminder */
+      renewal_reminder: boolean
+      /** Subscription Cycled */
+      subscription_cycled: boolean
+      /** Card Expiring */
+      card_expiring: boolean
+      /** Subscription Past Due */
+      subscription_past_due: boolean
+      /** Subscription Updated */
+      subscription_updated: boolean
+      /** Subscription Paused */
+      subscription_paused: boolean
+      /** Subscription Resumed */
+      subscription_resumed: boolean
+      /** Subscription Canceled */
+      subscription_canceled: boolean
+      /** Subscription Uncanceled */
+      subscription_uncanceled: boolean
+      /** Subscription Revoked */
+      subscription_revoked: boolean
+    }
     /** ConfigSettingsPayments */
     ConfigSettingsPayments: {
       /** @description The organization's default presentment currency. Every active product must have a price in it. */
@@ -18707,6 +18813,7 @@ export interface components {
       payments: components['schemas']['ConfigSettingsPaymentsRead']
       subscriptions: components['schemas']['ConfigSettingsSubscriptionsRead']
       customer_portal: components['schemas']['ConfigSettingsCustomerPortalRead']
+      emails: components['schemas']['ConfigSettingsEmailsRead']
     }
     /** ConfigSettingsResult */
     ConfigSettingsResult: {

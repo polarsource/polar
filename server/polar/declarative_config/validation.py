@@ -131,6 +131,20 @@ SETTINGS_FIELDS = {
         "customer_portal_customer_allow_email_change"
     ),
     "customer_portal.show_metered_usage": "customer_portal_usage_show",
+    "emails.order_confirmation": "customer_email_order_confirmation",
+    "emails.subscription_confirmation": "customer_email_subscription_confirmation",
+    "emails.trial_conversion_reminder": "customer_email_subscription_trial_conversion_reminder",
+    "emails.trial_converted": "customer_email_subscription_cycled_after_trial",
+    "emails.renewal_reminder": "customer_email_subscription_renewal_reminder",
+    "emails.subscription_cycled": "customer_email_subscription_cycled",
+    "emails.card_expiring": "customer_email_payment_method_expiration_reminder",
+    "emails.subscription_past_due": "customer_email_subscription_past_due",
+    "emails.subscription_updated": "customer_email_subscription_updated",
+    "emails.subscription_paused": "customer_email_subscription_paused",
+    "emails.subscription_resumed": "customer_email_subscription_resumed",
+    "emails.subscription_canceled": "customer_email_subscription_cancellation",
+    "emails.subscription_uncanceled": "customer_email_subscription_uncanceled",
+    "emails.subscription_revoked": "customer_email_subscription_revoked",
 }
 
 

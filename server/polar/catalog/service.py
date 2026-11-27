@@ -38,6 +38,10 @@ from polar.models import (
     ProductMedia,
 )
 from polar.models.catalog import CatalogStatus
+from polar.models.organization import (
+    OrganizationCustomerEmailSettings,
+    resolve_default_customer_email_settings,
+)
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
@@ -163,11 +167,28 @@ PORTAL_SETTINGS = {
     "customer_portal_subscription_pause": ("subscription", "pause"),
     "customer_portal_customer_allow_email_change": ("customer", "allow_email_change"),
 }
-CATALOG_SETTINGS = (*PAYMENT_SETTINGS, *SUBSCRIPTION_SETTINGS, *PORTAL_SETTINGS)
+EMAIL_SETTINGS = {
+    f"customer_email_{key}": key
+    for key in OrganizationCustomerEmailSettings.__annotations__
+}
+CATALOG_SETTINGS = (
+    *PAYMENT_SETTINGS,
+    *SUBSCRIPTION_SETTINGS,
+    *PORTAL_SETTINGS,
+    *EMAIL_SETTINGS,
+)
 
 
 def _settings(organization: Organization) -> dict[str, Any]:
-    return {name: getattr(organization, name) for name in CATALOG_SETTINGS}
+    emails: Mapping[str, Any] = resolve_default_customer_email_settings(
+        organization.customer_email_settings
+    )
+    return {
+        name: emails[EMAIL_SETTINGS[name]]
+        if name in EMAIL_SETTINGS
+        else getattr(organization, name)
+        for name in CATALOG_SETTINGS
+    }
 
 
 def _ids(rows: Mapping[str, Benefit | Meter | CustomField]) -> dict[str, uuid.UUID]:
@@ -604,6 +625,11 @@ class CatalogService:
         update_dict: dict[str, Any] = {}
         subscription: dict[str, Any] = dict(organization.subscription_settings)
         portal: dict[str, Any] = dict(organization.customer_portal_settings)
+        emails: dict[str, Any] = dict(
+            resolve_default_customer_email_settings(
+                organization.customer_email_settings
+            )
+        )
         for name, value in settings.items():
             if name in SUBSCRIPTION_SETTINGS:
                 subscription[name] = value
@@ -612,6 +638,9 @@ class CatalogService:
                 group, key = PORTAL_SETTINGS[name]
                 portal[group] = {**portal.get(group, {}), key: value}
                 update_dict["customer_portal_settings"] = portal
+            elif name in EMAIL_SETTINGS:
+                emails[EMAIL_SETTINGS[name]] = value
+                update_dict["customer_email_settings"] = emails
             else:
                 update_dict[name] = value
         await OrganizationRepository.from_session(session).update(
@@ -1001,10 +1030,11 @@ class CatalogService:
         ):
             if _ids(rows) != _ids(live_rows) and scope not in auth_subject.scopes:
                 raise InsufficientScopeError({str(scope)})
+        current = _settings(organization)
         settings = {
             name: value
             for name, value in (draft.settings or {}).items()
-            if getattr(organization, name) != value
+            if current[name] != value
         }
         if settings:
             if Scope.organizations_write not in auth_subject.scopes:

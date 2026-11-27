@@ -2283,6 +2283,20 @@ class TestApply:
             "customer_portal_subscription_update_units": False,
             "customer_portal_subscription_pause": False,
             "customer_portal_customer_allow_email_change": False,
+            "customer_email_order_confirmation": True,
+            "customer_email_payment_method_expiration_reminder": True,
+            "customer_email_subscription_cancellation": True,
+            "customer_email_subscription_confirmation": True,
+            "customer_email_subscription_cycled": True,
+            "customer_email_subscription_cycled_after_trial": True,
+            "customer_email_subscription_past_due": True,
+            "customer_email_subscription_paused": True,
+            "customer_email_subscription_resumed": True,
+            "customer_email_subscription_renewal_reminder": True,
+            "customer_email_subscription_revoked": True,
+            "customer_email_subscription_trial_conversion_reminder": True,
+            "customer_email_subscription_uncanceled": True,
+            "customer_email_subscription_updated": True,
         }
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -5525,6 +5539,22 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
             "allow_email_changes": True,
             "show_metered_usage": False,
         },
+        "emails": {
+            "order_confirmation": False,
+            "subscription_confirmation": True,
+            "trial_conversion_reminder": False,
+            "trial_converted": True,
+            "renewal_reminder": False,
+            "subscription_cycled": True,
+            "card_expiring": False,
+            "subscription_past_due": True,
+            "subscription_updated": False,
+            "subscription_paused": True,
+            "subscription_resumed": False,
+            "subscription_canceled": True,
+            "subscription_uncanceled": False,
+            "subscription_revoked": True,
+        },
     },
     "meters": [{**TOOL_CALLS_METER, "metadata": {"team": "billing"}}],
     "custom_fields": [
@@ -6720,6 +6750,44 @@ class TestCatalogDrafts:
             },
             "customer": {"allow_email_change": False},
         }
+
+    async def test_email_settings_go_live_on_publish(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "settings": {
+                        "emails": {"order_confirmation": False, "card_expiring": False}
+                    }
+                }
+            ),
+            publish=False,
+        )
+
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+        assert draft.settings == {
+            "customer_email_order_confirmation": False,
+            "customer_email_payment_method_expiration_reminder": False,
+        }
+        assert organization.customer_email_settings["order_confirmation"] is True
+
+        await catalog_service.publish_draft(session, auth_subject, organization, draft)
+
+        assert organization.customer_email_settings["order_confirmation"] is False
+        assert (
+            organization.customer_email_settings["payment_method_expiration_reminder"]
+            is False
+        )
+        assert organization.customer_email_settings["subscription_cycled"] is True
 
     async def test_reverting_settings_drops_the_draft(
         self,

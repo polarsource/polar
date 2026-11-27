@@ -2,7 +2,7 @@
 title: "Zero-latency metering"
 sidebarTitle: "Zero-latency metering"
 tag: "Beta"
-description: "Check a customer's balance on every request without calling Polar, with Outpost and your own Redis."
+description: "Check balances in milliseconds from your own Redis, without a round trip to Polar."
 ---
 
 **Outpost** is the part of the Polar SDK that answers meter reads from your own Redis. It gives you two things:
@@ -14,7 +14,21 @@ Outpost keeps a copy of each customer's meter usage in a Redis database you own.
 
 Polar stays the source of truth. When its totals change, Outpost pulls them and replaces its copy.
 
-Use Outpost when you check a balance on every request, and a round trip to Polar on each check is too slow. In our load test at 10,000 events per second, a read took 1.7 ms at the median: see [Performance and sizing](#performance-and-sizing).
+Use Outpost when you check a balance on every request, and a round trip to Polar on each check is too slow.
+
+## Performance and sizing
+
+A local read at 10,000 events per second:
+
+| Local read (`meter()`) | Latency |
+| ---------------------- | ------- |
+| Median                 | 1.7 ms  |
+| p95                    | 14 ms   |
+| p99                    | 25 ms   |
+
+Measured with the TypeScript SDK on Vercel and one Redis Cloud database on the 2.5 GB plan, running Redis 8. Redis set the ceiling, near 12,000 events per second.
+
+Outpost goes as fast as your Redis, so size it for your traffic. If a larger Redis is not enough, reach out [to the team](/support).
 
 ## What to expect
 
@@ -233,20 +247,6 @@ A long-running server sends its events every second on its own. A serverless fun
 ### Delivery callbacks
 
 `onEventAck` (`on_event_ack` in Python) runs with each batch Polar accepted, and `onEventRejected` (`on_event_rejected`) with the events Polar refused for good. They run on whichever instance sent the batch, so a batch can hold events from other instances' requests. An instance that stops mid-batch can run them twice on the same events: make them safe to repeat. Keep them short, because the instance waits for them before it sends its next batch. An error they throw goes to your logs.
-
-## Performance and sizing
-
-A local read at 10,000 events per second:
-
-| Local read (`meter()`) | Latency |
-| ---------------------- | ------- |
-| Median                 | 1.7 ms  |
-| p95                    | 14 ms   |
-| p99                    | 25 ms   |
-
-Measured with the TypeScript SDK on Vercel and one Redis Cloud database on the 2.5 GB plan, running Redis 8. Redis set the ceiling, near 12,000 events per second.
-
-Outpost goes as fast as your Redis, so size it for your traffic. If a larger Redis is not enough, reach out [to the team](/support).
 
 ## Technical details
 

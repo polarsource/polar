@@ -380,13 +380,23 @@ class OrderCreateBase(MetadataInputMixin, CustomFieldDataInputMixin):
         return self
 
 
-class OrderCreate(OrderCreateBase):
-    """Schema to create a draft order for an off-session charge."""
-
+class OrderCustomerIDReference(Schema):
     customer_id: UUID4 = Field(
         description="The ID of the customer the order is for. "
         "Must belong to the order's organization."
     )
+
+
+class OrderExternalCustomerIDReference(Schema):
+    external_customer_id: str = Field(
+        min_length=1,
+        description="The ID of the customer in your system the order is for. "
+        "Must belong to the order's organization.",
+        examples=["usr_1337"],
+    )
+
+
+class OrderProductIDReference(Schema):
     product_id: UUID4 = Field(
         description="The ID of the one-time product to charge for. "
         "Must belong to the order's organization. "
@@ -394,20 +404,7 @@ class OrderCreate(OrderCreateBase):
     )
 
 
-class OrderCreateExternal(OrderCreateBase):
-    """
-    Schema to create a draft order for an off-session charge,
-    referencing the customer and product by their external IDs.
-    """
-
-    model_config = ConfigDict(extra="forbid")
-
-    external_customer_id: str = Field(
-        min_length=1,
-        description="The ID of the customer in your system the order is for. "
-        "Must belong to the order's organization.",
-        examples=["usr_1337"],
-    )
+class OrderExternalProductIDReference(Schema):
     external_product_id: ExternalID = Field(
         description="The ID of the one-time product in your system to charge for. "
         "Resolves to the current version of the product. "
@@ -417,16 +414,60 @@ class OrderCreateExternal(OrderCreateBase):
     )
 
 
+class OrderCreate(OrderProductIDReference, OrderCustomerIDReference, OrderCreateBase):
+    """Schema to create a draft order for an off-session charge."""
+
+
+class OrderCreateExternalCustomer(
+    OrderProductIDReference, OrderExternalCustomerIDReference, OrderCreateBase
+):
+    """
+    Schema to create a draft order for an off-session charge,
+    referencing the customer by its external ID.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class OrderCreateExternalProduct(
+    OrderExternalProductIDReference, OrderCustomerIDReference, OrderCreateBase
+):
+    """
+    Schema to create a draft order for an off-session charge,
+    referencing the product by its external ID.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class OrderCreateExternal(
+    OrderExternalProductIDReference, OrderExternalCustomerIDReference, OrderCreateBase
+):
+    """
+    Schema to create a draft order for an off-session charge,
+    referencing the customer and product by their external IDs.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+
 def _order_create_discriminator(v: Any) -> str:
     if isinstance(v, dict):
-        external = "external_customer_id" in v or "external_product_id" in v
-        return "external" if external else "polar"
-    return "external" if isinstance(v, OrderCreateExternal) else "polar"
+        customer = "external" if "external_customer_id" in v else "polar"
+        product = "external" if "external_product_id" in v else "polar"
+        return f"{customer}_customer_{product}_product"
+    customer = (
+        "external" if isinstance(v, OrderExternalCustomerIDReference) else "polar"
+    )
+    product = "external" if isinstance(v, OrderExternalProductIDReference) else "polar"
+    return f"{customer}_customer_{product}_product"
 
 
 OrderCreateV2027_01 = Annotated[
-    Annotated[OrderCreate, Tag("polar")]
-    | Annotated[OrderCreateExternal, Tag("external")],
+    Annotated[OrderCreate, Tag("polar_customer_polar_product")]
+    | Annotated[OrderCreateExternalCustomer, Tag("external_customer_polar_product")]
+    | Annotated[OrderCreateExternalProduct, Tag("polar_customer_external_product")]
+    | Annotated[OrderCreateExternal, Tag("external_customer_external_product")],
     Discriminator(_order_create_discriminator),
 ]
 

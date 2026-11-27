@@ -149,7 +149,9 @@ from .repository import OrderRepository, order_benefits_revoked_clause
 from .schemas import (
     OrderCreate,
     OrderCreateBase,
-    OrderCreateExternal,
+    OrderCreateV2027_01,
+    OrderExternalCustomerIDReference,
+    OrderExternalProductIDReference,
     OrderInvoice,
     OrderReceipt,
     OrderUpdate,
@@ -1199,7 +1201,7 @@ class OrderService:
         self,
         session: AsyncSession,
         organization: Organization,
-        payload: OrderCreate | OrderCreateExternal,
+        payload: OrderCreate | OrderCreateV2027_01,
     ) -> Order:
         """
         Create a draft order for an off-session charge in `organization`. The
@@ -1218,16 +1220,12 @@ class OrderService:
         customer_repository = CustomerRepository.from_session(session)
         product_loc: str
         product_input: uuid.UUID | str
-        customer_loc: str
-        customer_input: uuid.UUID | str
         product: Product | None
-        if isinstance(payload, OrderCreateExternal):
+        if isinstance(payload, OrderExternalProductIDReference):
             product_loc, product_input = (
                 "external_product_id",
                 payload.external_product_id,
             )
-            customer_loc = "external_customer_id"
-            customer_input = payload.external_customer_id
             product = await product_repository.get_by_external_id_and_organization(
                 payload.external_product_id,
                 organization.id,
@@ -1235,7 +1233,6 @@ class OrderService:
             )
         else:
             product_loc, product_input = "product_id", payload.product_id
-            customer_loc, customer_input = "customer_id", payload.customer_id
             product = await product_repository.get_by_id_and_organization(
                 payload.product_id,
                 organization.id,
@@ -1316,15 +1313,22 @@ class OrderService:
                 ]
             )
 
-        customer = (
-            await customer_repository.get_by_external_id_and_organization(
+        customer_loc: str
+        customer_input: uuid.UUID | str
+        customer: Customer | None
+        if isinstance(payload, OrderExternalCustomerIDReference):
+            customer_loc, customer_input = (
+                "external_customer_id",
+                payload.external_customer_id,
+            )
+            customer = await customer_repository.get_by_external_id_and_organization(
                 payload.external_customer_id, organization.id
             )
-            if isinstance(payload, OrderCreateExternal)
-            else await customer_repository.get_by_id_and_organization(
+        else:
+            customer_loc, customer_input = "customer_id", payload.customer_id
+            customer = await customer_repository.get_by_id_and_organization(
                 payload.customer_id, organization.id
             )
-        )
         if customer is None:
             raise PolarRequestValidationError(
                 [

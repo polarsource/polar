@@ -13,17 +13,6 @@ assert(total == total and math.abs(total) ~= math.huge, 'Aggregation values must
 if redis.call('HSETNX', KEYS[2], ARGV[3], ARGV[2]) == 0 then
     return 0
 end
--- The write that first sees an event queues it for Polar, as Polar ingests it: KEYS[4] is the
--- stream, ARGV[4] the event, or nothing for the other reducers the event matches. A flusher
--- holding the first slot, KEYS[5], reads the stream again once it lets go: it delivers the event.
--- Otherwise the write returns 2, and the instance drains the stream on its next flush.
-local written = 1
-if ARGV[4] ~= '' then
-    redis.call('XADD', KEYS[4], '*', 'event', ARGV[4])
-    if redis.call('EXISTS', KEYS[5]) == 0 then
-        written = 2
-    end
-end
 -- Every local event counts in its bucket; the pending part is what Polar has not confirmed.
 for _, prefix in ipairs({bucket, pending}) do
     redis.call('HINCRBYFLOAT', KEYS[1], prefix .. 'sum', value and ARGV[2] or '0')
@@ -44,4 +33,4 @@ end
 -- Polar's snapshot.
 redis.call('EXPIRE', KEYS[2], 3900)
 redis.call('EXPIRE', KEYS[1], 86400)
-return written
+return 1

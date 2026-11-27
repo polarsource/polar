@@ -1,6 +1,5 @@
 import collections.abc
 import itertools
-import json
 
 import pytest
 from pytest_codspeed import BenchmarkFixture
@@ -37,33 +36,14 @@ def key_of(buckets: int) -> str:
 _ids = itertools.count(1)
 
 
-# What track queues for Polar with an event's first write.
-QUEUED_EVENT = json.dumps(
-    {
-        "name": "api_call",
-        "external_customer_id": "alice",
-        "external_id": "event",
-        "timestamp": "2026-10-12T12:00:00+00:00",
-        "metadata": {"tokens": 7},
-    }
-)
-
-
-def write_args(
-    identity: str, bucket_start: int, queued: bool = True
-) -> list[str | int]:
-    pending_key = f"outpost:v1:pending:{identity}:{bucket_start}"
+def write_args(identity: str, bucket_start: int) -> list[str | int]:
     return [
         state_key(identity),
-        pending_key,
+        f"outpost:v1:pending:{identity}:{bucket_start}",
         f"outpost:v1:rejected:{identity}:{bucket_start}",
-        "outpost:v1:outbox",
-        "outpost:v1:outbox:flusher:0",
         bucket_start,
-    ] + [
         7,
         f"event-{next(_ids)}",
-        QUEUED_EVENT if queued else "",
     ]
 
 
@@ -94,7 +74,7 @@ def test_write_bucket_one_event(
     identity = identity_of(buckets)
 
     def write() -> None:
-        redis.evalsha(sha, 5, *write_args(identity, newest_bucket_start))
+        redis.evalsha(sha, 3, *write_args(identity, newest_bucket_start))
 
     benchmark(write)
 
@@ -104,9 +84,9 @@ def test_write_bucket_three_reducers(benchmark: BenchmarkFixture, redis: Redis) 
 
     def write() -> None:
         pipeline = redis.pipeline(transaction=False)
-        for index, reducer in enumerate(REDUCERS):
+        for reducer in REDUCERS:
             identity = f"external:alice:{reducer}"
-            pipeline.evalsha(sha, 5, *write_args(identity, COLD_UNTIL, index == 0))
+            pipeline.evalsha(sha, 3, *write_args(identity, COLD_UNTIL))
         pipeline.execute()
 
     benchmark(write)

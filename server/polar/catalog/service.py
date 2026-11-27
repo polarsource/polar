@@ -970,10 +970,17 @@ class CatalogService:
         the new product rows. Its new meters start matching events, and the
         organization takes the settings it changes.
 
+        Publishing needs the `catalog:publish` permission (owners and admins).
         A draft that changes benefits, meters or custom fields also needs
         `benefits:write`, `meters:write` or `custom_fields:write`, and one that
         changes settings needs `organizations:write` and permission to manage
         the organization, as applying them does."""
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.catalog_publish,
+        )
         repository = CatalogRepository.from_session(session)
         await repository.lock(organization.id)
         await self._assert_still_draft(session, draft)

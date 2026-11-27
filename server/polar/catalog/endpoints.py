@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import Depends, Query
 from pydantic import UUID4
 
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.openapi import APITag
 from polar.postgres import (
@@ -138,6 +138,10 @@ async def update(
             "description": "No catalog with this ID.",
             "model": CatalogNotFound.schema(),
         },
+        403: {
+            "description": "Not allowed to publish this organization's catalog.",
+            "model": NotPermitted.schema(),
+        },
         409: {
             "description": (
                 "The catalog isn't a draft, or publishing it would leave an "
@@ -157,7 +161,7 @@ async def publish(
 
     Requires `products:write`, `benefits:write` when the draft changes
     benefits, `meters:write` when it changes meters, and `organizations:write`
-    when it changes settings."""
+    when it changes settings. Users need the owner or admin role."""
     draft = await catalog_service.get_draft_for_write(session, auth_subject, id)
     catalog = await catalog_service.publish_draft(
         session, auth_subject, draft.organization, draft

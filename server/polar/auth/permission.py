@@ -32,6 +32,10 @@ class OrganizationPermission(StrEnum):
     products_read = "products:read"
     products_manage = "products:manage"
 
+    # Catalog — publishing a draft catalog or a config makes its products,
+    # prices and settings live for new sales. Granted to admins and owners.
+    catalog_publish = "catalog:publish"
+
     # Custom fields.
     custom_fields_read = "custom_fields:read"
     custom_fields_manage = "custom_fields:manage"
@@ -61,6 +65,7 @@ class OrganizationPermission(StrEnum):
 
 _ADMIN_PERMISSIONS: set[OrganizationPermission] = {
     OrganizationPermission.organization_manage,
+    OrganizationPermission.catalog_publish,
     OrganizationPermission.members_manage,
     OrganizationPermission.finance_read,
     OrganizationPermission.finance_manage,
@@ -105,6 +110,7 @@ ROLE_PERMISSIONS: dict[OrganizationRole, set[OrganizationPermission]] = {
 # subscriptions, which stay closed because their routes don't list `Agent`.
 AGENT_PERMISSIONS: set[OrganizationPermission] = {
     OrganizationPermission.organization_manage,
+    OrganizationPermission.catalog_publish,
     OrganizationPermission.products_read,
     OrganizationPermission.products_manage,
     OrganizationPermission.sales_read,
@@ -120,6 +126,7 @@ PERMISSION_DENIED_MESSAGE: dict[OrganizationPermission, str] = {
     OrganizationPermission.members_manage: "You don't have permission to manage members",
     OrganizationPermission.products_read: "You don't have permission to view products",
     OrganizationPermission.products_manage: "You don't have permission to manage products",
+    OrganizationPermission.catalog_publish: "You don't have permission to publish the catalog",
     OrganizationPermission.custom_fields_read: "You don't have permission to view custom fields",
     OrganizationPermission.custom_fields_manage: "You don't have permission to manage custom fields",
     OrganizationPermission.customers_read: "You don't have permission to view customers",

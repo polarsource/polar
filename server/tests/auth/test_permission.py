@@ -23,6 +23,7 @@ def test_finance_role_permissions() -> None:
 def test_agent_permissions() -> None:
     assert AGENT_PERMISSIONS == {
         OrganizationPermission.organization_manage,
+        OrganizationPermission.catalog_publish,
         OrganizationPermission.products_read,
         OrganizationPermission.products_manage,
         OrganizationPermission.sales_read,
@@ -37,4 +38,11 @@ def test_roles_with_finance_read_permission() -> None:
         OrganizationRole.owner,
         OrganizationRole.admin,
         OrganizationRole.finance,
+    }
+
+
+def test_roles_with_catalog_publish_permission() -> None:
+    assert roles_with_permission(OrganizationPermission.catalog_publish) == {
+        OrganizationRole.owner,
+        OrganizationRole.admin,
     }

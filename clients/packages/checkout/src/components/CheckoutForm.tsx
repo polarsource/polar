@@ -934,20 +934,10 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   }, [form, t])
 
   useEffect(() => {
-    let cancelled = false
-    const onLoadFailure = () => {
-      if (!cancelled && checkout.is_payment_form_required) {
-        onPaymentElementLoadError()
-      }
-    }
+    if (!checkout.is_payment_form_required) return
     stripePromise.then((stripe) => {
-      if (!stripe) {
-        onLoadFailure()
-      }
-    }, onLoadFailure)
-    return () => {
-      cancelled = true
-    }
+      if (!stripe) onPaymentElementLoadError()
+    }, onPaymentElementLoadError)
   }, [
     stripePromise,
     checkout.is_payment_form_required,

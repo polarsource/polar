@@ -51,6 +51,11 @@ export const BenefitConfig = Schema.Union([
       team_invitees: Schema.Array(Schema.String),
     }),
   }),
+  Schema.Struct({
+    ...benefitFields,
+    type: Schema.Literal('custom'),
+    properties: Schema.Struct({ note: Schema.NullOr(Schema.String) }),
+  }),
 ])
 
 export type BenefitConfig = typeof BenefitConfig.Type
@@ -82,6 +87,13 @@ export type BenefitDefinition<Meter extends string = string> =
       readonly name: string | undefined
       readonly type: 'slack_shared_channel'
       readonly properties: SlackChannelProperties
+    } & HasMetadata &
+      HasVisibility &
+      HasDeprecation)
+  | ({
+      readonly name: string | undefined
+      readonly type: 'custom'
+      readonly properties: { readonly note: string | null }
     } & HasMetadata &
       HasVisibility &
       HasDeprecation)
@@ -196,6 +208,26 @@ export const slackChannel = (name?: string) => ({
   }),
 })
 
+class CustomDefinition extends withDeprecation(
+  withMetadata(withVisibility(Builder)),
+) {
+  readonly type = 'custom'
+  readonly properties: { readonly note: string | null } = { note: null }
+
+  constructor(readonly name: string | undefined) {
+    super()
+  }
+
+  /** A private note shown to customers who have the benefit, like how to reach priority support. */
+  note(note: string): this {
+    return this.with({ properties: { note } })
+  }
+}
+
+/** Anything that doesn't fit the other benefits, like priority support. The name defaults to its key in `benefits`. */
+export const custom = (name?: string): CustomDefinition =>
+  new CustomDefinition(name)
+
 export type BenefitHelpers<Meter extends string> = {
   /** A feature your app checks a customer has. The name defaults to its key in `benefits`. */
   readonly flag: typeof flag
@@ -208,4 +240,6 @@ export type BenefitHelpers<Meter extends string> = {
   }
   /** A Slack Connect channel shared with each customer. The name defaults to its key in `benefits`. */
   readonly slackChannel: typeof slackChannel
+  /** Anything that doesn't fit the other benefits, like priority support. The name defaults to its key in `benefits`. */
+  readonly custom: typeof custom
 }

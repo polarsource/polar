@@ -8,6 +8,7 @@ from pytest_mock import MockerFixture
 from polar.kit.utils import utc_now
 from polar.meter.unit import MeterUnit
 from polar.models import Organization, UserOrganization
+from polar.models.benefit import BenefitType
 from polar.models.user_organization import OrganizationRole
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
@@ -527,7 +528,11 @@ class TestExport:
         user_organization: UserOrganization,
     ) -> None:
         await create_benefit(
-            save_fixture, organization=organization, description="Priority support"
+            save_fixture,
+            organization=organization,
+            type=BenefitType.license_keys,
+            description="License key",
+            properties={},
         )
 
         response = await client.get(

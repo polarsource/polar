@@ -94,6 +94,7 @@ from polar.models.benefit import BenefitType
 from polar.models.catalog import CatalogStatus
 from polar.models.custom_field import CustomFieldText, CustomFieldType
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.organization import OrganizationCustomerEmailSettings
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole
@@ -2283,6 +2284,20 @@ class TestApply:
             "customer_portal_subscription_update_units": False,
             "customer_portal_subscription_pause": False,
             "customer_portal_customer_allow_email_change": False,
+            "customer_email_order_confirmation": True,
+            "customer_email_payment_method_expiration_reminder": True,
+            "customer_email_subscription_cancellation": True,
+            "customer_email_subscription_confirmation": True,
+            "customer_email_subscription_cycled": True,
+            "customer_email_subscription_cycled_after_trial": True,
+            "customer_email_subscription_past_due": True,
+            "customer_email_subscription_paused": True,
+            "customer_email_subscription_resumed": True,
+            "customer_email_subscription_renewal_reminder": True,
+            "customer_email_subscription_revoked": True,
+            "customer_email_subscription_trial_conversion_reminder": True,
+            "customer_email_subscription_uncanceled": True,
+            "customer_email_subscription_updated": True,
         }
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -5525,6 +5540,22 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
             "allow_email_changes": True,
             "show_metered_usage": False,
         },
+        "customer_notifications": {
+            "send_order_confirmation": False,
+            "send_subscription_confirmation": True,
+            "send_trial_conversion_reminder": False,
+            "send_trial_converted": True,
+            "send_renewal_reminder": False,
+            "send_subscription_cycled": True,
+            "send_card_expiring": False,
+            "send_subscription_past_due": True,
+            "send_subscription_updated": False,
+            "send_subscription_paused": True,
+            "send_subscription_resumed": False,
+            "send_subscription_canceled": True,
+            "send_subscription_uncanceled": False,
+            "send_subscription_revoked": True,
+        },
     },
     "meters": [{**TOOL_CALLS_METER, "metadata": {"team": "billing"}}],
     "custom_fields": [
@@ -6720,6 +6751,86 @@ class TestCatalogDrafts:
             },
             "customer": {"allow_email_change": False},
         }
+
+    async def test_email_settings_go_live_on_publish(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "settings": {
+                        "customer_notifications": {
+                            "send_order_confirmation": False,
+                            "send_card_expiring": False,
+                        }
+                    }
+                }
+            ),
+            publish=False,
+        )
+
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+        assert draft.settings == {
+            "customer_email_order_confirmation": False,
+            "customer_email_payment_method_expiration_reminder": False,
+        }
+        assert organization.customer_email_settings["order_confirmation"] is True
+
+        await catalog_service.publish_draft(session, auth_subject, organization, draft)
+
+        assert organization.customer_email_settings["order_confirmation"] is False
+        assert (
+            organization.customer_email_settings["payment_method_expiration_reminder"]
+            is False
+        )
+        assert organization.customer_email_settings["subscription_cycled"] is True
+
+    async def test_publish_stores_the_inherited_card_expiring_setting(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        stored = dict(organization.customer_email_settings)
+        del stored["payment_method_expiration_reminder"]
+        organization.customer_email_settings = cast(
+            OrganizationCustomerEmailSettings, stored
+        )
+        await save_fixture(organization)
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "settings": {
+                        "customer_notifications": {"send_subscription_cycled": False}
+                    }
+                }
+            ),
+            publish=False,
+        )
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+
+        await catalog_service.publish_draft(session, auth_subject, organization, draft)
+
+        assert organization.customer_email_settings["subscription_cycled"] is False
+        assert (
+            organization.customer_email_settings["payment_method_expiration_reminder"]
+            is True
+        )
 
     async def test_reverting_settings_drops_the_draft(
         self,

@@ -243,6 +243,20 @@ class TestPublishDraft:
             "customer_portal_subscription_update_units": False,
             "customer_portal_subscription_pause": False,
             "customer_portal_customer_allow_email_change": False,
+            "customer_email_order_confirmation": True,
+            "customer_email_payment_method_expiration_reminder": True,
+            "customer_email_subscription_cancellation": True,
+            "customer_email_subscription_confirmation": True,
+            "customer_email_subscription_cycled": True,
+            "customer_email_subscription_cycled_after_trial": True,
+            "customer_email_subscription_past_due": True,
+            "customer_email_subscription_paused": True,
+            "customer_email_subscription_resumed": True,
+            "customer_email_subscription_renewal_reminder": True,
+            "customer_email_subscription_revoked": True,
+            "customer_email_subscription_trial_conversion_reminder": True,
+            "customer_email_subscription_uncanceled": True,
+            "customer_email_subscription_updated": True,
         }
         send_mock.assert_called_once_with(
             session, organization, WebhookEventType.organization_updated, organization

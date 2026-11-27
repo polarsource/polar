@@ -561,6 +561,89 @@ class ConfigSettingsCustomerPortal(Schema):
     )
 
 
+class ConfigSettingsCustomerNotifications(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    send_order_confirmation: bool | None = Field(
+        default=None,
+        description=(
+            "Whether to email customers when they complete a one-time purchase."
+        ),
+    )
+    send_subscription_confirmation: bool | None = Field(
+        default=None,
+        description=("Whether to email customers when they start a new subscription."),
+    )
+    send_trial_conversion_reminder: bool | None = Field(
+        default=None,
+        description=(
+            "Whether to email customers when a trial is about to end and convert to a paid subscription."
+        ),
+    )
+    send_trial_converted: bool | None = Field(
+        default=None,
+        description=(
+            "Whether to email customers when a trial ends and the subscription becomes paid."
+        ),
+    )
+    send_renewal_reminder: bool | None = Field(
+        default=None,
+        description=(
+            "Whether to email customers when a subscription with a long billing cycle renews within 30 days."
+        ),
+    )
+    send_subscription_cycled: bool | None = Field(
+        default=None,
+        description=(
+            "Whether to email customers when a subscription renews or is invoiced for usage."
+        ),
+    )
+    send_card_expiring: bool | None = Field(
+        default=None,
+        description=(
+            "Whether to email customers when a card backing an active subscription is about to expire."
+        ),
+    )
+    send_subscription_past_due: bool | None = Field(
+        default=None,
+        description=(
+            "Whether to email customers when a subscription payment fails and becomes overdue."
+        ),
+    )
+    send_subscription_updated: bool | None = Field(
+        default=None,
+        description=(
+            "Whether to email customers when they change their subscription to another product."
+        ),
+    )
+    send_subscription_paused: bool | None = Field(
+        default=None,
+        description=("Whether to email customers when they pause their subscription."),
+    )
+    send_subscription_resumed: bool | None = Field(
+        default=None,
+        description=(
+            "Whether to email customers when a paused subscription resumes and billing restarts."
+        ),
+    )
+    send_subscription_canceled: bool | None = Field(
+        default=None,
+        description=("Whether to email customers when they cancel their subscription."),
+    )
+    send_subscription_uncanceled: bool | None = Field(
+        default=None,
+        description=(
+            "Whether to email customers when they reactivate a canceled subscription."
+        ),
+    )
+    send_subscription_revoked: bool | None = Field(
+        default=None,
+        description=(
+            "Whether to email customers when a canceled subscription ends at the end of its billing cycle."
+        ),
+    )
+
+
 class ConfigSettings(Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -575,6 +658,10 @@ class ConfigSettings(Schema):
     customer_portal: ConfigSettingsCustomerPortal | None = Field(
         default=None,
         description="Customer portal settings.",
+    )
+    customer_notifications: ConfigSettingsCustomerNotifications | None = Field(
+        default=None,
+        description="Which emails Polar sends customers.",
     )
 
 
@@ -1073,10 +1160,28 @@ class ConfigSettingsCustomerPortalRead(_ConfigRead):
     show_metered_usage: bool
 
 
+class ConfigSettingsCustomerNotificationsRead(_ConfigRead):
+    send_order_confirmation: bool
+    send_subscription_confirmation: bool
+    send_trial_conversion_reminder: bool
+    send_trial_converted: bool
+    send_renewal_reminder: bool
+    send_subscription_cycled: bool
+    send_card_expiring: bool
+    send_subscription_past_due: bool
+    send_subscription_updated: bool
+    send_subscription_paused: bool
+    send_subscription_resumed: bool
+    send_subscription_canceled: bool
+    send_subscription_uncanceled: bool
+    send_subscription_revoked: bool
+
+
 class ConfigSettingsRead(_ConfigRead):
     payments: ConfigSettingsPaymentsRead
     subscriptions: ConfigSettingsSubscriptionsRead
     customer_portal: ConfigSettingsCustomerPortalRead
+    customer_notifications: ConfigSettingsCustomerNotificationsRead
 
 
 class ConfigExportDocument(_ConfigRead):

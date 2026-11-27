@@ -131,6 +131,20 @@ SETTINGS_FIELDS = {
         "customer_portal_customer_allow_email_change"
     ),
     "customer_portal.show_metered_usage": "customer_portal_usage_show",
+    "customer_notifications.send_order_confirmation": "customer_email_order_confirmation",
+    "customer_notifications.send_subscription_confirmation": "customer_email_subscription_confirmation",
+    "customer_notifications.send_trial_conversion_reminder": "customer_email_subscription_trial_conversion_reminder",
+    "customer_notifications.send_trial_converted": "customer_email_subscription_cycled_after_trial",
+    "customer_notifications.send_renewal_reminder": "customer_email_subscription_renewal_reminder",
+    "customer_notifications.send_subscription_cycled": "customer_email_subscription_cycled",
+    "customer_notifications.send_card_expiring": "customer_email_payment_method_expiration_reminder",
+    "customer_notifications.send_subscription_past_due": "customer_email_subscription_past_due",
+    "customer_notifications.send_subscription_updated": "customer_email_subscription_updated",
+    "customer_notifications.send_subscription_paused": "customer_email_subscription_paused",
+    "customer_notifications.send_subscription_resumed": "customer_email_subscription_resumed",
+    "customer_notifications.send_subscription_canceled": "customer_email_subscription_cancellation",
+    "customer_notifications.send_subscription_uncanceled": "customer_email_subscription_uncanceled",
+    "customer_notifications.send_subscription_revoked": "customer_email_subscription_revoked",
 }
 
 

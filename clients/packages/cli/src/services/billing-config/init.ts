@@ -89,11 +89,7 @@ const withoutDefaultSettings = (exported: ConfigExport): ConfigExport => {
     }
   }
 
-  const hasChanges = Object.keys(changed).length > 0
-  return {
-    ...exported,
-    config: { ...(hasChanges && { settings: changed }), ...rest },
-  }
+  return { ...exported, config: { settings: changed, ...rest } }
 }
 
 export const exportConfig = (

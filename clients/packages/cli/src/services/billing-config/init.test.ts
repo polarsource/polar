@@ -236,7 +236,7 @@ describe('init', () => {
     })
   })
 
-  test('leaves settings out when all are at their default', async () => {
+  test('writes empty settings when all are at their default', async () => {
     const settings = { payments: { currency: 'usd', tax: 'location' } }
     api.routes[`GET ${exportUrl}`] = () =>
       Response.json({
@@ -249,7 +249,10 @@ describe('init', () => {
 
     await run()
 
-    expect(JSON.parse(await read('polar.config.json'))).toEqual(EMPTY)
+    expect(JSON.parse(await read('polar.config.json'))).toEqual({
+      settings: {},
+      ...EMPTY,
+    })
   })
 
   test('picks the package manager from the lockfile, then from package.json', async () => {

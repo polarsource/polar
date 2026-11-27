@@ -581,26 +581,24 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
       ? []
       : renderEntries('products', config.products, renderProduct(imports))
 
-  const settings =
-    config.settings === undefined
-      ? []
-      : [
-          '  settings: {',
-          ...Object.entries(config.settings).map(
-            ([group, fields]) =>
-              `    ${key(camelCase(group))}: ${renderObject(
-                Object.fromEntries(
-                  Object.entries(fields).map(([name, value]) => [
-                    camelCase(name),
-                    name === 'benefit_revocation_grace_period'
-                      ? gracePeriod(value)
-                      : value,
-                  ]),
-                ),
-              )},`,
-          ),
-          '  },',
-        ]
+  const settingsGroups = Object.entries(config.settings ?? {}).map(
+    ([group, fields]) =>
+      `    ${key(camelCase(group))}: ${renderObject(
+        Object.fromEntries(
+          Object.entries(fields).map(([name, value]) => [
+            camelCase(name),
+            name === 'benefit_revocation_grace_period'
+              ? gracePeriod(value)
+              : value,
+          ]),
+        ),
+      )},`,
+  )
+  const settingsLines =
+    settingsGroups.length === 0
+      ? ['  settings: {},']
+      : ['  settings: {', ...settingsGroups, '  },']
+  const settings = config.settings === undefined ? [] : settingsLines
 
   return [
     `import { ${[...imports].join(', ')} } from '@polar-sh/config'`,

@@ -41,15 +41,15 @@ Outpost calls Polar with your client's organization access token. The token need
 
 ### Use the Redis queue
 
-Outpost needs `RedisEventQueue`, on every runtime. `metering()` uses `MemoryEventQueue` by default, so pass the Redis queue yourself.
+Outpost needs `RedisEventQueue`, on every runtime. The client uses `MemoryEventQueue` by default, so pass the Redis queue yourself.
 
 `RedisEventQueue` keeps each event in Redis until Polar has it. An event Outpost has counted reaches Polar even if the process dies, or a serverless function freezes before it sends its events.
 
 Your instances share one queue: they send events to Polar in shared batches, and wait together when Polar is busy. Pass the queue and Outpost the same Redis URL, and they share one connection.
 
-### Start metering
+### Create the client
 
-Outpost is off by default. Pass the queue and Outpost to `metering()`.
+Outpost is off by default. Pass the queue and Outpost when you create the Polar client. Create it once, outside your request handlers.
 
 <Tabs>
   <Tab title="TypeScript">
@@ -90,31 +90,33 @@ Outpost is off by default. Pass the queue and Outpost to `metering()`.
     import { outpost } from "@polar-sh/sdk/outpost";
 
     const redisUrl = process.env.REDIS_URL!;
-    const polar = createPolar({ accessToken: process.env.POLAR_ACCESS_TOKEN! });
 
-    const metering = polar.metering({
-      queue: new RedisEventQueue(redisUrl, { stream: "polar:events" }),
+    export const polar = createPolar({
+      accessToken: process.env.POLAR_ACCESS_TOKEN!,
+      eventQueue: new RedisEventQueue(redisUrl, { stream: "polar:events" }),
       outpost: outpost({ redis: redisUrl }),
     });
     ```
 
-    `metering()` takes:
+    Besides `accessToken`, `createPolar()` takes:
 
-    | Option       | Default                  | Meaning                                                                   |
-    | ------------ | ------------------------ | ------------------------------------------------------------------------- |
-    | `queue`      | `new MemoryEventQueue()` | The queue that delivers events to Polar. Outpost needs `RedisEventQueue`. |
-    | `outpost`    | `undefined`              | Outpost, from `outpost()`. Without it, reads call Polar's API.            |
-    | `onAck`      | `undefined`              | Called with each batch Polar accepted; may be async.                      |
-    | `onRejected` | `undefined`              | Called with the events Polar refused, and why; may be async.              |
+    | Option            | Default                  | Meaning                                                                                             |
+    | ----------------- | ------------------------ | --------------------------------------------------------------------------------------------------- |
+    | `eventQueue`      | `new MemoryEventQueue()` | The queue that delivers events to Polar. Outpost needs `RedisEventQueue`. `null` turns delivery off. |
+    | `outpost`         | `undefined`              | Outpost, from `outpost()`. Without it, reads call Polar's API.                                      |
+    | `onEventAck`      | `undefined`              | Called with each batch Polar accepted; may be async.                                                |
+    | `onEventRejected` | `undefined`              | Called with the events Polar refused, and why; may be async.                                        |
 
-    `outpost()` throws if neither `redis` nor `REDIS_URL` is set. It takes:
+    `outpost()` takes:
 
-    | Option            | Default                          | Meaning                                                               |
-    | ----------------- | -------------------------------- | --------------------------------------------------------------------- |
-    | `redis`           | `REDIS_URL` environment variable | A Redis URL, or an `ioredis` client you own.                          |
-    | `snapshotTimeout` | `5000`                           | Milliseconds the first read of a customer waits for Polar's totals.   |
+    | Option            | Default  | Meaning                                                             |
+    | ----------------- | -------- | ------------------------------------------------------------------- |
+    | `redis`           | Required | A Redis URL, or an `ioredis` client you own.                        |
+    | `snapshotTimeout` | `5000`   | Milliseconds the first read of a customer waits for Polar's totals. |
 
     `new RedisEventQueue(redis, { stream })` takes a Redis URL or an `ioredis` client you own, and the stream's key. Use one stream per Polar environment and organization.
+
+    On a long-running server, `await polar.close()` at shutdown delivers what's queued.
   </Tab>
   <Tab title="Python">
     Outpost and `RedisEventQueue` need the `outpost` extra:
@@ -131,29 +133,29 @@ Outpost is off by default. Pass the queue and Outpost to `metering()`.
 
     redis_url = os.environ["REDIS_URL"]
 
-    async with PolarAsync(os.environ["POLAR_ACCESS_TOKEN"]) as polar:
-        async with polar.metering(
-            queue=RedisEventQueue(redis_url, stream="polar:events"),
-            outpost={"redis": redis_url},
-        ) as metering:
-            ...
+    async with PolarAsync(
+        os.environ["POLAR_ACCESS_TOKEN"],
+        event_queue=RedisEventQueue(redis_url, stream="polar:events"),
+        outpost={"redis": redis_url},
+    ) as polar:
+        ...
     ```
 
-    `metering()` takes:
+    Open it for the life of your application, in its lifespan for example. Leaving the context delivers what's queued. Besides the access token, `PolarAsync` takes:
 
-    | Option        | Default              | Meaning                                                                                    |
-    | ------------- | -------------------- | ------------------------------------------------------------------------------------------ |
-    | `queue`       | `MemoryEventQueue()` | The queue that delivers events to Polar. Outpost needs `RedisEventQueue`.                  |
-    | `outpost`     | `None`               | `True` to use `REDIS_URL`, or a dictionary of options. Without it, reads call Polar's API. |
-    | `on_ack`      | `None`               | Async function called with each batch Polar accepted.                                      |
-    | `on_rejected` | `None`               | Async function called with the events Polar refused, and why.                              |
+    | Option              | Default              | Meaning                                                                                              |
+    | ------------------- | -------------------- | ---------------------------------------------------------------------------------------------------- |
+    | `event_queue`       | `MemoryEventQueue()` | The queue that delivers events to Polar. Outpost needs `RedisEventQueue`. `None` turns delivery off. |
+    | `outpost`           | `None`               | A dictionary of Outpost options. Without it, reads call Polar's API.                                 |
+    | `on_event_ack`      | `None`               | Async function called with each batch Polar accepted.                                                |
+    | `on_event_rejected` | `None`               | Async function called with the events Polar refused, and why.                                        |
 
-    `outpost` raises if neither `redis` nor `REDIS_URL` is set. Its dictionary takes:
+    The `outpost` dictionary takes:
 
-    | Option             | Default                          | Meaning                                                            |
-    | ------------------ | -------------------------------- | ------------------------------------------------------------------ |
-    | `redis`            | `REDIS_URL` environment variable | A Redis URL, or an asynchronous `redis` client you own.            |
-    | `snapshot_timeout` | `5`                              | Seconds the first read of a customer waits for Polar's totals.     |
+    | Option             | Default  | Meaning                                                        |
+    | ------------------ | -------- | -------------------------------------------------------------- |
+    | `redis`            | Required | A Redis URL, or an asynchronous `redis` client you own.        |
+    | `snapshot_timeout` | `5`      | Seconds the first read of a customer waits for Polar's totals. |
 
     `RedisEventQueue(redis, stream=...)` takes a Redis URL or an asynchronous `redis` client you own, and the stream's key. Use one stream per Polar environment and organization.
   </Tab>
@@ -167,13 +169,14 @@ Give each event an `external_id`, such as your request ID. Outpost counts an eve
   If you track an event again after Polar has stored it, Polar ignores it, but Outpost counts it once more. Outpost corrects this the next time it syncs with Polar, within a few minutes.
 </Note>
 
-Call `actor()` when a session, a conversation or an agent run starts. The first read of a customer waits for Polar's totals, up to 5 seconds. `actor()` does that wait up front, so the reads that decide whether to serve answer from Redis.
+Call `actor.warmup()` when a session, a conversation or an agent run starts. The first read of a customer waits for Polar's totals, up to 5 seconds. `warmup()` does that wait up front, so the reads that decide whether to serve answer from Redis.
 
 <Tabs>
   <Tab title="TypeScript">
     ```typescript
     // When the session starts
-    const actor = await metering.actor({ external_customer_id: "customer_123" });
+    const actor = polar.actor({ external_customer_id: "customer_123" });
+    await actor.warmup();
 
     // On each request of the session
     const meter = await actor.meter("meter_uuid");
@@ -186,7 +189,8 @@ Call `actor()` when a session, a conversation or an agent run starts. The first 
   <Tab title="Python">
     ```python
     # When the session starts
-    actor = await metering.actor(external_customer_id="customer_123")
+    actor = polar.actor(external_customer_id="customer_123")
+    await actor.warmup()
 
     # On each request of the session
     meter = await actor.meter("meter_uuid")
@@ -212,14 +216,14 @@ A long-running server sends its events every second on its own. A serverless fun
     ```typescript
     import { after } from "next/server";
 
-    after(() => metering.flush());
+    after(() => polar.flush());
     ```
   </Tab>
   <Tab title="Python">
     Flush before you return the response.
 
     ```python
-    await metering.flush()
+    await polar.flush()
     ```
   </Tab>
 </Tabs>
@@ -228,7 +232,7 @@ A long-running server sends its events every second on its own. A serverless fun
 
 ### Delivery callbacks
 
-`onAck` runs with each batch Polar accepted, and `onRejected` with the events Polar refused for good. They run on whichever instance sent the batch, so a batch can hold events from other instances' requests. An instance that stops mid-batch can run them twice on the same events: make them safe to repeat. Keep them short, because the instance waits for them before it sends its next batch. An error they throw goes to your logs.
+`onEventAck` (`on_event_ack` in Python) runs with each batch Polar accepted, and `onEventRejected` (`on_event_rejected`) with the events Polar refused for good. They run on whichever instance sent the batch, so a batch can hold events from other instances' requests. An instance that stops mid-batch can run them twice on the same events: make them safe to repeat. Keep them short, because the instance waits for them before it sends its next batch. An error they throw goes to your logs.
 
 ## Performance and sizing
 
@@ -280,7 +284,7 @@ Every instance of your application that uses the same Redis shares the same stat
 
 **Polar is down for a long time.** The queue grows until Redis is full, then `track()` fails. Size your Redis memory for the outage you want to survive, and watch it.
 
-**Polar refuses an event.** When Polar can never accept an event, an invalid one for example, the queue drops it and passes it to `onRejected`. Polar doesn't bill it, and Outpost stops counting it.
+**Polar refuses an event.** When Polar can never accept an event, an invalid one for example, the queue drops it and passes it to `onEventRejected`. Polar doesn't bill it, and Outpost stops counting it.
 
 **Your access token stops working.** The queue keeps the events and retries. Reads fall back to Polar's API, which refuses the token too. Fix the token and delivery resumes.
 

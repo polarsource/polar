@@ -279,6 +279,87 @@ The in-memory queue sends events in batches to Polar. It retries network errors,
 
 Telemetry can also be disabled with the `POLAR_OUTPOST_TELEMETRY=0` environment variable.
 
+## FastAPI
+
+Install the `fastapi` extra and set `POLAR_ACCESS_TOKEN` to your organization access token.
+
+```bash
+uv add "polar-sdk[fastapi]"
+```
+
+`PolarMiddleware` opens the client at startup and closes it at shutdown. Use
+`PolarDependency[PolarAsync]` to inject the shared client into your endpoints. Use the same
+`PolarAsync` version for the middleware and the dependency.
+
+The example uses your app's authenticated-user dependency, `User`. The user's ID must match
+the external ID of their Polar customer.
+
+```python
+import os
+
+from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
+
+from my_app.auth import User
+from polar.integrations.fastapi import PolarDependency, PolarMiddleware
+from polar.{{ ir.versions[-2] | default(ir.versions[0]) | format_version }} import PolarAsync
+
+app = FastAPI()
+app.add_middleware(
+    PolarMiddleware,
+    client_class=PolarAsync,
+    access_token=os.environ["POLAR_ACCESS_TOKEN"],
+)
+
+PolarClient = PolarDependency[PolarAsync]
+
+
+@app.get("/customer-portal")
+async def customer_portal(user: User, polar: PolarClient) -> RedirectResponse:
+    session = await polar.customer_sessions.create(external_customer_id=str(user.id))
+    return RedirectResponse(session.customer_portal_url)
+```
+
+### Track events
+
+Use the same injected client to track events. The client drains its configured
+queue before closing its HTTP transport at shutdown.
+
+```python
+@app.post("/track")
+async def track_usage(user: User, polar: PolarClient) -> dict[str, bool]:
+    await polar.track(name="api_request", external_customer_id=str(user.id))
+    return {"ok": True}
+```
+
+On Vercel, install the `vercel` Python SDK to let the middleware flush events with
+`wait_until` after each HTTP request. Without the Vercel SDK, the middleware awaits
+the flush before handing control back to the runtime.
+
+#### Redis queue and Outpost
+
+Install both extras and set `REDIS_URL`.
+
+```bash
+uv add "polar-sdk[fastapi,outpost]"
+```
+
+Pass the queue and Outpost options to the same `PolarMiddleware` registration.
+The queue and Outpost share a Redis client when their URLs match.
+
+```python
+from polar.metering.queue.redis import RedisEventQueue
+
+redis_url = os.environ["REDIS_URL"]
+app.add_middleware(
+    PolarMiddleware,
+    client_class=PolarAsync,
+    access_token=os.environ["POLAR_ACCESS_TOKEN"],
+    event_queue=RedisEventQueue(redis_url, stream="my-app:production:org:events"),
+    outpost={"redis": redis_url},
+)
+```
+
 ## Webhooks
 
 Use `validate_event` to verify that a webhook was sent by Polar and parse it into a typed payload

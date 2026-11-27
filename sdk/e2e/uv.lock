@@ -355,14 +355,17 @@ outpost = [
 requires-dist = [
     { name = "adaptix", specifier = "==3.0.0b12" },
     { name = "anyio", specifier = ">=4.5.0" },
+    { name = "asgiref", marker = "extra == 'asgi'", specifier = ">=3.8.1" },
+    { name = "asgiref", marker = "extra == 'fastapi'", specifier = ">=3.8.1" },
     { name = "certifi", specifier = ">=2026.10.19" },
+    { name = "fastapi", marker = "extra == 'fastapi'", specifier = ">=0.95.1" },
     { name = "httpx2", specifier = ">=2.16.0" },
     { name = "opentelemetry-exporter-otlp-proto-common", marker = "extra == 'outpost'", specifier = ">=1.30.0" },
     { name = "opentelemetry-sdk", marker = "extra == 'outpost'", specifier = ">=1.30.0" },
     { name = "redis", extras = ["hiredis"], marker = "extra == 'outpost'", specifier = ">=5.0.4" },
     { name = "typing-extensions", specifier = ">=4.13.0" },
 ]
-provides-extras = ["outpost"]
+provides-extras = ["asgi", "fastapi", "outpost"]
 
 [package.metadata.requires-dev]
 dev = [

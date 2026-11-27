@@ -105,6 +105,7 @@ class RedisEventQueue:
         self._drain_until = math.inf
         self._drain_again = False
         self._undrained = False
+        self._flushing: dict[anyio.CancelScope, float] = {}
 
     @property
     def redis_url(self) -> str | None:
@@ -134,12 +135,25 @@ class RedisEventQueue:
 
     async def flush(self, *, timeout: float = 30.0) -> None:
         """Deliver this instance's events, or wait for its drain in flight: never for
-        the rest of the fleet's stream."""
+        the rest of the fleet's stream. A newer flush releases the ones still waiting
+        that it outlasts: one waiter keeps a serverless function alive until the drain
+        ends, the others answer."""
         validate_timeout(timeout)
         self._require_redis()
-        with anyio.move_on_after(timeout) as scope:
-            await self._drain_queue_quietly(limited=True)
-        if scope.cancelled_caught:
+        deadline = anyio.current_time() + timeout
+        for older, until in self._flushing.items():
+            if until <= deadline:
+                older.cancel()
+        timed_out = False
+        with anyio.CancelScope() as released:
+            self._flushing[released] = deadline
+            try:
+                with anyio.move_on_after(timeout) as scope:
+                    await self._drain_queue_quietly(limited=True)
+                timed_out = scope.cancelled_caught
+            finally:
+                del self._flushing[released]
+        if timed_out:
             raise MeteringTimeoutError(timeout)
 
     @contextlib.asynccontextmanager

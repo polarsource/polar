@@ -2462,6 +2462,58 @@ class TestGetCustomerMeterUnits:
         assert consumed_units is None
         assert credited_units == 15
 
+    async def test_many_meters_with_post_reset_usage_in_slot(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+    ) -> None:
+        meter_a = await rollup_tokens(
+            save_fixture, session, redis, organization, SUM_TOKENS
+        )
+        meter_b = await create_meter(
+            save_fixture,
+            id=uuid.uuid4(),
+            organization=organization,
+            aggregation=CountAggregation(),
+        )
+        await reducer_service.sync_meter(session, meter_b)
+        customer = await create_customer(
+            save_fixture, organization=organization, external_id="external"
+        )
+        since = BUCKET_START + timedelta(seconds=20)
+        for meter in (meter_a, meter_b):
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer,
+                source=EventSource.system,
+                name=SystemEvent.meter_reset,
+                timestamp=since,
+                metadata={"meter_id": str(meter.id)},
+            )
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            external_customer_id="external",
+            timestamp=since + timedelta(seconds=10),
+            ingested_at=since + timedelta(seconds=10),
+            metadata={"tokens": 5},
+        )
+        await reducer_service.rollup(session, redis, organization.id, [event])
+
+        units = await reducer_service.get_customer_meter_units(
+            session,
+            redis,
+            [(customer, meter_b.id), (customer, meter_a.id)],
+        )
+
+        assert units == [
+            (Decimal(1), Decimal(0)),
+            (Decimal(5), None),
+        ]
+
     async def test_credits_since_latest_reset(
         self,
         save_fixture: SaveFixture,

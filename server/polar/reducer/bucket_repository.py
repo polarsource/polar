@@ -223,6 +223,47 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         result = await self.session.execute(statement)
         return result.one()
 
+    async def aggregate_events_batch(
+        self,
+        requests: Sequence[tuple[Reducer, datetime, datetime, UUID | None, str | None]],
+    ) -> list[tuple[int, UsageSummary]]:
+        """count, sum, min and max of each request's stored and staged events
+        in one statement, tagged with the request index."""
+        statement = union_all(
+            *(
+                self._aggregate_statement(
+                    model,
+                    reducer,
+                    bucket_start,
+                    bucket_end,
+                    customer_id,
+                    external_customer_id,
+                ).add_columns(literal(index).label("index"))
+                for index, (
+                    reducer,
+                    bucket_start,
+                    bucket_end,
+                    customer_id,
+                    external_customer_id,
+                ) in enumerate(requests)
+                for model in (Event, StagedEvent)
+            )
+        )
+        return [
+            (
+                index,
+                UsageSummary(
+                    count=count,
+                    total=Decimal(total),
+                    minimum=None if minimum is None else Decimal(minimum),
+                    maximum=None if maximum is None else Decimal(maximum),
+                ),
+            )
+            for count, total, minimum, maximum, index in await self.session.execute(
+                statement
+            )
+        ]
+
     async def get_identities_with_events(
         self, reducer: Reducer, bucket_start: datetime, bucket_end: datetime
     ) -> Sequence[tuple[UUID | None, str | None]]:
@@ -271,7 +312,11 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
                 func.max(value),
             )
         else:
-            statistics = (literal(0), null(), null())
+            statistics = (
+                literal(0).cast(Numeric),
+                null().cast(Numeric),
+                null().cast(Numeric),
+            )
         return select(
             func.count().label("count"),
             statistics[0].label("sum"),

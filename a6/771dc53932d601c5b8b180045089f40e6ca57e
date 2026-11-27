@@ -1,0 +1,29 @@
+sdk/generator/python/template/tests/redis.py
+  s_868513325afaca::t_2b0fe50057e1ef 1-58
+sdk/generator/python/template/tests/outpost/test_client.py
+  s_868513325afaca::t_58bbef0c84f780 63
+sdk/generator/python/emitter.py
+  s_868513325afaca::t_d05e68e3decfcc 161
+  s_868513325afaca::t_7fa2c8509dcaed 162
+sdk/generator/python/template/tests/metering/queue/test_redis.py
+  s_868513325afaca::t_58bbef0c84f780 22,174
+  s_868513325afaca::t_79ce375a4219e4 1-2,5,7-8,11,15,129-173,175-546
+sdk/generator/python/template/tests/conftest.py
+  s_868513325afaca::t_7fa2c8509dcaed 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a6771dc53932d601c5b8b180045089f40e6ca57e",
+  "prompts": {},
+  "sessions": {
+    "s_868513325afaca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2138b-136c-7cf0-b8fd-2500c8a89c9c",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

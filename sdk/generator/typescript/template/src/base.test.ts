@@ -460,6 +460,31 @@ test("close bounds its wait for an active custom flush and still closes resource
   }
 });
 
+test("warms the actor's customer without starting the delivery queue", async () => {
+  vi.spyOn(Outpost.prototype, "start").mockImplementation(async function (this: Outpost) {
+    return this;
+  });
+  vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
+  const warmup = vi.spyOn(Outpost.prototype, "actor").mockRejectedValue(
+    new NotReadyError("no snapshot yet"),
+  );
+  const queue = { start: vi.fn(), enqueue: vi.fn(), close: vi.fn(), flush: vi.fn() };
+  const polar = createPolar({
+    accessToken: "token",
+    eventQueue: queue,
+    outpost: outpost({ redis: "redis://localhost" }),
+  });
+  try {
+    const actor = polar.actor({ customer_id: "alice", member_id: "member" });
+    expect(warmup).not.toHaveBeenCalled();
+    await actor.warmup();
+    expect(warmup).toHaveBeenCalledExactlyOnceWith({ customer_id: "alice" });
+    expect(queue.start).not.toHaveBeenCalled();
+  } finally {
+    await polar.close();
+  }
+});
+
 test("delivers events after a meter read falls back when Outpost cannot start", async () => {
   const startOutpost = vi.spyOn(Outpost.prototype, "start").mockRejectedValue(
     new UnavailableRedisError(),

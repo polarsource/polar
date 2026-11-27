@@ -50,6 +50,7 @@ it("uses the memory queue without loading optional Outpost dependencies", () => 
     const polar = createPolar({ accessToken: "token" });
     globalThis.fetch = async () => new Response('{"inserted":1,"duplicates":0}');
     const actor = polar.actor({ external_customer_id: "alice" });
+    await actor.warmup();
     await actor.track({ name: "usage" });
     await polar.close();
   `,

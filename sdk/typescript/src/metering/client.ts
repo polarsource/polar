@@ -20,6 +20,7 @@ interface OutpostBackend {
   start(): Promise<unknown>;
   close(): Promise<void>;
   track(event: EventInput): Promise<void>;
+  actor(input: MeterInput): Promise<void>;
   meter(input: MeterInput & { meter_id: string }): Promise<CustomerMeter | null>;
   flush(): Promise<void>;
   onAck(events: EventInput[]): Promise<void>;
@@ -105,9 +106,14 @@ export class PolarEventClient {
             external_customer_id: input.external_customer_id,
             external_member_id: input.external_member_id,
           };
+    const customer: MeterInput =
+      identity.customer_id != null
+        ? { customer_id: identity.customer_id }
+        : { external_customer_id: identity.external_customer_id };
     return {
+      warmup: () => this.warmup(customer),
       track: (event) => this.track({ ...event, ...identity }),
-      meter: (meterId) => this.meter(meterId, identity),
+      meter: (meterId) => this.meter(meterId, customer),
     };
   }
 
@@ -177,6 +183,18 @@ export class PolarEventClient {
       this.closing = this.drain(this.shutdownDeadline);
     }
     await this.closing;
+  }
+
+  private async warmup(customer: MeterInput): Promise<void> {
+    this.begin();
+    try {
+      const outpost = await this.startOutpost();
+      await outpost?.actor(customer);
+    } catch (error) {
+      if (!(error instanceof PolarOutpostError)) throw error;
+    } finally {
+      if (--this.activeOperations === 0) this.onDrained?.();
+    }
   }
 
   private requireQueue(): EventQueue {

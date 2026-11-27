@@ -220,6 +220,9 @@ const polar = createPolar({
 Outpost applies events locally after enqueue succeeds. If Outpost cannot answer a meter read,
 the client queries the Polar API. `snapshotTimeout` controls the wait for an initial snapshot.
 
+Call `await actor.warmup()` to warm the customer's state across all configured Outpost
+reducers before reading a meter.
+
 ### Choose a queue
 
 The client uses a `MemoryEventQueue` by default and opens it on the first `track()` or

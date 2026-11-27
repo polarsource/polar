@@ -35,6 +35,21 @@ class Actor:
         self.external_customer_id = external_customer_id
         self.external_member_id = external_member_id
 
+    async def warmup(self) -> None:
+        """Ask Outpost to load this customer's state when Outpost is enabled."""
+        outpost = self.polar.outpost
+        if outpost is None:
+            return
+        from polar.outpost.errors import PolarOutpostError
+
+        try:
+            await outpost.actor(
+                customer_id=self.customer_id,
+                external_customer_id=self.external_customer_id,
+            )
+        except PolarOutpostError:
+            pass
+
     async def track(self, **event: typing.Unpack[ContextualEventInput]) -> None:
         """Track an event with this actor's identifiers attached.
 

@@ -598,6 +598,7 @@ async def main():
             return httpx2.Response(202, request=httpx2.Request("POST", "https://polar.test"))
         polar._client._client.post = post
         actor = polar.actor(external_customer_id="customer")
+        await actor.warmup()
         await actor.track(name="usage")
 
 asyncio.run(main())
@@ -852,6 +853,24 @@ async def test_enqueue_failure_skips_reduction_and_reduction_failure_is_logged(
             in caplog.messages
         )
         assert "private event details" not in caplog.text
+
+
+@pytest.mark.anyio
+async def test_actor_warmup_uses_customer_identity_without_a_queue(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    outpost = AsyncMock(spec=Outpost)
+    monkeypatch.setattr(Outpost, "create", MagicMock(return_value=outpost))
+    outpost.actor.side_effect = NotReadyError("no snapshot yet")
+    async with PolarAsync(
+        "token", event_queue=None, outpost={"redis": "redis://localhost"}
+    ) as polar:
+        actor = polar.actor(external_customer_id="alice", external_member_id="member")
+        outpost.actor.assert_not_awaited()
+        await actor.warmup()
+    outpost.actor.assert_awaited_once_with(
+        customer_id=None, external_customer_id="alice"
+    )
 
 
 @pytest.mark.anyio

@@ -19,6 +19,9 @@ export type ActorInput =
  * The helper shares its parent's lifecycle and owns no resources.
  */
 export interface Actor {
+  /** Ask Outpost to load this customer's state when Outpost is enabled. */
+  warmup(): Promise<void>;
+
   /**
    * Track an event with this actor's identifiers attached.
    *

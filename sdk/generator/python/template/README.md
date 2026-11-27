@@ -176,6 +176,9 @@ Outpost applies events locally after enqueue succeeds. If it cannot answer a
 meter read, the client queries the Polar API. Install the `outpost` extra with
 `uv add "polar-sdk[outpost]"`.
 
+Call `await actor.warmup()` inside the client context to warm the customer's state
+across all configured Outpost reducers before reading a meter.
+
 ```python
 async with PolarAsync(token, outpost={"redis": "redis://localhost:6379"}) as polar:
     actor = polar.actor(external_customer_id="customer_123")

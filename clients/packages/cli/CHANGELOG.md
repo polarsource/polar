@@ -1,5 +1,19 @@
 # @polar-sh/cli
 
+## 3.4.2
+
+### Patch Changes
+
+- 66d44c7: Internal cleanup of how commands are registered.
+- 6c3731c: Some commands now add a short summary of the run to the anonymous usage event, such as how it ended and the codes of any issues found. Organization names are no longer included in reported error messages.
+- ff42747: Fix a misleading hint shown when a config file can't be written.
+- 86532ac: A setting left out of `settings` is now set to its default, the value a new organization gets, instead of keeping its current value. `polar config init` and `polar config reset` only write settings that differ from their default, and write an empty `settings` when none do, so apply still resets every setting to its default.
+- cd680ef: Add `settings.subscriptions` to the config: `allowMultipleSubscriptions`, `prorationBehavior`, `benefitRevocationGracePeriod` and `preventTrialAbuse`. `benefitRevocationGracePeriod` takes the dashboard's options, like `'immediately'` or `'7 days'`. `polar config init` and `polar config reset` could not write a TypeScript config for an organization that has these settings.
+- Updated dependencies [86532ac]
+- Updated dependencies [c295c57]
+- Updated dependencies [cd680ef]
+  - @polar-sh/config@0.0.2
+
 ## 3.4.1
 
 ### Patch Changes

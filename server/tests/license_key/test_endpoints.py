@@ -1215,6 +1215,34 @@ class TestValidateLicenseKey:
 
         assert response.status_code == 422
 
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("api_version", "expected_status_code"),
+        [(V2026_10, 200), (V2027_01, 422)],
+    )
+    async def test_null_references(
+        self,
+        api_version: APIVersion,
+        expected_status_code: int,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        license_key_external_ids: LicenseKey,
+    ) -> None:
+        response = await client.post(
+            "/v1/license-keys/validate",
+            json={
+                "key": license_key_external_ids.key,
+                "organization_id": str(license_key_external_ids.organization_id),
+                "activation_id": None,
+                "benefit_id": None,
+                "customer_id": None,
+                "increment_usage": None,
+            },
+            headers={"Polar-Version": str(api_version)},
+        )
+
+        assert response.status_code == expected_status_code
+
     @pytest.mark.api_version(V2027_01)
     async def test_customer_portal_external_ids_mismatch(
         self, client: AsyncClient, license_key_external_ids: LicenseKey

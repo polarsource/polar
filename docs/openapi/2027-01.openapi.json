@@ -11428,6 +11428,16 @@
               }
             }
           },
+          "403": {
+            "description": "Off-session charges are not enabled for this organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OffSessionChargesNotEnabled"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -11676,16 +11686,6 @@
               "text/csv": {
                 "schema": {
                   "type": "string"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Off-session charges are not enabled for this organization.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OffSessionChargesNotEnabled"
                 }
               }
             }
@@ -61259,40 +61259,19 @@
             "title": "Organization Id"
           },
           "activation_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "uuid4",
             "title": "Activation Id"
           },
           "benefit_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4",
-                "description": "The benefit ID."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Benefit Id"
+            "type": "string",
+            "format": "uuid4",
+            "title": "Benefit Id",
+            "description": "The benefit ID."
           },
           "external_benefit_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Benefit Id",
             "description": "The ID in your system of the benefit the license key must belong to. Matches every version of the benefit. Can't be combined with `benefit_id`.",
             "examples": [
@@ -61300,27 +61279,13 @@
             ]
           },
           "customer_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "uuid4",
             "title": "Customer Id"
           },
           "external_customer_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "minLength": 1,
             "title": "External Customer Id",
             "description": "The ID in your system of the customer the license key must belong to. Can't be combined with `customer_id`.",
             "examples": [
@@ -61328,15 +61293,8 @@
             ]
           },
           "increment_usage": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
+            "minimum": 0.0,
             "title": "Increment Usage"
           },
           "conditions": {

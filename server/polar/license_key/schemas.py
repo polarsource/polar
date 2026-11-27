@@ -113,10 +113,10 @@ MetaField = Annotated[
 class LicenseKeyValidate(Schema):
     key: str
     organization_id: UUID4
-    activation_id: UUID4 | None = None
-    benefit_id: BenefitID | None = None
+    activation_id: Omissible[UUID4] = MISSING
+    benefit_id: Omissible[BenefitID] = MISSING
     external_benefit_id: Annotated[
-        ExternalID | None,
+        Omissible[ExternalID],
         Version(starting_from=V2027_01),
         Field(
             description=(
@@ -126,10 +126,10 @@ class LicenseKeyValidate(Schema):
             ),
             examples=["ext_1337"],
         ),
-    ] = None
-    customer_id: UUID4 | None = None
+    ] = MISSING
+    customer_id: Omissible[UUID4] = MISSING
     external_customer_id: Annotated[
-        str | None,
+        Omissible[str],
         Version(starting_from=V2027_01),
         Field(
             min_length=1,
@@ -139,15 +139,15 @@ class LicenseKeyValidate(Schema):
             ),
             examples=["usr_1337"],
         ),
-    ] = None
-    increment_usage: int | None = Field(default=None, ge=0)
+    ] = MISSING
+    increment_usage: Omissible[Annotated[int, Field(ge=0)]] = MISSING
     conditions: ConditionsField
 
     @model_validator(mode="after")
     def _validate_references(self) -> Self:
-        if self.benefit_id is not None and self.external_benefit_id is not None:
+        if self.benefit_id is not MISSING and self.external_benefit_id is not MISSING:
             raise ValueError("benefit_id and external_benefit_id can't be set together")
-        if self.customer_id is not None and self.external_customer_id is not None:
+        if self.customer_id is not MISSING and self.external_customer_id is not MISSING:
             raise ValueError(
                 "customer_id and external_customer_id can't be set together"
             )

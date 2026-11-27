@@ -27449,26 +27449,36 @@ export interface components {
        * Format: uuid4
        */
       organization_id: string
-      /** Activation Id */
-      activation_id?: string | null
-      /** Benefit Id */
-      benefit_id?: string | null
+      /**
+       * Activation Id
+       * Format: uuid4
+       */
+      activation_id?: string
+      /**
+       * Benefit Id
+       * Format: uuid4
+       * @description The benefit ID.
+       */
+      benefit_id?: string
       /**
        * External Benefit Id
        * @description The ID in your system of the benefit the license key must belong to. Matches every version of the benefit. Can't be combined with `benefit_id`.
        * @example ext_1337
        */
-      external_benefit_id?: string | null
-      /** Customer Id */
-      customer_id?: string | null
+      external_benefit_id?: string
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id?: string
       /**
        * External Customer Id
        * @description The ID in your system of the customer the license key must belong to. Can't be combined with `customer_id`.
        * @example usr_1337
        */
-      external_customer_id?: string | null
+      external_customer_id?: string
       /** Increment Usage */
-      increment_usage?: number | null
+      increment_usage?: number
       /**
        * Conditions
        * @description Key-value object allowing you to set conditions that must match when validating the license key.

@@ -3,6 +3,7 @@ from typing import cast
 from uuid import UUID
 
 import structlog
+from pydantic import MISSING
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import joinedload
 
@@ -312,7 +313,10 @@ class LicenseKeyService:
             customer_id=license_key.customer_id,
             benefit_id=license_key.benefit_id,
         )
-        if validate.increment_usage:
+        increment_usage = (
+            validate.increment_usage if validate.increment_usage is not MISSING else 0
+        )
+        if increment_usage:
             await session.refresh(
                 license_key,
                 attribute_names=[
@@ -332,7 +336,7 @@ class LicenseKeyService:
             bound_logger.info("license_key.validate.invalid_ttl")
             raise ResourceNotFound("License key has expired.")
 
-        if validate.activation_id:
+        if validate.activation_id is not MISSING:
             activation = await self.get_activation_or_raise(
                 session,
                 license_key=license_key,
@@ -344,11 +348,17 @@ class LicenseKeyService:
                 raise ResourceNotFound("License key does not match required conditions")
             license_key.activation = activation
 
-        if validate.benefit_id and validate.benefit_id != license_key.benefit_id:
+        if (
+            validate.benefit_id is not MISSING
+            and validate.benefit_id != license_key.benefit_id
+        ):
             bound_logger.info("license_key.validate.invalid_benefit")
             raise ResourceNotFound("License key does not match given benefit.")
 
-        if validate.customer_id and validate.customer_id != license_key.customer_id:
+        if (
+            validate.customer_id is not MISSING
+            and validate.customer_id != license_key.customer_id
+        ):
             bound_logger.warning(
                 "license_key.validate.invalid_owner",
                 validate_customer_id=validate.customer_id,
@@ -356,32 +366,32 @@ class LicenseKeyService:
             raise ResourceNotFound("License key does not match given user.")
 
         if (
-            validate.external_benefit_id is not None
+            validate.external_benefit_id is not MISSING
             and validate.external_benefit_id != license_key.benefit.external_id
         ):
             bound_logger.info("license_key.validate.invalid_benefit")
             raise ResourceNotFound("License key does not match given benefit.")
 
         if (
-            validate.external_customer_id is not None
+            validate.external_customer_id is not MISSING
             and validate.external_customer_id != license_key.customer.external_id
         ):
             bound_logger.warning("license_key.validate.invalid_owner")
             raise ResourceNotFound("License key does not match given user.")
 
-        if validate.increment_usage and license_key.limit_usage:
+        if increment_usage and license_key.limit_usage:
             remaining = license_key.limit_usage - license_key.usage
-            if validate.increment_usage > remaining:
+            if increment_usage > remaining:
                 bound_logger.info(
                     "license_key.validate.insufficient_usage",
                     usage_remaining=remaining,
-                    usage_requested=validate.increment_usage,
+                    usage_requested=increment_usage,
                 )
                 raise BadRequest(f"License key only has {remaining} more usages.")
 
         await session.refresh(license_key, attribute_names=["subscription", "order"])
-        if validate.increment_usage:
-            license_key.mark_validated(increment_usage=validate.increment_usage)
+        if increment_usage:
+            license_key.mark_validated(increment_usage=increment_usage)
             session.add(license_key)
         elif not await LicenseKeyRepository.from_session(session).record_validation(
             license_key

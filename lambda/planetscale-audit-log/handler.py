@@ -1,16 +1,27 @@
 import json
 import os
 import urllib.request
-from collections import defaultdict
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
+from functools import cache
 from typing import Any
 
 import boto3
 
-HOURS = 3
+# An entry can reach the API a little after it happened, so an hour is only
+# exported once it has been over for this long.
+SETTLE = timedelta(minutes=15)
 
 s3 = boto3.client("s3")
+secretsmanager = boto3.client("secretsmanager")
+
+
+@cache
+def planetscale_token() -> str:
+    secret = secretsmanager.get_secret_value(
+        SecretId=os.environ["PLANETSCALE_TOKEN_SECRET_ARN"]
+    )
+    return secret["SecretString"]
 
 
 def fetch_page(starting_after: str | None) -> dict[str, Any]:
@@ -18,7 +29,7 @@ def fetch_page(starting_after: str | None) -> dict[str, Any]:
     if starting_after:
         url += f"&starting_after={starting_after}"
     request = urllib.request.Request(
-        url, headers={"Authorization": f"Bearer {os.environ['PLANETSCALE_TOKEN']}"}
+        url, headers={"Authorization": f"Bearer {planetscale_token()}"}
     )
     with urllib.request.urlopen(request, timeout=30) as response:
         return json.load(response)
@@ -34,24 +45,44 @@ def audit_log() -> Iterator[dict[str, Any]]:
         cursor = page["cursor_end"]
 
 
-# Entries come newest first. Each run rewrites the last few complete hours,
-# one object per hour, so the next run redoes the work of a failed one.
+def start_of_hour(moment: datetime) -> datetime:
+    return moment.replace(minute=0, second=0, microsecond=0)
+
+
+def object_key(hour: datetime) -> str:
+    return f"{hour:%Y/%m/%d/%H}.jsonl"
+
+
+def exported(hour: datetime) -> bool:
+    listing = s3.list_objects_v2(
+        Bucket=os.environ["BUCKET"], Prefix=object_key(hour), MaxKeys=1
+    )
+    return listing["KeyCount"] > 0
+
+
+# Entries come newest first. Walk back to the newest hour that is already in
+# the bucket, then write the hours after it oldest first, one object each:
+# a run that fails part way leaves no gap for the next one to skip over.
 def handler(event: Any, context: Any) -> dict[str, int]:
-    end = datetime.now(UTC).replace(minute=0, second=0, microsecond=0)
-    start = end - timedelta(hours=HOURS)
+    end = start_of_hour(datetime.now(UTC) - SETTLE)
 
-    hours: dict[datetime, list[dict[str, Any]]] = defaultdict(list)
+    hours: dict[datetime, list[dict[str, Any]]] = {}
     for entry in audit_log():
-        created_at = datetime.fromisoformat(entry["created_at"]).astimezone(UTC)
-        if created_at < start:
-            break
-        if created_at < end:
-            hours[created_at.replace(minute=0, second=0, microsecond=0)].append(entry)
+        hour = start_of_hour(
+            datetime.fromisoformat(entry["created_at"]).astimezone(UTC)
+        )
+        if hour >= end:
+            continue
+        if hour not in hours:
+            if exported(hour):
+                break
+            hours[hour] = []
+        hours[hour].append(entry)
 
-    for hour, entries in hours.items():
+    for hour, entries in reversed(hours.items()):
         s3.put_object(
             Bucket=os.environ["BUCKET"],
-            Key=f"{hour:%Y/%m/%d/%H}.jsonl",
+            Key=object_key(hour),
             Body="".join(json.dumps(entry) + "\n" for entry in reversed(entries)),
             ContentType="application/x-ndjson",
         )

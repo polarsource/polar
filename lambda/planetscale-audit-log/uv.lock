@@ -101,6 +101,9 @@ wheels = [
 s3 = [
     { name = "mypy-boto3-s3" },
 ]
+secretsmanager = [
+    { name = "mypy-boto3-secretsmanager" },
+]
 
 [[package]]
 name = "botocore"
@@ -699,6 +702,15 @@ wheels = [
 ]
 
 [[package]]
+name = "mypy-boto3-secretsmanager"
+version = "1.44.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/a1/dd89735f1d78c49f22df2b3c44861d09aae1cf66d8e7ecc2da18b8881e87/mypy_boto3_secretsmanager-1.44.2.tar.gz", hash = "sha256:298bcffdbff85bf5dbe02ff7b444f2aff46110e0d7ffe5729ce8a2f33c56cfa5", size = 20905, upload-time = "2026-11-13T00:33:11.064Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/40/4c/9239424d9cd8377bb965727aaf4372c1462651aff025e802cd039e49a425/mypy_boto3_secretsmanager-1.44.2-py3-none-any.whl", hash = "sha256:a75e82a888171020ccc6c9011cb5b4c0212788d6b29fbe57d0f7af3c0614113e", size = 28995, upload-time = "2026-11-13T00:33:08.031Z" },
+]
+
+[[package]]
 name = "mypy-extensions"
 version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -733,7 +745,7 @@ source = { virtual = "." }
 [package.dev-dependencies]
 dev = [
     { name = "boto3" },
-    { name = "boto3-stubs", extra = ["s3"] },
+    { name = "boto3-stubs", extra = ["s3", "secretsmanager"] },
     { name = "moto", extra = ["s3"] },
     { name = "mypy" },
     { name = "pytest" },
@@ -746,8 +758,8 @@ dev = [
 [package.metadata.requires-dev]
 dev = [
     { name = "boto3", specifier = ">=1.43.64" },
-    { name = "boto3-stubs", extras = ["s3"], specifier = ">=1.43.64" },
-    { name = "moto", extras = ["s3"], specifier = ">=5.2.2" },
+    { name = "boto3-stubs", extras = ["s3", "secretsmanager"], specifier = ">=1.43.64" },
+    { name = "moto", extras = ["s3", "secretsmanager"], specifier = ">=5.2.2" },
     { name = "mypy", specifier = ">=2.3.0" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "ruff", specifier = ">=0.16.1" },

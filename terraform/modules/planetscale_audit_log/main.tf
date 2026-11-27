@@ -10,6 +10,15 @@ data "archive_file" "placeholder" {
   }
 }
 
+resource "aws_secretsmanager_secret" "planetscale_token" {
+  name = "${var.name}-token"
+}
+
+resource "aws_secretsmanager_secret_version" "planetscale_token" {
+  secret_id     = aws_secretsmanager_secret.planetscale_token.id
+  secret_string = var.token
+}
+
 data "aws_iam_policy_document" "assume" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -30,6 +39,16 @@ data "aws_iam_policy_document" "export" {
   statement {
     actions   = ["s3:PutObject"]
     resources = ["arn:aws:s3:::${var.bucket_name}/*"]
+  }
+
+  statement {
+    actions   = ["s3:ListBucket"]
+    resources = ["arn:aws:s3:::${var.bucket_name}"]
+  }
+
+  statement {
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [aws_secretsmanager_secret.planetscale_token.arn]
   }
 
   statement {
@@ -59,9 +78,9 @@ resource "aws_lambda_function" "export" {
 
   environment {
     variables = {
-      PLANETSCALE_ORGANIZATION = var.organization
-      PLANETSCALE_TOKEN        = var.token
-      BUCKET                   = var.bucket_name
+      PLANETSCALE_ORGANIZATION     = var.organization
+      PLANETSCALE_TOKEN_SECRET_ARN = aws_secretsmanager_secret.planetscale_token.arn
+      BUCKET                       = var.bucket_name
     }
   }
 

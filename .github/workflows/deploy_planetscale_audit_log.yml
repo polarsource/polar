@@ -45,3 +45,4 @@ jobs:
           aws lambda update-function-code \
             --function-name polar-production-planetscale-audit-log \
             --zip-file fileb://lambda/planetscale-audit-log/package.zip > /dev/null
+          aws lambda wait function-updated-v2 --function-name polar-production-planetscale-audit-log

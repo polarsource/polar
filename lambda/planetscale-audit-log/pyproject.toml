@@ -10,8 +10,8 @@ dev = [
 "pytest>=9.1.1",
 "mypy>=2.3.0",
 "boto3>=1.43.64",
-"boto3-stubs[s3]>=1.43.64",
-"moto[s3]>=5.2.2",
+"boto3-stubs[s3,secretsmanager]>=1.43.64",
+"moto[s3,secretsmanager]>=5.2.2",
 "ruff>=0.16.1",
 ]
 

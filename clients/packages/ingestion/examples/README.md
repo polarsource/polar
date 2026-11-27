@@ -49,8 +49,6 @@ A strategy wraps something you already use, like an LLM client or an S3 client, 
 | [`opentelemetry.ts`](./opentelemetry.ts) | OpenTelemetry exporter | Spans you already record           |
 | [`events.ts`](./events.ts)               | None                   | Events you build yourself          |
 
-`opentelemetry.ts` doesn't use the metering helper yet. The exporter sends each batch of spans in its own request.
-
 ## Send buffered events
 
 Events wait in the buffer until it sends the next batch, so make sure they leave before your process stops:

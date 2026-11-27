@@ -1,0 +1,76 @@
+sdk/generator/python/template/polar/base.py
+  s_7671299f8b7483::t_7b7676f17614a0 1-2,5,7,10,24-34,347-353,355-363,372-375,377-391,413-591
+  s_7671299f8b7483::t_c3186999f4b652 376,410
+  s_7671299f8b7483::t_44d2fd5b73cdf1 14,341
+  s_7671299f8b7483::t_9e29191ce75ef9 338-340
+  s_7671299f8b7483::t_fe33aac3f7cdfd 392-394,407-409
+  s_7671299f8b7483::t_7c12b4683fc89e 411-412
+  s_7671299f8b7483::t_2ae427843f3f88 337,395-406
+sdk/generator/python/template/polar/version/client.py
+  s_7671299f8b7483::t_7b7676f17614a0 1-2,6-8,53-56,59-63
+sdk/generator/python/template/tests/metering/test_metering.py
+  s_7671299f8b7483::t_44d2fd5b73cdf1 211-212,214-221
+  s_7671299f8b7483::t_998b61c12a78f6 330-333
+  s_7671299f8b7483::t_c3186999f4b652 334-341,343-345,347-348
+  s_7671299f8b7483::t_6d56b0730b64a1 40,42,45,64,67-72,108-112,140-141,150-152,170,172,185-189,208,213,252-257,264,278-279,291,294,301,313,316-319,321-329
+sdk/generator/python/template/README.md
+  s_7671299f8b7483::t_8b1405aebfef64 151,153-155,158,163-166,169-171,175-178,181-182,184,188-194,197-199,206,211,220-221,233-234,263,283
+sdk/generator/python/template/polar/outpost/client.py
+  s_7671299f8b7483::t_7b7676f17614a0 46,412
+sdk/generator/python/template/polar/metering/__init__.py
+  s_7671299f8b7483::t_7b7676f17614a0 14-16
+sdk/generator/python/template/polar/actor.py
+  s_7671299f8b7483::t_ae78fe7b1b7906 1-2,14-22,25,31,33-44,46-49,51-56,58-72
+  s_7671299f8b7483::t_7b7676f17614a0 7-12,23
+  s_7671299f8b7483::t_ecd712e5fc048b 3-6,13,24,26-30,32,45,50,57
+sdk/generator/python/emitter.py
+  s_7671299f8b7483::t_7b7676f17614a0 133
+sdk/generator/python/template/polar/metering/events.py
+  s_7671299f8b7483::t_7b7676f17614a0 51-66
+sdk/generator/python/template/tests/outpost/test_client.py
+  s_7671299f8b7483::t_6d56b0730b64a1 41,2277-2279,2281,2288,2324-2328,2334,2361-2363,2367-2368,2405-2407,2410,2412,2431-2433,2436,2438,2442
+sdk/generator/python/template/pyproject.toml
+  s_7671299f8b7483::t_44d2fd5b73cdf1 18,26,44
+sdk/python/README.md
+  s_7671299f8b7483::t_95496a3dc07cdf 149,151-153,156,161-164,167-169,173-176,179-180,182,186-192,195-197,204,209,218-219,231-232,261-262,274,279-283
+sdk/python/polar/actor.py
+  s_7671299f8b7483::t_1032057d0d7538 1-71
+sdk/python/polar/base.py
+  s_7671299f8b7483::t_e050011d695bc6 1-2,5,7,10,14,24-38,199,343-347,353-359,361-369,378-610,618,627
+sdk/python/polar/metering/__init__.py
+  s_7671299f8b7483::t_ab2eed4a720001 14-16
+sdk/python/polar/metering/events.py
+  s_7671299f8b7483::t_dac9de97d8f7f3 51-64
+sdk/python/polar/outpost/client.py
+  s_7671299f8b7483::t_f8856ecef8ade7 46,767
+sdk/python/polar/v2026_04/client.py
+  s_7671299f8b7483::t_6486cc8299df0b 1-2,6-10,107-110,113-122
+sdk/python/polar/v2026_10/client.py
+  s_7671299f8b7483::t_fd5fc71e1a863f 1-2,6-10,107-110,113-122
+sdk/python/polar/v2027_01/client.py
+  s_7671299f8b7483::t_2495d08cce0823 1-2,6-10,107-110,113-122
+sdk/python/pyproject.toml
+  s_7671299f8b7483::t_39bad9afc37859 18,26,44
+sdk/python/tests/metering/test_metering.py
+  s_7671299f8b7483::t_c8e6087bfad395 40,42,45,64,67-72,108-112,140-141,150-152,170,172,185-191,210-215,218-230,265-273,280,297-298,310,313,320,335,338-341,343-363,365-367,369-370
+sdk/python/tests/outpost/test_client.py
+  s_7671299f8b7483::t_f81f5ac50b58bd 40,2304-2311,2313,2322,2358-2370,2376,2403-2410,2414-2415,2452-2459,2462,2464,2483-2490,2493,2495,2499
+sdk/python/uv.lock
+  s_7671299f8b7483::t_4ca0d998017c22 2,449,476
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b54311b6db961ebf6fb11024e6a2c775d2f70b3b",
+  "prompts": {},
+  "sessions": {
+    "s_7671299f8b7483": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21d18-2190-7bb2-991b-09c4eaafbef3",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

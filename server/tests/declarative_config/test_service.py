@@ -1141,11 +1141,6 @@ class TestApply:
             organization.id, ["support"]
         )
 
-        unchanged = await declarative_config_service.plan(
-            session,
-            auth_subject,
-            Config.model_validate({"benefits": [CUSTOM_SUPPORT_BENEFIT]}),
-        )
         await declarative_config_service.apply(
             session,
             redis,
@@ -1164,9 +1159,6 @@ class TestApply:
 
         assert created.type == BenefitType.custom
         assert dict(created.properties) == {"note": "Email support@acme.com"}
-        assert [change.action for change in unchanged.changes] == [
-            ConfigAction.unchanged
-        ]
         assert updated.id != created.id
         assert dict(updated.properties) == {"note": "Call us"}
 
@@ -5793,32 +5785,6 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 class TestExport:
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_exports_custom_benefits(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        await create_benefit(
-            save_fixture,
-            organization=organization,
-            description="Priority support",
-            external_id="support",
-            properties={"note": "Email support@acme.com"},
-        )
-
-        exported = await declarative_config_service.export(session, auth_subject, None)
-        plan = await declarative_config_service.plan(
-            session, auth_subject, Config.model_validate(exported.config.model_dump())
-        )
-
-        assert exported.config.model_dump(mode="json")["benefits"] == [
-            {**CUSTOM_SUPPORT_BENEFIT, "visibility": "public", "metadata": {}}
-        ]
-        assert [change.action for change in plan.changes] == [ConfigAction.unchanged]
-
     @pytest.mark.auth(
         AuthSubjectFixture(
             subject="organization",

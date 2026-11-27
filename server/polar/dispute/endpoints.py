@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends, Query
 
 from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_resource_permission
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Dispute
@@ -89,11 +90,13 @@ async def accept(
     Closes the dispute with the processor (settling it as `lost`) and records
     the merchant's decision on the dispute's support case.
     """
-    dispute = await dispute_service.get(
-        session, auth_subject, id, permission=OrganizationPermission.sales_manage
-    )
+    dispute = await dispute_service.get(session, auth_subject, id)
 
     if dispute is None:
         raise ResourceNotFound()
+
+    await assert_resource_permission(
+        session, auth_subject, dispute.payment, OrganizationPermission.sales_manage
+    )
 
     return await dispute_service.accept(session, dispute)

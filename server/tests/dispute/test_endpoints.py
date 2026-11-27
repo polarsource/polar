@@ -204,6 +204,19 @@ class TestAcceptDispute:
         assert response.status_code == 401
 
     @pytest.mark.auth
+    async def test_other_organization_dispute_not_found(
+        self,
+        client: AsyncClient,
+        dispute_organization_second: Dispute,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/v1/disputes/{dispute_organization_second.id}/accept"
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
     async def test_requires_sales_manage(
         self,
         client: AsyncClient,
@@ -222,7 +235,7 @@ class TestAcceptDispute:
         url = f"/v1/disputes/{dispute.id}"
 
         assert (await client.get(url)).status_code == 200
-        assert (await client.post(f"{url}/accept")).status_code == 404
+        assert (await client.post(f"{url}/accept")).status_code == 403
         close_mock.assert_not_awaited()
 
     @pytest.mark.auth

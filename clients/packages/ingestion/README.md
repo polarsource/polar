@@ -99,6 +99,8 @@ await polar.events.ingest({
 
 Want to report events regarding Large Language Model usage, S3 file uploads or something else? Our Ingestion strategies are customized to make it as seamless as possible to fire ingestion events for complex needs.
 
+Runnable examples for every strategy, and every way to set up the LLM strategy, are in [`examples/`](./examples).
+
 ### LLM Strategy
 
 Wrap any LLM model from the `@ai-sdk/*` library, a TanStack AI text adapter, or an OpenAI or Anthropic client, to automatically fire prompt- & completion tokens used by every model call.

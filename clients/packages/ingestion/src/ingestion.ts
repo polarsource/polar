@@ -248,7 +248,7 @@ export function Ingestion(config?: IngestionTokenConfig | Metering) {
 
       return strategy
     }) satisfies IngestionStrategyAttacher,
-    ingest: (events: (IngestionEvent | IngestionCamelCaseEvent)[]) =>
+    ingest: async (events: (IngestionEvent | IngestionCamelCaseEvent)[]) =>
       createTokenClient(config).events.ingest({
         events: events.map((event) => encodeEvent(event) as IngestionEvent),
       }),

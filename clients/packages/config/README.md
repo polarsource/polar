@@ -44,5 +44,3 @@ polar config validate
 polar config draft
 polar config publish
 ```
-
-Publishing needs the `catalog:publish` scope. Give it only to the tokens that should change live pricing, such as the one your deploy pipeline uses.

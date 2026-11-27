@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Annotated, Literal, Self
 
 from dateutil.relativedelta import relativedelta
-from pydantic import MISSING, UUID4, AliasChoices, AliasPath, Field
+from pydantic import MISSING, UUID4, AliasChoices, AliasPath, Field, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.benefit.schemas import BenefitID
@@ -13,6 +13,7 @@ from polar.benefit.strategies.license_keys.properties import (
 )
 from polar.customer.schemas.customer import CustomerBase
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound, Unauthorized
+from polar.kit.external_id import ExternalID
 from polar.kit.metadata import (
     MAXIMUM_KEYS,
     METADATA_DESCRIPTION,
@@ -112,11 +113,45 @@ MetaField = Annotated[
 class LicenseKeyValidate(Schema):
     key: str
     organization_id: UUID4
-    activation_id: UUID4 | None = None
-    benefit_id: BenefitID | None = None
-    customer_id: UUID4 | None = None
-    increment_usage: int | None = Field(default=None, ge=0)
+    activation_id: Omissible[UUID4] = MISSING
+    benefit_id: Omissible[BenefitID] = MISSING
+    external_benefit_id: Annotated[
+        Omissible[ExternalID],
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "The ID in your system of the benefit the license key must belong "
+                "to. Matches every version of the benefit. "
+                "Can't be combined with `benefit_id`."
+            ),
+            examples=["ext_1337"],
+        ),
+    ] = MISSING
+    customer_id: Omissible[UUID4] = MISSING
+    external_customer_id: Annotated[
+        Omissible[str],
+        Version(starting_from=V2027_01),
+        Field(
+            min_length=1,
+            description=(
+                "The ID in your system of the customer the license key must belong "
+                "to. Can't be combined with `customer_id`."
+            ),
+            examples=["usr_1337"],
+        ),
+    ] = MISSING
+    increment_usage: Omissible[Annotated[int, Field(ge=0)]] = MISSING
     conditions: ConditionsField
+
+    @model_validator(mode="after")
+    def _validate_references(self) -> Self:
+        if self.benefit_id is not MISSING and self.external_benefit_id is not MISSING:
+            raise ValueError("benefit_id and external_benefit_id can't be set together")
+        if self.customer_id is not MISSING and self.external_customer_id is not MISSING:
+            raise ValueError(
+                "customer_id and external_customer_id can't be set together"
+            )
+        return self
 
 
 class LicenseKeyActivate(Schema):

@@ -746,6 +746,34 @@ class TestCustomerUpdateGrant:
 
 
 @pytest.fixture
+async def license_key_external_ids(
+    session: AsyncSession,
+    redis: Redis,
+    save_fixture: SaveFixture,
+    organization: Organization,
+    product: Product,
+    customer: Customer,
+) -> LicenseKey:
+    customer.external_id = "usr_1337"
+    await save_fixture(customer)
+    benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+        session,
+        redis,
+        save_fixture,
+        customer=customer,
+        organization=organization,
+        product=product,
+        properties=BenefitLicenseKeysCreateProperties(prefix="testing"),
+    )
+    benefit.external_id = "pro_license"
+    await save_fixture(benefit)
+    repository = LicenseKeyRepository.from_session(session)
+    lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+    assert lk is not None
+    return lk
+
+
+@pytest.fixture
 async def license_key_organization_second(
     session: AsyncSession,
     redis: Redis,
@@ -1119,6 +1147,116 @@ class TestValidateLicenseKey:
         assert data["subscription"] is None
         assert data["order_id"] == str(order.id)
         assert data["order"]["id"] == str(order.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_external_ids(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        license_key_external_ids: LicenseKey,
+    ) -> None:
+        response = await client.post(
+            "/v1/license-keys/validate",
+            json={
+                "key": license_key_external_ids.key,
+                "organization_id": str(license_key_external_ids.organization_id),
+                "external_benefit_id": "pro_license",
+                "external_customer_id": "usr_1337",
+            },
+        )
+
+        assert response.status_code == 200
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        "references",
+        [
+            {"external_benefit_id": "other_license"},
+            {"external_customer_id": "usr_other"},
+        ],
+    )
+    async def test_external_ids_mismatch(
+        self,
+        references: dict[str, str],
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        license_key_external_ids: LicenseKey,
+    ) -> None:
+        response = await client.post(
+            "/v1/license-keys/validate",
+            json={
+                "key": license_key_external_ids.key,
+                "organization_id": str(license_key_external_ids.organization_id),
+                **references,
+            },
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_external_and_polar_ids(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        license_key_external_ids: LicenseKey,
+    ) -> None:
+        response = await client.post(
+            "/v1/license-keys/validate",
+            json={
+                "key": license_key_external_ids.key,
+                "organization_id": str(license_key_external_ids.organization_id),
+                "benefit_id": str(license_key_external_ids.benefit_id),
+                "external_benefit_id": "pro_license",
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("api_version", "expected_status_code"),
+        [(V2026_10, 200), (V2027_01, 422)],
+    )
+    async def test_null_references(
+        self,
+        api_version: APIVersion,
+        expected_status_code: int,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        license_key_external_ids: LicenseKey,
+    ) -> None:
+        response = await client.post(
+            "/v1/license-keys/validate",
+            json={
+                "key": license_key_external_ids.key,
+                "organization_id": str(license_key_external_ids.organization_id),
+                "activation_id": None,
+                "benefit_id": None,
+                "customer_id": None,
+                "increment_usage": None,
+            },
+            headers={"Polar-Version": str(api_version)},
+        )
+
+        assert response.status_code == expected_status_code
+
+    @pytest.mark.api_version(V2027_01)
+    async def test_customer_portal_external_ids_mismatch(
+        self, client: AsyncClient, license_key_external_ids: LicenseKey
+    ) -> None:
+        response = await client.post(
+            "/v1/customer-portal/license-keys/validate",
+            json={
+                "key": license_key_external_ids.key,
+                "organization_id": str(license_key_external_ids.organization_id),
+                "external_customer_id": "usr_other",
+            },
+        )
+
+        assert response.status_code == 404
 
 
 @pytest.mark.anyio

@@ -5,6 +5,7 @@ from unittest.mock import call
 from uuid import UUID
 
 import pytest
+from pydantic import MISSING
 from pytest_mock import MockerFixture
 from sqlalchemy import delete, func, select, update
 
@@ -148,7 +149,7 @@ class TestConcurrentActivation:
 async def _attempt_validation(
     sessionmaker: AsyncSessionMaker,
     license_key_id: UUID,
-    increment_usage: int | None = 1,
+    increment_usage: int | MISSING = 1,
 ) -> bool:
     async with sessionmaker() as session:
         repository = LicenseKeyRepository.from_session(session)
@@ -223,13 +224,15 @@ class TestConcurrentValidation:
         ("increment_usage", "column", "expected_successes", "expected_value"),
         [
             pytest.param(1, LicenseKey.usage, 3, 3, id="usage_limit_enforced"),
-            pytest.param(None, LicenseKey.validations, 5, 5, id="validations_counted"),
+            pytest.param(
+                MISSING, LicenseKey.validations, 5, 5, id="validations_counted"
+            ),
         ],
     )
     async def test_counters_under_concurrency(
         self,
         committed_license_key: tuple[AsyncSessionMaker, UUID],
-        increment_usage: int | None,
+        increment_usage: int | MISSING,
         column: Any,
         expected_successes: int,
         expected_value: int,

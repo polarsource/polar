@@ -708,7 +708,10 @@ test('renders settings as an object literal, a group per line', async () => {
           benefit_revocation_grace_period: 0,
         },
         customer_portal: { allow_pausing: true },
-        emails: { order_confirmation: false, card_expiring: false },
+        customer_notifications: {
+          send_order_confirmation: false,
+          send_card_expiring: false,
+        },
       },
       meters: [],
     }),
@@ -719,7 +722,7 @@ test('renders settings as an object literal, a group per line', async () => {
       "    payments: { currency: 'eur', tax: 'location' },",
       "    subscriptions: { prorationBehavior: 'invoice', benefitRevocationGracePeriod: 'immediately', preventTrialAbuse: true },",
       '    customerPortal: { allowPausing: true },',
-      '    emails: { orderConfirmation: false, cardExpiring: false },',
+      '    customerNotifications: { sendOrderConfirmation: false, sendCardExpiring: false },',
       '  },',
     ].join('\n'),
   )

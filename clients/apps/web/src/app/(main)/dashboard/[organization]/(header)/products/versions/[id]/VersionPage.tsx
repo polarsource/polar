@@ -210,7 +210,9 @@ export default function VersionPage({
           customer_portal: customerPortalSettings(
             organization.customer_portal_settings,
           ),
-          emails: customerEmailSettings(organization.customer_email_settings),
+          customer_notifications: customerEmailSettings(
+            organization.customer_email_settings,
+          ),
         })
       : undefined
   const settingsChanges: SettingChange[] =

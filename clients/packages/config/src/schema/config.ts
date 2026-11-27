@@ -69,22 +69,22 @@ export const SettingsConfig = Schema.Struct({
       show_metered_usage: Schema.optionalKey(Schema.Boolean),
     }),
   ),
-  emails: Schema.optionalKey(
+  customer_notifications: Schema.optionalKey(
     Schema.Struct({
-      order_confirmation: Schema.optionalKey(Schema.Boolean),
-      subscription_confirmation: Schema.optionalKey(Schema.Boolean),
-      trial_conversion_reminder: Schema.optionalKey(Schema.Boolean),
-      trial_converted: Schema.optionalKey(Schema.Boolean),
-      renewal_reminder: Schema.optionalKey(Schema.Boolean),
-      subscription_cycled: Schema.optionalKey(Schema.Boolean),
-      card_expiring: Schema.optionalKey(Schema.Boolean),
-      subscription_past_due: Schema.optionalKey(Schema.Boolean),
-      subscription_updated: Schema.optionalKey(Schema.Boolean),
-      subscription_paused: Schema.optionalKey(Schema.Boolean),
-      subscription_resumed: Schema.optionalKey(Schema.Boolean),
-      subscription_canceled: Schema.optionalKey(Schema.Boolean),
-      subscription_uncanceled: Schema.optionalKey(Schema.Boolean),
-      subscription_revoked: Schema.optionalKey(Schema.Boolean),
+      send_order_confirmation: Schema.optionalKey(Schema.Boolean),
+      send_subscription_confirmation: Schema.optionalKey(Schema.Boolean),
+      send_trial_conversion_reminder: Schema.optionalKey(Schema.Boolean),
+      send_trial_converted: Schema.optionalKey(Schema.Boolean),
+      send_renewal_reminder: Schema.optionalKey(Schema.Boolean),
+      send_subscription_cycled: Schema.optionalKey(Schema.Boolean),
+      send_card_expiring: Schema.optionalKey(Schema.Boolean),
+      send_subscription_past_due: Schema.optionalKey(Schema.Boolean),
+      send_subscription_updated: Schema.optionalKey(Schema.Boolean),
+      send_subscription_paused: Schema.optionalKey(Schema.Boolean),
+      send_subscription_resumed: Schema.optionalKey(Schema.Boolean),
+      send_subscription_canceled: Schema.optionalKey(Schema.Boolean),
+      send_subscription_uncanceled: Schema.optionalKey(Schema.Boolean),
+      send_subscription_revoked: Schema.optionalKey(Schema.Boolean),
     }),
   ),
 })
@@ -512,7 +512,7 @@ export const defineConfig = <
   Events extends EventDefinitions | undefined = undefined,
 >(
   input: {
-    /** Organization settings: payment defaults, how subscriptions behave, what customers can do in the customer portal and which emails they get. */
+    /** Organization settings: payment defaults, how subscriptions behave, what customers can do in the customer portal and which emails Polar sends them. */
     readonly settings?: SettingsInput
     /** The events your app sends, keyed by name. Meters count them. */
     readonly events?: (helpers: EventHelpers) => Events

@@ -181,6 +181,28 @@ def _delivered(ingest: dict[str, typing.Any]) -> list[list[str]]:
 
 
 @pytest.mark.anyio
+async def test_skips_periodic_drains_until_the_queue_has_work(
+    redis_connection: tuple[str, Redis],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, _ = redis_connection
+    monkeypatch.setattr("polar.metering.queue.redis.DRAIN_INTERVAL", 0.01)
+    queue = RedisEventQueue(url, stream=QUEUE)
+    ingest = AsyncMock()
+    drain = AsyncMock(wraps=queue._drain_queue)
+    monkeypatch.setattr(queue, "_drain_queue", drain)
+    async with queue.open(ingest=ingest):
+        await anyio.sleep(0.03)
+        drain.assert_not_awaited()
+        event = _usage("event-0", 10)
+        await queue.enqueue(event)
+        with anyio.fail_after(1):
+            while not ingest.await_count:
+                await anyio.sleep(0.01)
+        ingest.assert_awaited_once_with([event])
+
+
+@pytest.mark.anyio
 async def test_delivers_what_it_queued_on_its_own_without_a_flush(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,

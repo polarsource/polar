@@ -1,0 +1,29 @@
+sdk/generator/tests/typescript/test_emitter.py
+  s_7671299f8b7483::t_6d2e2586af7112 35,45-48
+sdk/generator/typescript/template/src/metering/client.ts
+  s_7671299f8b7483::t_6d2e2586af7112 42,191,222-242
+sdk/generator/tests/python/test_emitter.py
+  s_7671299f8b7483::t_6d2e2586af7112 64-65,68-70
+sdk/generator/typescript/template/src/base.test.ts
+  s_7671299f8b7483::t_819d5830090430 463-493
+sdk/typescript/src/base.test.ts
+  s_7671299f8b7483::t_d9fcb5f15f5c51 442-472
+sdk/typescript/src/metering/client.ts
+  s_7671299f8b7483::t_236124a8d2b0aa 43,193,224-248
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "370c50bf3d5409092d1ded6ed9a3afa1f3467a7c",
+  "prompts": {},
+  "sessions": {
+    "s_7671299f8b7483": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21d18-2190-7bb2-991b-09c4eaafbef3",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

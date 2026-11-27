@@ -5,11 +5,11 @@ import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button, Status, Text, type StatusColor } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
-import { useMemo, useState } from 'react'
+import Link from 'next/link'
+import { useParams, useSearchParams } from 'next/navigation'
+import { useMemo } from 'react'
 import { OrderDownloadActions } from '../Orders/OrderDownloadActions'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
-import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
 import { PortalDivider, PortalRow, PortalRows } from './PortalPrimitives'
 import { SeatManagementTable } from './SeatManagementTable'
 
@@ -36,14 +36,13 @@ const CustomerPortalOrder = ({
   api,
   order,
   customerSessionToken,
-  themingPreset,
 }: {
   api: Client
   order: schemas['CustomerOrder']
   customerSessionToken: string
-  themingPreset: ThemingPresetProps
 }) => {
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+  const params = useParams<{ organization: string }>()
+  const searchParams = useSearchParams()
 
   const isPartiallyOrFullyRefunded = useMemo(() => {
     return order.status === 'partially_refunded' || order.status === 'refunded'
@@ -87,9 +86,11 @@ const CustomerPortalOrder = ({
             </Box>
           </Box>
           {canRetryOrderPayment(order) && (
-            <Button size="sm" onClick={() => setIsPaymentModalOpen(true)}>
-              Retry payment
-            </Button>
+            <Link
+              href={`/${params.organization}/portal/orders/${order.id}/pay?${searchParams.toString()}`}
+            >
+              <Button size="sm">Retry payment</Button>
+            </Link>
           )}
         </Box>
 
@@ -188,14 +189,6 @@ const CustomerPortalOrder = ({
         api={api}
         subscriptionId={order.subscription_id ?? undefined}
         orderId={order.id}
-      />
-
-      <OrderPaymentRetryModal
-        order={order}
-        api={api}
-        isOpen={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
-        themingPreset={themingPreset}
       />
     </Box>
   )

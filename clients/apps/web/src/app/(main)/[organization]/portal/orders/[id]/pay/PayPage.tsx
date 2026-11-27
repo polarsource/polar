@@ -1,7 +1,7 @@
 'use client'
 
 import { PortalBackLink } from '@/components/CustomerPortal/PortalPrimitives'
-import { ReactivateSubscription } from '@/components/CustomerPortal/ReactivateSubscription/ReactivateSubscription'
+import { OrderPayment } from '@/components/CustomerPortal/OrderPayment/OrderPayment'
 import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import { Avatar, Text } from '@polar-sh/orbit'
@@ -9,19 +9,18 @@ import { Box } from '@polar-sh/orbit/Box'
 import { useSearchParams } from 'next/navigation'
 import { PoweredByPolar } from '../../../PortalShell'
 
-const ReactivatePage = ({
+const PayPage = ({
   organization,
-  subscription,
   order,
   customerSessionToken,
 }: {
   organization: schemas['CustomerOrganization']
-  subscription: schemas['CustomerSubscription']
-  order: schemas['CustomerOrder'] | null
+  order: schemas['CustomerOrder']
   customerSessionToken: string
 }) => {
   const searchParams = useSearchParams()
   const api = createClientSideAPI(customerSessionToken)
+  const backHref = `/${organization.slug}/portal/overview?${searchParams.toString()}`
   return (
     <Box
       minHeight="100vh"
@@ -33,9 +32,7 @@ const ReactivatePage = ({
     >
       <Box width="100%" maxWidth={540} flexDirection="column" rowGap="2xl">
         <Box flexDirection="column" rowGap="xl">
-          <PortalBackLink
-            href={`/${organization.slug}/portal/subscriptions/${subscription.id}?${searchParams.toString()}`}
-          >
+          <PortalBackLink href={backHref}>
             Back to customer portal
           </PortalBackLink>
           <Box alignItems="center" columnGap="m">
@@ -49,11 +46,7 @@ const ReactivatePage = ({
             </Text>
           </Box>
         </Box>
-        <ReactivateSubscription
-          api={api}
-          subscription={subscription}
-          order={order}
-        />
+        <OrderPayment api={api} order={order} doneHref={backHref} />
         <Box justifyContent="center">
           <PoweredByPolar />
         </Box>
@@ -62,4 +55,4 @@ const ReactivatePage = ({
   )
 }
 
-export default ReactivatePage
+export default PayPage

@@ -5,7 +5,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { FIXED_STATE_OPTIONS } from '@polar-sh/ui/lib/states'
 import { BillingDetailsFields } from '../BillingDetailsFields'
 import { PortalSection, PortalText } from '../PortalPrimitives'
-import { ReactivationCard } from './ReactivationCard'
+import { OrderPaymentCard } from './OrderPaymentCard'
 
 const formatState = (country: string, state: string) =>
   FIXED_STATE_OPTIONS[country]?.[state] ?? state.replace(`${country}-`, '')
@@ -47,13 +47,13 @@ export const BillingDetailsCard = ({
   order: schemas['CustomerOrder']
   customer: schemas['CustomerPortalCustomer']
   editing: boolean
-  onEdit: () => void
+  onEdit?: () => void
   onCancel?: () => void
   onSave?: () => void
   saving?: boolean
   disabled?: boolean
 }) => (
-  <ReactivationCard>
+  <OrderPaymentCard>
     <PortalSection
       title="Billing details"
       actions={
@@ -68,7 +68,7 @@ export const BillingDetailsCard = ({
               Cancel
             </Button>
           ) : null
-        ) : (
+        ) : onEdit ? (
           <Button
             variant="secondary"
             size="sm"
@@ -77,7 +77,7 @@ export const BillingDetailsCard = ({
           >
             Edit billing details
           </Button>
-        )
+        ) : null
       }
     >
       {editing ? (
@@ -101,5 +101,5 @@ export const BillingDetailsCard = ({
         </Box>
       )}
     </PortalSection>
-  </ReactivationCard>
+  </OrderPaymentCard>
 )

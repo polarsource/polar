@@ -22,7 +22,7 @@ import {
 } from '../BillingDetailsFields'
 import { BillingDetailsCard } from './BillingDetailsCard'
 import { PaymentMethodCard } from './PaymentMethodCard'
-import { useReactivationPayment } from './useReactivationPayment'
+import { useOrderPayment } from './useOrderPayment'
 
 type SavedCard = schemas['PaymentMethodCard'] | schemas['PaymentMethodKrCard']
 
@@ -43,7 +43,7 @@ const getTaxAddressKey = (
   return values.every(Boolean) ? JSON.stringify(values) : null
 }
 
-export const ReactivateSubscriptionForm = ({
+export const OrderPaymentForm = ({
   api,
   order,
   customer,
@@ -61,9 +61,13 @@ export const ReactivateSubscriptionForm = ({
   const stripe = useStripe()
   const elements = useElements()
   const updateOrder = useCustomerOrderUpdate(api)
-  const { state, pay, reset } = useReactivationPayment({
+  // A draft order's amounts follow its billing details. Once finalized (e.g. a
+  // past-due renewal), the tax-relevant details and the tax ID are fixed.
+  const isDraft = order.status === 'draft'
+  const { state, pay, reset } = useOrderPayment({
     api,
     orderId: order.id,
+    isDraft,
   })
   const [savedCardId, setSavedCardId] = useState<string | null>(null)
   const [useNewCard, setUseNewCard] = useState(savedCards.length === 0)
@@ -87,7 +91,10 @@ export const ReactivateSubscriptionForm = ({
     if (state.status === 'succeeded') {
       onSucceeded()
     }
-  }, [state.status, onSucceeded])
+    // Only on the transition: the callback changes identity on every render,
+    // and re-running it would repeat the toast and navigation.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.status])
 
   const showValidationErrors = (errors: schemas['ValidationError'][]) => {
     setValidationErrors(errors, setError)
@@ -101,7 +108,7 @@ export const ReactivateSubscriptionForm = ({
       body: {
         billing_name: data.billing_name,
         billing_address: data.billing_address ?? undefined,
-        tax_id: data.tax_id,
+        ...(isDraft ? { tax_id: data.tax_id } : {}),
       },
     })
     if (!updated) {
@@ -123,7 +130,7 @@ export const ReactivateSubscriptionForm = ({
   // Recalculate tax as soon as the tax-relevant address fields change, so
   // the summary reflects the new total before the customer confirms.
   useEffect(() => {
-    if (!taxAddressKey || taxAddressKey === orderTaxAddressKey) {
+    if (!isDraft || !taxAddressKey || taxAddressKey === orderTaxAddressKey) {
       return
     }
     const address = getValues('billing_address')
@@ -197,9 +204,18 @@ export const ReactivateSubscriptionForm = ({
     state.status === 'confirming' ||
     state.status === 'succeeded'
 
-  const submitLabel = order.is_payment_required
-    ? `Pay ${formatCurrency('compact')(order.due_amount, order.currency)} and subscribe`
-    : 'Reactivate subscription'
+  const formattedDueAmount = formatCurrency('compact')(
+    order.due_amount,
+    order.currency,
+  )
+  const submitLabel = !isDraft
+    ? `Pay ${formattedDueAmount}`
+    : order.is_payment_required
+      ? `Pay ${formattedDueAmount} and subscribe`
+      : 'Reactivate subscription'
+
+  const canEditBilling =
+    isDraft || !hasCompleteBillingAddress(order.billing_address)
 
   return (
     <Form {...form}>
@@ -208,7 +224,7 @@ export const ReactivateSubscriptionForm = ({
           order={order}
           customer={customer}
           editing={editingBilling}
-          onEdit={() => setEditingBilling(true)}
+          onEdit={canEditBilling ? () => setEditingBilling(true) : undefined}
           onCancel={
             hasCompleteBillingAddress(order.billing_address)
               ? () => {

@@ -3,7 +3,7 @@ import { Button } from '@polar-sh/orbit'
 import { PaymentElement } from '@stripe/react-stripe-js'
 import { PortalSection } from '../PortalPrimitives'
 import { SavedCardsSelector } from '../SavedCardsSelector'
-import { ReactivationCard } from './ReactivationCard'
+import { OrderPaymentCard } from './OrderPaymentCard'
 
 type SavedCard = schemas['PaymentMethodCard'] | schemas['PaymentMethodKrCard']
 
@@ -20,7 +20,7 @@ export const PaymentMethodCard = ({
   onSelectSavedCard: (paymentMethodId: string | null) => void
   disabled?: boolean
 }) => (
-  <ReactivationCard>
+  <OrderPaymentCard>
     <PortalSection
       title="Payment method"
       actions={
@@ -72,5 +72,5 @@ export const PaymentMethodCard = ({
         />
       )}
     </PortalSection>
-  </ReactivationCard>
+  </OrderPaymentCard>
 )

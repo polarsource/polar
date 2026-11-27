@@ -3,7 +3,7 @@
 import revalidate from '@/app/actions'
 import { toast } from '@/components/Toast/use-toast'
 import {
-  invalidateReactivatedSubscription,
+  invalidatePaidOrder,
   useCustomerPaymentMethods,
   useCustomerPortalCustomer,
 } from '@/hooks/queries/customerPortal'
@@ -15,71 +15,78 @@ import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { Elements } from '@stripe/react-stripe-js'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { PortalText } from '../PortalPrimitives'
-import { ReactivateSubscriptionForm } from './ReactivateSubscriptionForm'
-import { ReactivationCard } from './ReactivationCard'
-import { ReactivationSummary } from './ReactivationSummary'
+import { OrderPaymentForm } from './OrderPaymentForm'
+import { OrderPaymentCard } from './OrderPaymentCard'
+import { OrderPaymentSummary } from './OrderPaymentSummary'
 
-export const ReactivateSubscription = ({
+export const OrderPayment = ({
   api,
-  subscription,
   order: initialOrder,
+  doneHref,
 }: {
   api: Client
-  subscription: schemas['CustomerSubscription']
-  order: schemas['CustomerOrder'] | null
+  order: schemas['CustomerOrder']
+  doneHref: string
 }) => {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const theme = useTheme()
   const themingPreset = getThemePreset(theme.resolvedTheme as 'light' | 'dark')
   const [stripePromise] = useState(() => loadPolarStripe())
 
-  const subscriptionHref = `/${subscription.product.organization.slug}/portal/subscriptions/${subscription.id}?${searchParams.toString()}`
   const [order, setOrder] = useState(initialOrder)
 
   const { data: customer } = useCustomerPortalCustomer()
   const { data: paymentMethods } = useCustomerPaymentMethods(api)
 
+  // A draft order reactivates an ended trial. A pending one is an unpaid renewal.
+  const isDraft = initialOrder.status === 'draft'
+
   const handleSucceeded = async () => {
-    invalidateReactivatedSubscription()
+    invalidatePaidOrder()
     await revalidate('customer_portal')
-    toast({
-      title: 'Subscription reactivated',
-      description: 'Your subscription is active again.',
-    })
-    router.push(subscriptionHref)
+    toast(
+      isDraft
+        ? {
+            title: 'Subscription reactivated',
+            description: 'Your subscription is active again.',
+          }
+        : {
+            title: 'Payment successful',
+            description: 'Your order has been paid.',
+          },
+    )
+    router.push(doneHref)
   }
 
-  if (subscription.status !== 'trial_ended' || order === null) {
+  if (order.status !== 'draft' && order.status !== 'pending') {
     return (
-      <ReactivationCard alignItems="center" textAlign="center" rowGap="xs">
+      <OrderPaymentCard alignItems="center" textAlign="center" rowGap="xs">
         <Box as="span" color="text-primary">
-          Nothing to reactivate
+          Nothing to pay
         </Box>
         <PortalText tone="secondary" className="text-sm">
-          This subscription doesn&apos;t need to be reactivated.
+          This order doesn&apos;t need to be paid.
         </PortalText>
         <Box marginTop="l">
-          <Link href={subscriptionHref}>
-            <Button variant="secondary">Back to subscription</Button>
+          <Link href={doneHref}>
+            <Button variant="secondary">Back to customer portal</Button>
           </Link>
         </Box>
-      </ReactivationCard>
+      </OrderPaymentCard>
     )
   }
 
   const savedCards = (paymentMethods?.items ?? []).filter(
     (pm): pm is schemas['PaymentMethodCard'] | schemas['PaymentMethodKrCard'] =>
-      pm.type === 'card' ||
-      (pm.type === 'kr_card' && subscription.currency === 'krw'),
+      pm.type === 'card' || (pm.type === 'kr_card' && order.currency === 'krw'),
   )
 
   return (
     <Box flexDirection="column" rowGap="xl">
-      <ReactivationSummary order={order} />
+      <OrderPaymentSummary order={order} />
       {customer && paymentMethods && (
         <Elements
           stripe={stripePromise}
@@ -100,7 +107,7 @@ export const ReactivateSubscription = ({
             appearance: themingPreset.stripe,
           }}
         >
-          <ReactivateSubscriptionForm
+          <OrderPaymentForm
             api={api}
             order={order}
             customer={customer}

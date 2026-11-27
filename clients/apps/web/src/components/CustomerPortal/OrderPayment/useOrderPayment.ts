@@ -7,12 +7,12 @@ import { useEffect, useState } from 'react'
 const POLL_INTERVAL_MS = 2000
 const MAX_POLL_ATTEMPTS = 90
 
-export type ReactivationPaymentSource =
+export type OrderPaymentSource =
   | { elements: StripeElements }
   | { paymentMethodId: string }
   | null
 
-export type ReactivationPaymentState =
+export type OrderPaymentState =
   | { status: 'idle' }
   | { status: 'paying' }
   | { status: 'confirming' }
@@ -35,7 +35,7 @@ const EMPTY_BILLING_DETAILS = {
 
 const getPayBody = async (
   stripe: Stripe | null,
-  source: ReactivationPaymentSource,
+  source: OrderPaymentSource,
 ): Promise<schemas['CustomerOrderPay'] | { error: string }> => {
   if (source === null) {
     return {}
@@ -65,15 +65,20 @@ const getPayBody = async (
   }
 }
 
-export const useReactivationPayment = ({
+export const useOrderPayment = ({
   api,
   orderId,
+  isDraft,
 }: {
   api: Client
   orderId: string
+  // A failed payment reverts a draft order back to draft. A pending order
+  // stays pending and its latest payment may be an earlier failed attempt, so
+  // only a successful payment can be detected while confirming.
+  isDraft: boolean
 }) => {
   const payOrder = useCustomerOrderPay(api)
-  const [state, setState] = useState<ReactivationPaymentState>({
+  const [state, setState] = useState<OrderPaymentState>({
     status: 'idle',
   })
 
@@ -90,7 +95,7 @@ export const useReactivationPayment = ({
       if (order?.status === 'paid') {
         clearInterval(interval)
         setState({ status: 'succeeded' })
-      } else if (order?.status === 'draft') {
+      } else if (isDraft && order?.status === 'draft') {
         clearInterval(interval)
         const { data: payment } = await api.GET(
           '/v1/customer-portal/orders/{id}/payment-status',
@@ -112,13 +117,13 @@ export const useReactivationPayment = ({
       }
     }, POLL_INTERVAL_MS)
     return () => clearInterval(interval)
-  }, [state.status, api, orderId])
+  }, [state.status, api, orderId, isDraft])
 
   const fail = (error: string) => setState({ status: 'failed', error })
 
   const pay = async (
     stripe: Stripe | null,
-    source: ReactivationPaymentSource,
+    source: OrderPaymentSource,
   ): Promise<schemas['ValidationError'][] | undefined> => {
     setState({ status: 'paying' })
 

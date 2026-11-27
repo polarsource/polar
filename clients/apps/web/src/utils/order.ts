@@ -34,14 +34,14 @@ export const isListableCustomerOrder = (
 ): boolean => order.status !== 'draft'
 
 /**
- * Determines if an order is eligible for payment retry
+ * A pending subscription order can be paid until its subscription ends:
+ * paying it afterwards settles the order but doesn't restore the subscription
  */
 export const canRetryOrderPayment = (
   order: schemas['CustomerOrder'],
 ): boolean => {
   return (
     order.status === 'pending' &&
-    order.next_payment_attempt_at !== null &&
     order.subscription !== null &&
     order.subscription.ended_at === null
   )

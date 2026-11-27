@@ -9,19 +9,20 @@ import {
   PortalRows,
   PortalText,
 } from '../PortalPrimitives'
-import { ReactivationCard } from './ReactivationCard'
+import { OrderPaymentCard } from './OrderPaymentCard'
 
-export const ReactivationSummary = ({
+export const OrderPaymentSummary = ({
   order,
 }: {
   order: schemas['CustomerOrder']
 }) => {
   const format = (amount: number) =>
     formatCurrency('compact')(amount, order.currency)
-  const isTaxCalculated = hasCompleteBillingAddress(order.billing_address)
+  const isTaxCalculated =
+    order.status !== 'draft' || hasCompleteBillingAddress(order.billing_address)
 
   return (
-    <ReactivationCard rowGap="2xl">
+    <OrderPaymentCard rowGap="2xl">
       <Box flexDirection="column" rowGap="xs">
         <Text variant="heading-l" as="h1">
           {format(order.due_amount)}
@@ -80,6 +81,6 @@ export const ReactivationSummary = ({
           </PortalText>
         )}
       </Box>
-    </ReactivationCard>
+    </OrderPaymentCard>
   )
 }

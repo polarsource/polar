@@ -1,14 +1,16 @@
 'use client'
 
+import { toast } from '@/components/Toast/use-toast'
 import {
   useCustomerCancelSubscription,
   useCustomerPortalCustomer,
+  useCustomerReactivationOrder,
 } from '@/hooks/queries/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
 import { Alert, Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { hasCompleteBillingAddress } from './BillingDetailsFields'
 import CustomerCancellationModal from './CustomerCancellationModal'
@@ -120,17 +122,36 @@ export const TrialEndedAlert = () => (
 )
 
 export const TrialEndedSubscriptionActions = ({
+  api,
   subscription,
 }: {
+  api: Client
   subscription: schemas['CustomerSubscription']
 }) => {
+  const router = useRouter()
   const searchParams = useSearchParams()
+  const reactivationOrder = useCustomerReactivationOrder(api)
+
+  const onReactivate = async () => {
+    try {
+      const order = await reactivationOrder.mutateAsync(subscription.id)
+      router.push(
+        `/${subscription.product.organization.slug}/portal/orders/${order.id}/pay?${searchParams.toString()}`,
+      )
+    } catch {
+      toast({
+        title: 'Could not reactivate subscription',
+        description: 'Try again in a moment.',
+      })
+    }
+  }
 
   return (
-    <Link
-      href={`/${subscription.product.organization.slug}/portal/subscriptions/${subscription.id}/reactivate?${searchParams.toString()}`}
+    <Button
+      onClick={onReactivate}
+      loading={reactivationOrder.isPending || reactivationOrder.isSuccess}
     >
-      <Button>Reactivate subscription</Button>
-    </Link>
+      Reactivate subscription
+    </Button>
   )
 }

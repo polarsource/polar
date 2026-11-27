@@ -673,7 +673,30 @@ export const useCustomerOrderPay = (api: Client) =>
       }),
   })
 
-export const invalidateReactivatedSubscription = () => {
+// The API refuses a second draft order for a subscription, so reuse an open one
+export const useCustomerReactivationOrder = (api: Client) =>
+  useMutation({
+    mutationFn: async (subscriptionId: string) => {
+      const orders = await unwrap(
+        api.GET('/v1/customer-portal/orders/', {
+          params: { query: { subscription_id: subscriptionId, limit: 10 } },
+        }),
+      )
+      const existing = orders.items.find(
+        (order) => order.status === 'draft' || order.status === 'pending',
+      )
+      if (existing) {
+        return existing
+      }
+      return unwrap(
+        api.POST('/v1/customer-portal/orders/', {
+          body: { subscription_id: subscriptionId },
+        }),
+      )
+    },
+  })
+
+export const invalidatePaidOrder = () => {
   const queryClient = getQueryClient()
   for (const queryKey of [
     ['customer_subscriptions'],
@@ -699,49 +722,6 @@ export const useCustomerCustomerMeters = (
         }),
       ),
     retry: defaultRetry,
-  })
-
-export const useCustomerOrderConfirmPayment = (api: Client) =>
-  useMutation({
-    mutationFn: async (variables: {
-      orderId: string
-      confirmation_token_id?: string
-      payment_method_id?: string
-      payment_processor?: schemas['PaymentProcessor']
-    }) =>
-      api.POST('/v1/customer-portal/orders/{id}/confirm-payment', {
-        params: { path: { id: variables.orderId } },
-        body: {
-          ...(variables.confirmation_token_id && {
-            confirmation_token_id: variables.confirmation_token_id,
-          }),
-          ...(variables.payment_method_id && {
-            payment_method_id: variables.payment_method_id,
-          }),
-          payment_processor: variables.payment_processor || 'stripe',
-        } as schemas['CustomerOrderConfirmPayment'],
-      }),
-    onSuccess: async (result, variables) => {
-      if (result.error) {
-        return
-      }
-      // Invalidate order queries to refresh data
-      const queryClient = getQueryClient()
-      queryClient.invalidateQueries({
-        queryKey: ['customer_order', { id: variables.orderId }],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['customer_orders'],
-      })
-    },
-  })
-
-export const useCustomerOrderPaymentStatus = (api: Client) =>
-  useMutation({
-    mutationFn: async (variables: { orderId: string }) =>
-      api.GET('/v1/customer-portal/orders/{id}/payment-status', {
-        params: { path: { id: variables.orderId } },
-      }),
   })
 
 export const useCustomerSeats = (

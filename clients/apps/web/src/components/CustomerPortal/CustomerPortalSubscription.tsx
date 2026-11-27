@@ -12,18 +12,20 @@ import {
 import { useRequirePaymentMethod } from '@/hooks/useRequirePaymentMethod'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { hasBillingPermission } from '@/utils/customerPortal'
-import { isListableCustomerOrder } from '@/utils/order'
+import { canRetryOrderPayment, isListableCustomerOrder } from '@/utils/order'
 import { getUnitLabels, isUnitBasedPrice } from '@/utils/product'
 import { getPauseAction } from '@/utils/subscription'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { useModal } from '../Modal/useModal'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
+import { OrderStatus } from '../Orders/OrderStatus'
 import CustomerCancellationModal from './CustomerCancellationModal'
 import CustomerPauseSubscriptionModal from './CustomerPauseSubscriptionModal'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
@@ -88,6 +90,7 @@ const CustomerPortalSubscription = ({
   })
 
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const cancelSubscription = useCustomerCancelSubscription(api)
   const clearPendingUpdate = useCustomerClearPendingSubscriptionUpdate(api)
@@ -187,7 +190,10 @@ const CustomerPortalSubscription = ({
         {(showCancelAction || showPauseAction || showReactivateAction) && (
           <Box columnGap="s" rowGap="s" flexWrap="wrap" justifyContent="end">
             {showReactivateAction && (
-              <TrialEndedSubscriptionActions subscription={subscription} />
+              <TrialEndedSubscriptionActions
+                api={api}
+                subscription={subscription}
+              />
             )}
             {showCancelAction && (
               <Button variant="secondary" onClick={showCancelModal}>
@@ -285,20 +291,34 @@ const CustomerPortalSubscription = ({
                 }
                 subtitle={order.invoice_number}
                 meta={
-                  <PortalText tone="primary" className="tabular-nums">
-                    {formatCurrency('compact')(
-                      order.total_amount,
-                      order.currency,
-                    )}
-                  </PortalText>
+                  <>
+                    <OrderStatus status={order.status} />
+                    <PortalText
+                      tone="primary"
+                      className="min-w-[72px] text-right tabular-nums"
+                    >
+                      {formatCurrency('compact')(
+                        order.total_amount,
+                        order.currency,
+                      )}
+                    </PortalText>
+                  </>
                 }
                 actions={
-                  <DownloadInvoicePortal
-                    customerSessionToken={customerSessionToken}
-                    order={order}
-                    onInvoiceGenerated={refetchOrders}
-                    dropdown
-                  />
+                  canManageBilling && canRetryOrderPayment(order) ? (
+                    <Link
+                      href={`/${subscription.product.organization.slug}/portal/orders/${order.id}/pay?${searchParams.toString()}`}
+                    >
+                      <Button>Pay now</Button>
+                    </Link>
+                  ) : (
+                    <DownloadInvoicePortal
+                      customerSessionToken={customerSessionToken}
+                      order={order}
+                      onInvoiceGenerated={refetchOrders}
+                      dropdown
+                    />
+                  )
                 }
               />
             ))}

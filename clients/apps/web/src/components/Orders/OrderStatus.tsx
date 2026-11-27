@@ -18,7 +18,7 @@ export const OrderStatusDisplayTitle: Record<Status, string> = {
 
 const OrderStatusDescription: Record<Status, string> = {
   draft: 'Created but not finalized. Nothing has been charged yet.',
-  pending: 'Created, and Polar is attempting to collect payment.',
+  pending: 'Polar is attempting to collect payment.',
   paid: 'The payment succeeded.',
   partially_refunded: 'Part of the order has been refunded.',
   refunded: 'The order has been fully refunded.',

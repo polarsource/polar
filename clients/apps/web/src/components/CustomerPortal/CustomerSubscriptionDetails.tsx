@@ -186,7 +186,10 @@ const CustomerSubscriptionDetails = ({
       <Box columnGap="s" rowGap="s" flexWrap="wrap" justifyContent="end">
         {isTrialEnded ? (
           canManageBilling && (
-            <TrialEndedSubscriptionActions subscription={subscription} />
+            <TrialEndedSubscriptionActions
+              api={api}
+              subscription={subscription}
+            />
           )
         ) : isTrialing && !isCanceled ? (
           canManageBilling && (

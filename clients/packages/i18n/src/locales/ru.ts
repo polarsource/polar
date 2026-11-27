@@ -135,6 +135,9 @@ export default {
           _mode: 'plural',
         },
         updateFailed: 'Не удалось обновить количество',
+        range: '{min} – {max} {unitLabelPlural}',
+        minimum: 'Минимум {min} {unitLabelPlural}',
+        maximum: 'Максимум {max} {unitLabelPlural}',
       },
       discount: {
         until: 'До {date}',

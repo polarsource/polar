@@ -3019,6 +3019,9 @@
     "intervals.short.day.other": "# dy",
     "intervals.short.week.other": "# wk",
     "intervals.short.month.other": "# mo",
-    "intervals.short.year.other": "# yr"
+    "intervals.short.year.other": "# yr",
+    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
+    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
+    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}"
   }
 }

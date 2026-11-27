@@ -140,6 +140,9 @@ export default {
           _mode: 'plural',
         },
         updateFailed: 'Posodobitev enot ni uspela',
+        range: '{min} - {max} {unitLabelPlural}',
+        minimum: 'Najmanj {min} {unitLabelPlural}',
+        maximum: 'Največ {max} {unitLabelPlural}',
       },
       discount: {
         until: 'Do {date}',

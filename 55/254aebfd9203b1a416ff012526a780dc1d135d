@@ -1,0 +1,54 @@
+sdk/generator/python/template/tests/integrations/fastapi/test_event_delivery.py
+  s_7671299f8b7483::t_23ff5ae61a5a48 1-74
+sdk/generator/python/template/README.md
+  s_7671299f8b7483::t_23ff5ae61a5a48 282-362
+sdk/generator/python/template/tests/integrations/fastapi/test_dependency.py
+  s_7671299f8b7483::t_d04e238246dc76 1-42
+sdk/generator/python/template/polar/integrations/asgi/__init__.py
+  s_7671299f8b7483::t_d04e238246dc76 1-11,13-39,42-43,55-58,68-69,89-92,94-95,97,99,101-102
+  s_7671299f8b7483::t_23ff5ae61a5a48 12,40-41,44-54,59-67,70-88,93,96,98,100,103
+sdk/generator/python/template/pyproject.toml
+  s_7671299f8b7483::t_23ff5ae61a5a48 26-27
+sdk/generator/python/template/tests/integrations/asgi/test_middleware.py
+  s_7671299f8b7483::t_d04e238246dc76 1-16,18-59,61-106,112-133,136,139-141,146-150
+  s_7671299f8b7483::t_23ff5ae61a5a48 17,60,107-111,134-135,137-138,142-145
+sdk/generator/python/template/polar/integrations/fastapi/__init__.py
+  s_7671299f8b7483::t_23ff5ae61a5a48 6,50
+  s_7671299f8b7483::t_d04e238246dc76 1-5,7-49
+sdk/generator/python/emitter.py
+  s_7671299f8b7483::t_23ff5ae61a5a48 140-142,159-161
+sdk/e2e/uv.lock
+  s_7671299f8b7483::t_b12fe83fd3be31 358-359,361,368
+sdk/python/README.md
+  s_7671299f8b7483::t_2647acdecae6f8 280-360
+sdk/python/polar/integrations/asgi/__init__.py
+  s_7671299f8b7483::t_f893bdc9181b45 1-103
+sdk/python/polar/integrations/fastapi/__init__.py
+  s_7671299f8b7483::t_f9c7878bf60cc8 1-50
+sdk/python/pyproject.toml
+  s_7671299f8b7483::t_a7ef88d3b95a1c 26-27
+sdk/python/tests/integrations/asgi/test_middleware.py
+  s_7671299f8b7483::t_2bf284f3a75eb1 1-159
+sdk/python/tests/integrations/fastapi/test_dependency.py
+  s_7671299f8b7483::t_d63c930fbf53a4 1-45
+sdk/python/tests/integrations/fastapi/test_event_delivery.py
+  s_7671299f8b7483::t_e529b4a986f770 1-76
+sdk/python/uv.lock
+  s_7671299f8b7483::t_70e1b947f1922c 25-42,56-64,110-127,501-507,529-530,532,539,567-717,850-862,905-916
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "55254aebfd9203b1a416ff012526a780dc1d135d",
+  "prompts": {},
+  "sessions": {
+    "s_7671299f8b7483": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21d18-2190-7bb2-991b-09c4eaafbef3",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

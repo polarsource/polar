@@ -1,4 +1,3 @@
-export { Metering } from "./client";
 export {
   MeteringError,
   IngestRejectedError,
@@ -8,7 +7,6 @@ export {
   UnknownMeterError,
 } from "./errors";
 export type { DeliveryOptions, DeliveryFailure } from "./errors";
-export type { ActorInput, ActorMetering, MeteringOptions, MeteringOutpost } from "./client";
 export { MemoryEventQueue } from "./queue/memory";
 export type { MemoryEventQueueOptions } from "./queue/memory";
 export type { DropReason } from "./errors";

@@ -14,9 +14,8 @@ import pytest
 from fakeredis import FakeAsyncRedis, FakeServer
 from redis.asyncio import Redis
 
-from polar.metering import _ingest_events
 from polar.metering.errors import DropReason, MeteringTimeoutError
-from polar.metering.events import EventInput
+from polar.metering.events import EventInput, ingest_events
 from polar.metering.queue import EventQueue
 from polar.metering.queue.redis import RedisEventQueue
 from tests.redis import _cost
@@ -64,7 +63,7 @@ async def test_redis_queue_retries_with_the_same_event_and_reports_acceptance(
             redis="redis://localhost",
             stream="test:queue",
         )
-        send = functools.partial(_ingest_events, client)
+        send = functools.partial(ingest_events, client)
         first_ack = AsyncMock()
         async with queue.open(ingest=send, on_ack=first_ack, on_rejected=on_rejected):
             await queue.enqueue({"name": "call", "external_customer_id": "alice"})
@@ -117,7 +116,7 @@ async def test_redis_queue_reports_a_rejection_before_retiring_the_entry(
                 raise RuntimeError("Reducer unavailable")
 
         async with RedisEventQueue("redis://localhost", stream="test:queue").open(
-            ingest=functools.partial(_ingest_events, client), on_rejected=on_rejected
+            ingest=functools.partial(ingest_events, client), on_rejected=on_rejected
         ) as queue:
             await queue.enqueue(event)
             await queue.flush()
@@ -210,7 +209,7 @@ async def test_delivers_what_it_queued_on_its_own_without_a_flush(
 ) -> None:
     url, _ = redis_connection
     async with RedisEventQueue(url, stream=QUEUE).open(
-        ingest=functools.partial(_ingest_events, polar_client)
+        ingest=functools.partial(ingest_events, polar_client)
     ) as queue:
         await queue.enqueue(_usage("event-0", 10))
         with anyio.fail_after(3):
@@ -228,10 +227,10 @@ async def test_delivers_the_stream_in_batches_of_a_thousand_whichever_instance_f
     url, redis = redis_connection
     async with (
         RedisEventQueue(url, stream=QUEUE).open(
-            ingest=functools.partial(_ingest_events, polar_client)
+            ingest=functools.partial(ingest_events, polar_client)
         ) as first,
         RedisEventQueue(url, stream=QUEUE).open(
-            ingest=functools.partial(_ingest_events, polar_client)
+            ingest=functools.partial(ingest_events, polar_client)
         ) as second,
     ):
         outposts = (first, second)
@@ -257,10 +256,10 @@ async def test_keeps_a_batch_polar_fails_to_take_and_the_fleet_waits_to_send_it_
     url, redis = redis_connection
     async with (
         RedisEventQueue(url, stream=QUEUE).open(
-            ingest=functools.partial(_ingest_events, polar_client)
+            ingest=functools.partial(ingest_events, polar_client)
         ) as queue,
         RedisEventQueue(url, stream=QUEUE).open(
-            ingest=functools.partial(_ingest_events, polar_client)
+            ingest=functools.partial(ingest_events, polar_client)
         ) as other,
     ):
         await queue.enqueue(_usage("event-0", 10))
@@ -290,7 +289,7 @@ async def test_sends_a_batch_that_failed_on_another_slot_again_once_the_backoff_
     url, redis = redis_connection
     monkeypatch.setattr("polar.metering.queue.redis.DRAIN_INTERVAL", 60)
     async with RedisEventQueue(url, stream=QUEUE).open(
-        ingest=functools.partial(_ingest_events, polar_client)
+        ingest=functools.partial(ingest_events, polar_client)
     ) as queue:
         # Two full batches: two flushers, and Polar fails both.
         for index in range(2000):
@@ -314,7 +313,7 @@ async def test_waits_as_long_as_a_polar_that_rate_limits_it_asks(
 ) -> None:
     url, redis = redis_connection
     async with RedisEventQueue(url, stream=QUEUE).open(
-        ingest=functools.partial(_ingest_events, polar_client)
+        ingest=functools.partial(ingest_events, polar_client)
     ) as queue:
         await queue.enqueue(_usage("event-0", 10))
         ingest["statuses"] = [429]
@@ -337,7 +336,7 @@ async def test_keeps_a_backoff_another_flusher_set_while_this_one_delivered(
 
     await redis.hset(BACKOFF, mapping={"failures": 1, "retry_at": 1})
     async with RedisEventQueue(url, stream=QUEUE).open(
-        ingest=functools.partial(_ingest_events, polar_client), on_ack=on_delivered
+        ingest=functools.partial(ingest_events, polar_client), on_ack=on_delivered
     ) as queue:
         await queue.enqueue(_usage("event-0", 10))
         await queue.flush()
@@ -362,7 +361,7 @@ async def test_skips_a_queue_entry_it_cannot_read_and_delivers_the_rest(
 ) -> None:
     url, redis = redis_connection
     async with RedisEventQueue(url, stream=QUEUE).open(
-        ingest=functools.partial(_ingest_events, polar_client)
+        ingest=functools.partial(ingest_events, polar_client)
     ) as queue:
         await redis.xadd(QUEUE, {field: value})
         await queue.enqueue(_usage("event-0", 10))
@@ -379,7 +378,7 @@ async def test_delivers_an_event_another_sdk_queued_in_a_form_it_cannot_parse(
 ) -> None:
     url, redis = redis_connection
     async with RedisEventQueue(url, stream=QUEUE).open(
-        ingest=functools.partial(_ingest_events, polar_client)
+        ingest=functools.partial(ingest_events, polar_client)
     ) as queue:
         # Another SDK takes a timestamp this one refuses.
         foreign = _usage("foreign", 10, timestamp="2026-10-12t12:00:00z")
@@ -396,7 +395,7 @@ async def test_refuses_to_enqueue_a_number_json_cannot_carry(
 ) -> None:
     url, redis = redis_connection
     async with RedisEventQueue(url, stream=QUEUE).open(
-        ingest=functools.partial(_ingest_events, polar_client)
+        ingest=functools.partial(ingest_events, polar_client)
     ) as queue:
         event = _usage("event-0", 10)
         event["metadata"] = {"tokens": 10, "ratio": float("nan")}
@@ -413,7 +412,7 @@ async def test_takes_back_the_batch_of_a_flusher_that_died_on_the_next_drain(
 ) -> None:
     url, redis = redis_connection
     async with RedisEventQueue(url, stream=QUEUE).open(
-        ingest=functools.partial(_ingest_events, polar_client)
+        ingest=functools.partial(ingest_events, polar_client)
     ) as queue:
         await queue.enqueue(_usage("event-0", 10))
         # A flusher read the batch and froze before Polar answered.
@@ -442,7 +441,7 @@ async def test_sends_only_full_batches_while_another_flusher_delivers(
 ) -> None:
     url, redis = redis_connection
     async with RedisEventQueue(url, stream=QUEUE).open(
-        ingest=functools.partial(_ingest_events, polar_client)
+        ingest=functools.partial(ingest_events, polar_client)
     ) as queue:
         await queue.enqueue(_usage("event-0", 10))
         # Another flusher holds a batch in flight.
@@ -468,7 +467,7 @@ async def test_returns_from_a_flush_once_its_drain_ends_while_another_flusher_st
 ) -> None:
     url, redis = redis_connection
     async with RedisEventQueue(url, stream=QUEUE).open(
-        ingest=functools.partial(_ingest_events, polar_client)
+        ingest=functools.partial(ingest_events, polar_client)
     ) as queue:
         await queue.enqueue(_usage("event-0", 10))
         # Another flusher holds a batch in flight.
@@ -536,10 +535,10 @@ async def test_delivers_what_another_instance_queued_while_it_flushed(
     url, redis = redis_connection
     async with (
         RedisEventQueue(url, stream=QUEUE).open(
-            ingest=functools.partial(_ingest_events, polar_client)
+            ingest=functools.partial(ingest_events, polar_client)
         ) as first,
         RedisEventQueue(url, stream=QUEUE).open(
-            ingest=functools.partial(_ingest_events, polar_client)
+            ingest=functools.partial(ingest_events, polar_client)
         ) as second,
     ):
         await first.enqueue(_usage("event-0", 10))
@@ -568,7 +567,7 @@ async def test_drains_after_an_empty_flush(
     url, _ = redis_connection
     monkeypatch.setattr("polar.metering.queue.redis.FLUSH_TENURE", 0.1)
     async with RedisEventQueue(url, stream=QUEUE).open(
-        ingest=functools.partial(_ingest_events, polar_client)
+        ingest=functools.partial(ingest_events, polar_client)
     ) as queue:
         await queue.flush()
         await anyio.sleep(0.2)
@@ -588,10 +587,10 @@ async def test_hands_its_slot_over_a_few_seconds_into_a_drain_a_flush_waits_on(
     monkeypatch.setattr("polar.metering.queue.redis.FLUSH_TENURE", 0.3)
     async with (
         RedisEventQueue(url, stream=QUEUE).open(
-            ingest=functools.partial(_ingest_events, polar_client)
+            ingest=functools.partial(ingest_events, polar_client)
         ) as first,
         RedisEventQueue(url, stream=QUEUE).open(
-            ingest=functools.partial(_ingest_events, polar_client)
+            ingest=functools.partial(ingest_events, polar_client)
         ) as second,
     ):
         await first.enqueue(_usage("event-0", 10))
@@ -622,7 +621,7 @@ async def test_flushes_a_thousand_events_in_as_many_commands_as_one(
 ) -> None:
     url, redis = redis_connection
     async with RedisEventQueue(url, stream=QUEUE).open(
-        ingest=functools.partial(_ingest_events, polar_client)
+        ingest=functools.partial(ingest_events, polar_client)
     ) as queue:
 
         async def flush_cost(events: int) -> dict[str, int]:
@@ -644,7 +643,7 @@ async def test_queues_an_event_in_two_commands_and_flushes_at_no_cost_while_a_fl
 ) -> None:
     url, redis = redis_connection
     async with RedisEventQueue(url, stream=QUEUE).open(
-        ingest=functools.partial(_ingest_events, polar_client)
+        ingest=functools.partial(ingest_events, polar_client)
     ) as queue:
         # A serverless instance flushes on every request: the flusher in flight delivers
         # its event.

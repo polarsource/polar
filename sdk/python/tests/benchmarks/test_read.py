@@ -4,7 +4,7 @@ import typing
 import pytest
 from pytest_codspeed import BenchmarkFixture
 
-from polar.metering import CustomerMeter
+from polar.metering.meter import CustomerMeter
 from polar.outpost.client import Outpost
 from polar.outpost.reducer import Reducer
 from tests.benchmarks import CREDIT_REDUCER, REDUCER, SNAPSHOT

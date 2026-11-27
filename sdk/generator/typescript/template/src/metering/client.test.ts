@@ -4,18 +4,12 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import type { EventInput } from "./event";
 
-import { ClientBase } from "../base";
 import { createPolar } from "../{{ (ir.versions[-2] | default(ir.versions[0])).version }}/client";
-import { Outpost } from "../outpost/client";
+import { Outpost, outpost } from "../outpost/client";
 import { NotReadyError } from "../outpost/errors";
 import type { EventQueueStartOptions } from "./queue/index";
-import { Metering, UnknownMeterError, type ActorInput } from "./client";
-
-const client = new ClientBase({
-  accessToken: "token",
-  baseUrl: "https://api.polar.sh",
-  version: "2026-10",
-});
+import type { ActorInput } from "./actor";
+import { UnknownMeterError } from "./errors";
 
 const event = { name: "usage", external_customer_id: "alice" };
 
@@ -34,14 +28,11 @@ it("creates a memory queue using the configured HTTP client", async () => {
     organizationId: "org",
     baseUrl: "https://custom.test",
   });
-  {
-    const metering = polar.metering();
-    try {
-      await metering.track(event);
-      expect(fetch).not.toHaveBeenCalled();
-    } finally {
-      await metering.close();
-    }
+  try {
+    await polar.actor({ external_customer_id: "alice" }).track({ name: "usage" });
+    expect(fetch).not.toHaveBeenCalled();
+  } finally {
+    await polar.close();
   }
   const [url, request] = fetch.mock.calls[0];
   expect(url).toBe("https://custom.test/v1/events/ingest");
@@ -57,31 +48,37 @@ it("creates a memory queue using the configured HTTP client", async () => {
 });
 
 it("enqueues before reducing and shares delivery hooks with Outpost", async () => {
-  const outpost = new Outpost("redis://localhost", { client });
-  vi.spyOn(outpost, "start").mockResolvedValue(outpost);
-  const closeOutpost = vi.spyOn(outpost, "close").mockResolvedValue(undefined);
-  const reduce = vi.spyOn(outpost, "track").mockResolvedValue(undefined);
-  const ack = vi.spyOn(outpost, "onAck").mockResolvedValue(undefined);
-  const reject = vi.spyOn(outpost, "onRejected").mockResolvedValue(undefined);
+  vi.spyOn(Outpost.prototype, "start").mockImplementation(async function (this: Outpost) {
+    return this;
+  });
+  const closeOutpost = vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
+  const reduce = vi.spyOn(Outpost.prototype, "track").mockResolvedValue(undefined);
+  const ack = vi.spyOn(Outpost.prototype, "onAck").mockResolvedValue(undefined);
+  const reject = vi.spyOn(Outpost.prototype, "onRejected").mockResolvedValue(undefined);
   const transport = {
     start: vi.fn<(options: EventQueueStartOptions) => Promise<void>>().mockResolvedValue(undefined),
     enqueue: vi.fn<(event: EventInput) => Promise<void>>().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
     flush: vi.fn().mockResolvedValue(undefined),
   };
-  const polar = createPolar({ accessToken: "token" });
   const onAck = vi.fn().mockRejectedValue(new Error("private event details"));
   const onRejected = vi.fn();
-  const metering = polar.metering({ queue: transport, outpost: () => outpost, onAck, onRejected });
+  const polar = createPolar({
+    accessToken: "token",
+    eventQueue: transport,
+    outpost: outpost({ redis: "redis://localhost" }),
+    onEventAck: onAck,
+    onEventRejected: onRejected,
+  });
   try {
     const unavailable = new Error("private event details");
     transport.enqueue.mockRejectedValueOnce(unavailable);
-    await expect(metering.track(event)).rejects.toBe(unavailable);
+    await expect(polar.track(event)).rejects.toBe(unavailable);
     expect(reduce).not.toHaveBeenCalled();
 
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     reduce.mockRejectedValueOnce(unavailable);
-    await metering.track(event);
+    await polar.track(event);
     expect(warn).toHaveBeenCalledExactlyOnceWith("Outpost failed to reduce an enqueued event", "Error");
     const queued = transport.enqueue.mock.calls[1][0];
     expect(reduce).toHaveBeenCalledWith(queued);
@@ -97,9 +94,9 @@ it("enqueues before reducing and shares delivery hooks with Outpost", async () =
     expect(onRejected).toHaveBeenCalledWith([queued], "permanent_error");
     expect(ack.mock.invocationCallOrder[0]).toBeLessThan(onAck.mock.invocationCallOrder[0]);
     expect(reject.mock.invocationCallOrder[0]).toBeLessThan(onRejected.mock.invocationCallOrder[0]);
-    expect(warn).toHaveBeenLastCalledWith("Metering acknowledgement hook failed", "Error");
+    expect(warn).toHaveBeenLastCalledWith("Event acknowledgement hook failed", "Error");
   } finally {
-    await metering.close();
+    await polar.close();
   }
   expect(transport.close.mock.invocationCallOrder[0]).toBeLessThan(
     closeOutpost.mock.invocationCallOrder[0],
@@ -110,24 +107,31 @@ it.each([
   new NotReadyError("pending snapshot"),
   new UnknownMeterError("unknown meter"),
 ])("reads from Outpost and falls back to the API on %s", async (error) => {
-  const polar = createPolar({ accessToken: "token" });
-  const outpost = new Outpost("redis://localhost", { client });
-  vi.spyOn(outpost, "start").mockResolvedValue(outpost);
-  vi.spyOn(outpost, "close").mockResolvedValue(undefined);
+  vi.spyOn(Outpost.prototype, "start").mockImplementation(async function (this: Outpost) {
+    return this;
+  });
+  vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
   const local = { meter_id: "meter", consumed_units: 2, credited_units: 3, balance: 1 };
-  vi.spyOn(outpost, "meter")
+  vi.spyOn(Outpost.prototype, "meter")
     .mockResolvedValueOnce(local)
     .mockRejectedValueOnce(error);
   const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
     new Response(JSON.stringify({ items: [{ ...local, balance: 0 }] })),
   );
-  const metering = polar.metering({ outpost: () => outpost });
+  const polar = createPolar({
+    accessToken: "token",
+    eventQueue: null,
+    outpost: outpost({ redis: "redis://localhost" }),
+  });
   try {
-    await expect(metering.meter("meter", event)).resolves.toEqual(local);
+    const actor = polar.actor({ external_customer_id: "alice" });
+    expect(Outpost.prototype.start).not.toHaveBeenCalled();
+    await expect(actor.meter("meter")).resolves.toEqual(local);
+    await expect(actor.track({ name: "usage" })).rejects.toThrow("Configure an eventQueue");
     expect(fetch).not.toHaveBeenCalled();
-    await expect(metering.meter("meter", event)).resolves.toEqual({ ...local, balance: 0 });
+    await expect(polar.meter("meter", event)).resolves.toEqual({ ...local, balance: 0 });
   } finally {
-    await metering.close();
+    await polar.close();
   }
 });
 
@@ -140,32 +144,34 @@ it.each([
   { external_customer_id: "customer", member_id: "member" },
 ])("rejects an invalid actor before starting the queue: %j", async (input) => {
   const queue = { start: vi.fn(), enqueue: vi.fn(), close: vi.fn(), flush: vi.fn() };
-  const metering = new Metering(client, queue);
+  const polar = createPolar({ accessToken: "token", eventQueue: queue });
   try {
-    await expect(metering.actor(input as unknown as ActorInput)).rejects.toBeInstanceOf(TypeError);
-    await expect(metering.track({ name: "usage", ...input } as EventInput)).rejects.toBeInstanceOf(
+    expect(() => polar.actor(input as unknown as ActorInput)).toThrow(TypeError);
+    await expect(polar.track({ name: "usage", ...input } as EventInput)).rejects.toBeInstanceOf(
       TypeError,
     );
     expect(queue.start).not.toHaveBeenCalled();
   } finally {
-    await metering.close();
+    await polar.close();
   }
 });
 
-it("propagates meter API errors", async () => {
+it("propagates meter API errors without opening the delivery queue", async () => {
   vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("Forbidden", { status: 403 }));
-  const metering = createPolar({ accessToken: "token" }).metering();
+  const queue = { start: vi.fn(), enqueue: vi.fn(), close: vi.fn(), flush: vi.fn() };
+  const polar = createPolar({ accessToken: "token", eventQueue: queue });
   try {
-    await expect(metering.meter("meter", { customer_id: "customer" })).rejects.toThrow("403");
+    await expect(polar.meter("meter", { customer_id: "customer" })).rejects.toThrow("403");
+    expect(queue.start).not.toHaveBeenCalled();
   } finally {
-    await metering.close();
+    await polar.close();
   }
 });
 
 it("ships metering for both ESM and CommonJS", async () => {
   const esm = await import("../../dist/metering/index.mjs");
   const cjs = createRequire(import.meta.url)("../../dist/metering/index.cjs");
-  expect(esm.Metering).toBeTypeOf("function");
+  expect(esm.MemoryEventQueue).toBeTypeOf("function");
   expect(cjs.MemoryEventQueue).toBeTypeOf("function");
 });
 
@@ -182,9 +188,11 @@ it("uses the memory queue without loading optional Outpost dependencies", () => 
       return next(specifier, context);
     }});
     const { createPolar } = await import("@polar-sh/sdk/{{ (ir.versions[-2] | default(ir.versions[0])).version }}");
-    const metering = createPolar({ accessToken: "token" }).metering();
-    await metering.actor({ external_customer_id: "alice" });
-    await metering.close();
+    const polar = createPolar({ accessToken: "token" });
+    globalThis.fetch = async () => new Response('{"inserted":1,"duplicates":0}');
+    const actor = polar.actor({ external_customer_id: "alice" });
+    await actor.track({ name: "usage" });
+    await polar.close();
   `,
     ],
     { encoding: "utf8" },
@@ -195,9 +203,9 @@ it("uses the memory queue without loading optional Outpost dependencies", () => 
 
 it("closing an unused helper does not start resources", async () => {
   const strategy = { start: vi.fn(), enqueue: vi.fn(), close: vi.fn() };
-  const metering = new Metering(client, { ...strategy, flush: vi.fn() });
-  await metering.close();
-  await expect(metering.flush()).rejects.toThrow("closed");
+  const polar = createPolar({ accessToken: "token", eventQueue: { ...strategy, flush: vi.fn() } });
+  await polar.close();
+  await expect(polar.flush()).rejects.toThrow("closed");
   expect(strategy.start).not.toHaveBeenCalled();
   expect(strategy.close).not.toHaveBeenCalled();
 });
@@ -213,13 +221,13 @@ it("close bounds its wait for an active custom flush and still closes resources"
     flush: vi.fn(() => gate),
     close: vi.fn().mockResolvedValue(undefined),
   };
-  const metering = new Metering(client, strategy);
-  const flushing = metering.flush();
+  const polar = createPolar({ accessToken: "token", eventQueue: strategy });
+  const flushing = polar.flush();
   try {
     await vi.waitFor(() => expect(strategy.flush).toHaveBeenCalledOnce());
-    await expect(metering.close({ timeoutMs: 10 })).rejects.toThrow("timed out");
+    await expect(polar.close({ timeoutMs: 10 })).rejects.toThrow("timed out");
     expect(strategy.close).toHaveBeenCalledOnce();
-    await expect(metering.track(event)).rejects.toThrow("closed");
+    await expect(polar.track(event)).rejects.toThrow("closed");
   } finally {
     release();
     await flushing;
@@ -237,10 +245,10 @@ it("startup that outlives a close deadline cleans up when it eventually complete
     enqueue: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
   };
-  const metering = new Metering(client, { ...strategy, flush: vi.fn() });
-  const tracking = metering.track(event).catch((error) => error);
+  const polar = createPolar({ accessToken: "token", eventQueue: { ...strategy, flush: vi.fn() } });
+  const tracking = polar.track(event).catch((error) => error);
   try {
-    await expect(metering.close({ timeoutMs: 10 })).rejects.toThrow("timed out");
+    await expect(polar.close({ timeoutMs: 10 })).rejects.toThrow("timed out");
   } finally {
     release();
     expect(await tracking).toMatchObject({ message: expect.stringContaining("timed out") });
@@ -253,10 +261,10 @@ it.each([-1, NaN, Infinity, 2_147_483_648])(
   "rejects invalid delivery deadlines before startup: %s",
   async (timeoutMs) => {
     const queue = { start: vi.fn(), enqueue: vi.fn(), close: vi.fn(), flush: vi.fn() };
-    const metering = new Metering(client, queue);
-    await expect(metering.flush({ timeoutMs })).rejects.toBeInstanceOf(RangeError);
-    await expect(metering.close({ timeoutMs })).rejects.toBeInstanceOf(RangeError);
+    const polar = createPolar({ accessToken: "token", eventQueue: queue });
+    await expect(polar.flush({ timeoutMs })).rejects.toBeInstanceOf(RangeError);
+    await expect(polar.close({ timeoutMs })).rejects.toBeInstanceOf(RangeError);
     expect(queue.start).not.toHaveBeenCalled();
-    await metering.close();
+    await polar.close();
   },
 );

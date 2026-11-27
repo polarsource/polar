@@ -1,25 +1,20 @@
-import { createPolar } from '@polar-sh/sdk/2027-01'
+import type { EventInput } from '@polar-sh/sdk/metering'
 import { describe, expect, it, vi } from 'vitest'
 
 import { Ingestion } from './ingestion'
 import { DeltaTimeStrategy } from './strategies/DeltaTime'
 
-const meteringWithTrack = () => {
-  const metering = createPolar({ accessToken: 'polar_oat_test' }).metering()
-  const track = vi.spyOn(metering, 'track').mockResolvedValue()
-
-  return { metering, track }
-}
-
-describe('Ingestion(polar.metering())', () => {
+describe('Ingestion(polar)', () => {
   it.each([
     [{ customerId: 'cus_1' }, { customer_id: 'cus_1' }],
     [{ customer_id: 'cus_1' }, { customer_id: 'cus_1' }],
     [{ externalCustomerId: 'ext_1' }, { external_customer_id: 'ext_1' }],
     [{ external_customer_id: 'ext_1' }, { external_customer_id: 'ext_1' }],
   ])('should track %o as %o', async (customer, expected) => {
-    const { metering, track } = meteringWithTrack()
-    const strategy = Ingestion(metering)
+    const track = vi
+      .fn<(event: EventInput) => Promise<void>>()
+      .mockResolvedValue()
+    const strategy = Ingestion({ track })
       .strategy(new DeltaTimeStrategy(() => 0))
       .ingest('elapsed')
 
@@ -34,8 +29,10 @@ describe('Ingestion(polar.metering())', () => {
   })
 
   it('should snake-case the _llm metadata', async () => {
-    const { metering, track } = meteringWithTrack()
-    const strategy = Ingestion(metering)
+    const track = vi
+      .fn<(event: EventInput) => Promise<void>>()
+      .mockResolvedValue()
+    const strategy = Ingestion({ track })
       .strategy(new DeltaTimeStrategy(() => 0))
       .ingest('tokens')
 
@@ -66,10 +63,12 @@ describe('Ingestion(polar.metering())', () => {
   })
 
   it('should pass ingest() events to track() as given', async () => {
-    const { metering, track } = meteringWithTrack()
+    const track = vi
+      .fn<(event: EventInput) => Promise<void>>()
+      .mockResolvedValue()
     const event = { name: 'raw', external_customer_id: 'ext_1' }
 
-    await Ingestion(metering).ingest([event, event])
+    await Ingestion({ track }).ingest([event, event])
 
     expect(track).toHaveBeenCalledTimes(2)
     expect(track).toHaveBeenCalledWith(event)

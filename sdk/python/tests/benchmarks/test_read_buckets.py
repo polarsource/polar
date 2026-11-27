@@ -6,7 +6,7 @@ import pytest
 from pytest_codspeed import BenchmarkFixture
 from redis import Redis
 
-from polar.metering import CustomerMeter
+from polar.metering.meter import CustomerMeter
 from polar.outpost.client import Outpost
 from polar.outpost.reducer import Reducer
 from tests.benchmarks import BUCKET_COUNTS, REDUCER, SNAPSHOT, encode_state

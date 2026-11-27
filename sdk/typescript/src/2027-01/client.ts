@@ -1,5 +1,5 @@
 import { ClientBase, ClientOptions, resolveBaseUrl } from "../base";
-import { createMetering, type MeteringOptions } from "../metering/client";
+import { PolarEventClient, type PolarEventOptions } from "../metering/client";
 import { createBenefitGrantsService } from "./services/benefit_grants";
 import { createBenefitsService } from "./services/benefits";
 import { createCheckoutLinksService } from "./services/checkout_links";
@@ -34,7 +34,8 @@ const SERVERS: Record<Environment, string> = {
   sandbox: "https://sandbox-api.polar.sh",
 };
 
-export interface PolarOptions extends Omit<ClientOptions, "baseUrl" | "version"> {
+export interface PolarOptions
+  extends Omit<ClientOptions, "baseUrl" | "version">, PolarEventOptions {
   environment?: Environment;
   baseUrl?: string;
 }
@@ -51,6 +52,7 @@ export type PolarCore = ReturnType<typeof createPolarCore>;
 
 export function createPolar(options: PolarOptions) {
   const client = createPolarCore(options);
+  const events = new PolarEventClient(client, options);
 
   const services = {
     events: createEventsService(client),
@@ -83,16 +85,11 @@ export function createPolar(options: PolarOptions) {
 
   return {
     ...services,
-    /**
-     * Create a helper for event delivery and customer meter reads.
-     *
-     * @param options.queue EventQueue used to deliver events. Defaults to MemoryEventQueue.
-     * @param options.outpost Outpost from `outpost()` in `@polar-sh/sdk/outpost`. Disabled by default.
-     * @param options.onAck Callback for batches Polar accepts.
-     * @param options.onRejected Callback for permanently rejected events and their reason.
-     * @returns A metering helper that starts on its first operation.
-     */
-    metering: (options?: MeteringOptions) => createMetering(client, options),
+    actor: events.actor.bind(events),
+    track: events.track.bind(events),
+    meter: events.meter.bind(events),
+    flush: events.flush.bind(events),
+    close: events.close.bind(events),
   };
 }
 

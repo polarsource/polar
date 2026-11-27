@@ -146,11 +146,11 @@ from polar.v2026_10.outputs import Customer
 customer = deserialize(data, Customer)
 ```
 
-## Metering
+## Actors and event delivery
 
-The metering helper adds buffering, batching, and optional local reduction to the Polar Event Ingestion API.
-
-### Basic usage
+Use an actor to bind a customer and optional member. `PolarAsync` buffers events in
+memory by default. The client opens the queue on entry and drains it on exit.
+Pass `event_queue` to customize delivery or `event_queue=None` to disable it.
 
 ```python
 from polar.v2026_10 import PolarAsync
@@ -158,88 +158,45 @@ from polar.v2026_10 import PolarAsync
 
 async def record_usage() -> None:
     async with PolarAsync("polar_oat_xxx") as polar:
-        async with polar.metering() as metering:
-            await metering.track(
-                name="api_request",
-                external_customer_id="customer_123",
-                metadata={"tokens": 42},
-            )
+        actor = polar.actor(external_customer_id="customer_123")
+        await actor.track(name="api_request", metadata={"tokens": 42})
+        usage = await actor.meter("meter_uuid")
 ```
 
-An event without a `timestamp` is dated when you call `track()`, not when its batch reaches Polar.
-Metering uses an in-memory queue by default. Pass `queue=` to use a different queue or customize its settings.
-
-### Actor context
-
-It's common to have several events for the same customer in the same session. You can create an actor context, so you don't have to pass the customer identifier for each event:
-
-```python
-async with polar.metering() as metering:
-    actor = await metering.actor(external_customer_id="customer_123")
-    await actor.track(name="api_request", metadata={"tokens": 42})
-    await actor.track(name="api_request", metadata={"tokens": 17})
-```
-
-### Read meters
-
-The metering helper can read meters. Under the hood, it can leverage Outpost to have low-latency reads.
-
-```python
-meter = await metering.meter("meter_uuid", external_customer_id="customer_123")
-if meter is not None:
-    print(meter.consumed_units, meter.credited_units, meter.balance)
-```
-
-With an actor context:
-
-```python
-actor = await metering.actor(external_customer_id="customer_123")
-meter = await actor.meter("meter_uuid")
-if meter is not None:
-    print(meter.consumed_units, meter.credited_units, meter.balance)
-```
+Use `polar.track(...)` or `polar.meter(...)` to pass the customer ID on each call.
+Meter reads are customer-wide and work without a queue. `track()` requires a queue
+and an open client context. It assigns a timestamp and external ID when omitted.
 
 ### Local reduction with Outpost
 
-Pass `outpost=True` to enable local reduction using `REDIS_URL`, or pass a Redis URL or client in the `redis` option. The queue handles delivery. Outpost applies events locally after enqueue succeeds. If Outpost cannot answer a read, metering queries the Polar API.
-
-`track()` assigns a timestamp and external ID when omitted, so the queue and Outpost use the same event.
-
-For durable delivery, install the `outpost` extra with `uv add "polar-sdk[outpost]"` and use a Redis queue. Use a different stream for each Polar environment and organization.
-
-```python
-from polar.metering.queue.redis import RedisEventQueue
-
-redis_url = "redis://localhost:6379"
-queue = RedisEventQueue(redis_url, stream="my-app:production:org:events")
-async with polar.metering(queue=queue, outpost={"redis": redis_url}) as metering:
-    await metering.track(name="api_request", external_customer_id="customer_123")
-```
-
-If the queue and Outpost use the same URL, they share one Redis client for the metering
-session. You can also pass an existing `redis.asyncio.Redis` client. Your application owns
-that client and closes it after metering shuts down.
+Pass `outpost={"redis": redis_url}` to `PolarAsync` to enable local meter reads.
+Outpost applies events locally after enqueue succeeds. If it cannot answer a
+meter read, the client queries the Polar API. Install the `outpost` extra with
+`uv add "polar-sdk[outpost]"`.
 
 ```python
-from redis.asyncio import Redis
-
-async with Redis.from_url(redis_url) as redis:
-    queue = RedisEventQueue(redis, stream="my-app:production:org:events")
-    async with polar.metering(queue=queue, outpost={"redis": redis}) as metering:
-        await metering.track(name="api_request", external_customer_id="customer_123")
+async with PolarAsync(token, outpost={"redis": "redis://localhost:6379"}) as polar:
+    actor = polar.actor(external_customer_id="customer_123")
+    await actor.track(name="api_request")
+    usage = await actor.meter("meter_uuid")
 ```
+
+For durable delivery, pass a `RedisEventQueue` as `event_queue`. Use a different
+queue stream for each Polar environment and organization. When Outpost and the
+queue use the same Redis URL, they share a Redis client. If you pass your own
+asynchronous Redis client, close it after `PolarAsync` exits.
 
 ### Delivery
 
 The in-memory queue queues events in memory and sends them in batches of up to `batch_size`
 events, or every `batch_interval` seconds. `track()` never waits for the HTTP request.
 
-On a long-running server, keep one metering context open for the application's lifetime
+On a long-running server, keep one `PolarAsync` context open for the application's lifetime
 and let background batching deliver events. Share it between requests on the same event loop.
 Leaving the context drains the queue within `shutdown_timeout` (30 seconds by default) and
 raises if any earlier, unacknowledged events could not be confirmed.
 
-In serverless environments such as Vercel or AWS Lambda, await `flush(timeout=30)` before
+In serverless environments such as Vercel or AWS Lambda, await `polar.flush(timeout=30)` before
 returning from each request, so the function does not freeze with events in the queue. It
 waits for events queued before the call without closing the shared helper. A newer flush
 releases older ones whose deadline is no later than its own and waits for their events too,
@@ -248,8 +205,8 @@ HTTP batches.
 
 ```python
 async def handle_request() -> dict[str, bool]:
-    await metering.track(name="api_request", external_customer_id="customer_123")
-    await metering.flush(timeout=30)
+    await polar.track(name="api_request", external_customer_id="customer_123")
+    await polar.flush(timeout=30)
     return {"ok": True}
 ```
 
@@ -261,13 +218,13 @@ from polar.metering.queue.memory import MemoryEventQueue
 
 async def handle_request() -> dict[str, bool]:
     queue = MemoryEventQueue(shutdown_timeout=30)
-    async with polar.metering(queue=queue) as metering:
-        await metering.track(name="api_request", external_customer_id="customer_123")
+    async with PolarAsync(token, event_queue=queue) as polar:
+        await polar.track(name="api_request", external_customer_id="customer_123")
     return {"ok": True}
 ```
 
 A `flush()` confirms delivery unless a newer flush released it. Failed delivery raises
-`MeteringDeliveryError`, importable from `polar.metering`. Its `events` contains the unconfirmed events; each item in
+`MeteringDeliveryError`, importable from `polar.metering.errors`. Its `events` contains the unconfirmed events; each item in
 `failures` includes `events`, a `reason`, and the original `cause`. Drops are still logged
 and permanent rejections are passed to the queue session's rejection hook. A completed flush acknowledges the reported failures, so a later
 flush reports only subsequent outcomes. The newest overlapping flush reports the failures of
@@ -291,10 +248,8 @@ termination. A timeout means delivery is unconfirmed, so blindly retrying may du
 
 ### Delivery callbacks
 
-Pass async `on_ack(events)` and `on_rejected(events, reason)` callbacks to `polar.metering()`
-to observe delivery. When Outpost is enabled, its corresponding hook runs first. Metering
-logs caller callback failures. A Redis queue may notify callbacks again if a worker fails
-before acknowledging the stream entries.
+Pass async `on_event_ack(events)` and `on_event_rejected(events, reason)` callbacks to `PolarAsync`
+to observe delivery.
 
 ### Options
 
@@ -306,16 +261,16 @@ The in-memory queue sends events in batches to Polar. It retries network errors,
 | ------------------ | ------- | ---------------------------------------------------------- |
 | `batch_size`       | `100`   | Maximum events per HTTP request.                           |
 | `batch_interval`   | `1.0`   | Seconds to collect a batch, starting with its first event. |
-| `shutdown_timeout` | `30.0`   | Seconds allowed to drain on context exit.                  |
+| `shutdown_timeout` | `30.0`  | Seconds allowed to drain on context exit.                  |
 | `max_attempts`     | `3`     | Total attempts per batch, including the first.             |
 
 #### Outpost
 
-| Option         | Default                          | Meaning                                                  |
-| -------------- | -------------------------------- | -------------------------------------------------------- |
-| `redis`        | `REDIS_URL` environment variable | Redis URL or caller-owned asynchronous Redis client.    |
-| `telemetry`    | `True`                           | Send Outpost metrics and traces to Polar.                |
-| `snapshot_timeout` | `5`                          | Seconds a cold read waits for its initial snapshot.      |
+| Option             | Default                          | Meaning                                              |
+| ------------------ | -------------------------------- | ---------------------------------------------------- |
+| `redis`            | Required                         | Redis URL or caller-owned asynchronous Redis client. |
+| `telemetry`        | `True`                           | Send Outpost metrics and traces to Polar.            |
+| `snapshot_timeout` | `5`                              | Seconds a cold read waits for its initial snapshot.  |
 
 Telemetry can also be disabled with the `POLAR_OUTPOST_TELEMETRY=0` environment variable.
 

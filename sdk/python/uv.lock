@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.12' and sys_platform == 'emscripten'",
@@ -446,6 +446,7 @@ name = "polar-sdk"
 source = { editable = "." }
 dependencies = [
     { name = "adaptix" },
+    { name = "anyio" },
     { name = "certifi" },
     { name = "httpx2" },
     { name = "typing-extensions" },
@@ -453,7 +454,6 @@ dependencies = [
 
 [package.optional-dependencies]
 outpost = [
-    { name = "anyio" },
     { name = "opentelemetry-exporter-otlp-proto-common" },
     { name = "opentelemetry-sdk" },
     { name = "redis", extra = ["hiredis"] },
@@ -461,7 +461,6 @@ outpost = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "anyio" },
     { name = "fakeredis", extra = ["lua"] },
     { name = "httpx" },
     { name = "pytest" },
@@ -474,7 +473,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "adaptix", specifier = "==3.0.0b12" },
-    { name = "anyio", marker = "extra == 'outpost'", specifier = ">=4.5.0" },
+    { name = "anyio", specifier = ">=4.5.0" },
     { name = "certifi", specifier = ">=2026.10.19" },
     { name = "httpx2", specifier = ">=2.16.0" },
     { name = "opentelemetry-exporter-otlp-proto-common", marker = "extra == 'outpost'", specifier = ">=1.30.0" },
@@ -486,7 +485,6 @@ provides-extras = ["outpost"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "anyio", specifier = ">=4.5.0" },
     { name = "fakeredis", extras = ["lua"], specifier = ">=2.36.1" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "pytest" },

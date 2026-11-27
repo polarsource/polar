@@ -5,9 +5,14 @@ import anyio
 import anyio.lowlevel
 import pytest
 
-from polar.metering import EventQueue, MeteringDeliveryError, MeteringTimeoutError
-from polar.metering.errors import IngestRejectedError, IngestRetryableError
+from polar.metering.errors import (
+    IngestRejectedError,
+    IngestRetryableError,
+    MeteringDeliveryError,
+    MeteringTimeoutError,
+)
 from polar.metering.events import EventInput
+from polar.metering.queue import EventQueue
 from polar.metering.queue.memory import DropReason, MemoryEventQueue, _FlushRequest
 
 

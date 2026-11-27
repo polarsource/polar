@@ -4,7 +4,7 @@ import { Console, Effect, Layer, Option } from 'effect'
 import { CliConfig, CliOutput, Command, type HelpDoc } from 'effect/cli'
 import { FetchHttpClient } from 'effect/http'
 import { ApiRuntime } from '@polar-sh/cli-commands'
-import { program, referenceBuiltIns } from '@/program'
+import { programWithout, referenceBuiltIns } from '@/program'
 import { AgentSetup } from '@/services/agent-setup/service'
 import { Auth } from '@/services/auth'
 import { BillingConfig } from '@/services/billing-config/service'
@@ -59,6 +59,10 @@ const helpOnlyServices = Layer.mergeAll(
   ),
   FetchHttpClient.layer,
 )
+
+const UNDOCUMENTED = ['config']
+
+const documented = programWithout(UNDOCUMENTED)
 
 const docs = new URL('../../../../docs/', import.meta.url)
 const OVERVIEW = 'integrate/cli/reference.mdx'
@@ -221,7 +225,7 @@ const helpFor = (path: string[]) =>
       },
     }
     const { console } = captureConsole()
-    yield* Command.runWith(program, { version: '0.0.0' })([
+    yield* Command.runWith(documented, { version: '0.0.0' })([
       ...path.slice(1),
       '--help',
     ]).pipe(
@@ -261,7 +265,7 @@ const groupTitle = (group: string | undefined) =>
 
 const commandPage = (command: CommandTree) =>
   Effect.gen(function* () {
-    const [own, ...children] = paths(command, [program.name])
+    const [own, ...children] = paths(command, [documented.name])
     const doc = yield* helpFor(own!)
     const sections = [renderCommand(own!, doc, { heading: false })]
     for (const path of children) {
@@ -294,7 +298,7 @@ const overviewPage = (doc: HelpDoc.HelpDoc) =>
       `## ${groupTitle(group.group)}`,
       group.commands
         .map((child) =>
-          `- [${code(`${program.name} ${child.name}`)}](/${PAGES}/${child.name}) ${text(child.shortDescription ?? child.description)}`.trimEnd(),
+          `- [${code(`${documented.name} ${child.name}`)}](/${PAGES}/${child.name}) ${text(child.shortDescription ?? child.description)}`.trimEnd(),
         )
         .join('\n'),
     ]),
@@ -309,7 +313,7 @@ const navigationGroup = (existing: ReadonlyArray<unknown>) => ({
       (page) => typeof page === 'string' && !page.startsWith(PAGES),
     ),
     PAGES,
-    ...program.subcommands.map((group) => ({
+    ...documented.subcommands.map((group) => ({
       group: groupTitle(group.group),
       pages: group.commands.map((command) => `${PAGES}/${command.name}`),
     })),
@@ -340,8 +344,8 @@ const withNavigation = (source: string) => {
 
 const build = Effect.gen(function* () {
   const files = new Map<string, string>()
-  files.set(OVERVIEW, overviewPage(yield* helpFor([program.name])))
-  for (const command of program.subcommands.flatMap(
+  files.set(OVERVIEW, overviewPage(yield* helpFor([documented.name])))
+  for (const command of documented.subcommands.flatMap(
     (group) => group.commands,
   )) {
     files.set(`${PAGES}/${command.name}.mdx`, yield* commandPage(command))

@@ -9,13 +9,21 @@ import { polar } from '@/commands/home'
 import { update } from '@/commands/update'
 import { webhook } from '@/commands/webhook'
 
-export const program = polar.pipe(
-  Command.withSubcommands([
-    { group: 'CLI COMMANDS', commands: [auth, agent, config, webhook, update] },
-    { group: 'API RESOURCES', commands },
-  ]),
-  Command.withGlobalFlags([Output]),
-)
+const cliCommands = [auth, agent, config, webhook, update]
+
+export const programWithout = (hidden: ReadonlyArray<string>) =>
+  polar.pipe(
+    Command.withSubcommands([
+      {
+        group: 'CLI COMMANDS',
+        commands: cliCommands.filter(({ name }) => !hidden.includes(name)),
+      },
+      { group: 'API RESOURCES', commands },
+    ]),
+    Command.withGlobalFlags([Output]),
+  )
+
+export const program = programWithout([])
 
 const sharedBuiltIns = [
   GlobalFlag.Version,

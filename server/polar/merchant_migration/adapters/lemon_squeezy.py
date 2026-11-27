@@ -344,8 +344,8 @@ class LemonSqueezyAdapter:
         match attributes.get("scheme"):
             case "graduated" | "volume":
                 return CanonicalPricingScheme.tiered
-            case "package":
-                return CanonicalPricingScheme.package
+            # A package price bills unit_price per started package, so one unit
+            # costs exactly unit_price, and other quantities never import.
             case _:
                 return CanonicalPricingScheme.fixed
 

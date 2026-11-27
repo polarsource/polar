@@ -219,6 +219,8 @@ const polar = createPolar({
 
 Outpost applies events locally after enqueue succeeds. If Outpost cannot answer a meter read,
 the client queries the Polar API. `snapshotTimeout` controls the wait for an initial snapshot.
+If Outpost is unavailable at startup, event delivery continues and later reads or warmup
+calls retry Outpost after a short delay.
 
 Call `await actor.warmup()` to warm the customer's state across all configured Outpost
 reducers before reading a meter.

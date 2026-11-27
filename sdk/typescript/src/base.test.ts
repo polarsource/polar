@@ -464,14 +464,23 @@ test("warms the actor's customer without starting the delivery queue", async () 
   }
 });
 
-test("delivers events after a meter read falls back when Outpost cannot start", async () => {
+test("keeps delivering events during Outpost startup failure and resumes local reads", async () => {
+  const now = vi.spyOn(Date, "now").mockReturnValue(0);
   const startOutpost = vi
     .spyOn(Outpost.prototype, "start")
-    .mockRejectedValue(new UnavailableRedisError());
+    .mockRejectedValueOnce(new UnavailableRedisError())
+    .mockImplementation(async function (this: Outpost) {
+      return this;
+    });
+  const local = { meter_id: "meter", consumed_units: 2, credited_units: 3, balance: 1 };
+  vi.spyOn(Outpost.prototype, "meter").mockResolvedValue(local);
+  const reduce = vi.spyOn(Outpost.prototype, "track").mockResolvedValue(undefined);
+  const ack = vi.spyOn(Outpost.prototype, "onAck").mockResolvedValue(undefined);
+  const close = vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
   const fetch = vi
     .spyOn(globalThis, "fetch")
     .mockResolvedValueOnce(new Response('{"items":[]}'))
-    .mockResolvedValueOnce(new Response(null, { status: 202 }));
+    .mockImplementation(async () => new Response(null, { status: 202 }));
   const polar = createPolar({
     accessToken: "token",
     outpost: outpost({ redis: "redis://localhost" }),
@@ -486,9 +495,21 @@ test("delivers events after a meter read falls back when Outpost cannot start", 
       "https://api.polar.sh/v1/events/ingest",
       expect.objectContaining({ method: "POST" }),
     );
+    expect(ack).not.toHaveBeenCalled();
+
+    now.mockReturnValue(1000);
+    await expect(
+      Promise.all([polar.meter("meter", event), polar.meter("meter", event)]),
+    ).resolves.toEqual([local, local]);
+    expect(startOutpost).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    await polar.track(event);
+    expect(reduce).toHaveBeenCalledOnce();
   } finally {
     await polar.close();
   }
+  expect(ack).toHaveBeenCalledExactlyOnceWith([reduce.mock.calls[0][0]]);
+  expect(ack.mock.invocationCallOrder[0]).toBeLessThan(close.mock.invocationCallOrder[0]);
 });
 
 test("closes Outpost when the delivery queue fails to start", async () => {

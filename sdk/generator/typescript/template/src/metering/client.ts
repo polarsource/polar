@@ -15,6 +15,8 @@ import type { EventQueue, EventQueueHooks, EventQueueStartOptions } from "./queu
 import { MemoryEventQueue } from "./queue/memory";
 import type { RedisEventQueue } from "./queue/redis";
 
+const OUTPOST_START_RETRY_DELAY_MS = 1000;
+
 interface OutpostBackend {
   start(): Promise<unknown>;
   close(): Promise<void>;
@@ -41,6 +43,7 @@ export interface PolarEventOptions {
 export class PolarEventClient {
   private readonly running: Pick<EventQueue, "close">[] = [];
   private startingOutpost?: Promise<OutpostBackend | undefined>;
+  private outpostRetryAt = 0;
   private startingQueue?: Promise<void>;
   private outpost?: OutpostBackend;
   private readonly queue: EventQueue | null;
@@ -206,10 +209,15 @@ export class PolarEventClient {
   }
 
   private startOutpost(): Promise<OutpostBackend | undefined> | undefined {
-    if (this.options.outpost) {
-      this.startingOutpost ??= this.openOutpost(this.options.outpost);
-      return this.startingOutpost;
-    }
+    if (!this.options.outpost || Date.now() < this.outpostRetryAt) return;
+    this.startingOutpost ??= this.openOutpost(this.options.outpost).then((outpost) => {
+      if (outpost === undefined) {
+        this.outpostRetryAt = Date.now() + OUTPOST_START_RETRY_DELAY_MS;
+        this.startingOutpost = undefined;
+      }
+      return outpost;
+    });
+    return this.startingOutpost;
   }
 
   private async openOutpost(createOutpost: OutpostFactory): Promise<OutpostBackend | undefined> {
@@ -238,8 +246,8 @@ export class PolarEventClient {
     this.checkShutdownDeadline();
     const options: EventQueueStartOptions = {
       ingest: createIngest(this.client),
-      onAck: outpost || this.options.onEventAck ? this.onAck.bind(this) : undefined,
-      onRejected: outpost || this.options.onEventRejected ? this.onRejected.bind(this) : undefined,
+      onAck: this.options.outpost || this.options.onEventAck ? this.onAck.bind(this) : undefined,
+      onRejected: this.options.outpost || this.options.onEventRejected ? this.onRejected.bind(this) : undefined,
     };
     try {
       const redis = outpost?.redisForUrl(queue.redisUrl) as
@@ -284,7 +292,8 @@ export class PolarEventClient {
       }
       throw error;
     }
-    this.running.push(resource);
+    if (resource === this.queue) this.running.push(resource);
+    else this.running.unshift(resource);
   }
 
   private async onAck(events: EventInput[]): Promise<void> {

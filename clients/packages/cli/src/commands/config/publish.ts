@@ -27,6 +27,7 @@ import { confirm as confirmed, configFile as file, org } from '@/utils/flags'
 import { Output } from '@/utils/output'
 import { withProgress } from '@/utils/progress'
 import { interactive, keypress } from '@/utils/prompt'
+import { publishUsage } from '@/utils/billing-config/usage'
 import * as ui from '@/utils/ui'
 
 const label = (catalog: Catalog | null, fallback: string) =>
@@ -232,5 +233,6 @@ export const publish = Command.make('publish', { file, org, confirmed }).pipe(
       published,
       drift: drift?.entries ?? null,
     }),
+    telemetry: publishUsage,
   }),
 )

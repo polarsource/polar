@@ -92,5 +92,6 @@ export const disable = Command.make('disable', { org, confirmed }).pipe(
         return { organization, disabled: true }
       }),
     render: ({ organization }) => render(organization),
+    telemetry: () => ({ config_status: 'disabled' }),
   }),
 )

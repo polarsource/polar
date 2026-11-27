@@ -12,6 +12,7 @@ import { type Say, output } from '@/utils/command'
 import { confirm as confirmed, configFile as file, org } from '@/utils/flags'
 import { Output } from '@/utils/output'
 import { interactive } from '@/utils/prompt'
+import { fileStatusUsage } from '@/utils/billing-config/usage'
 import * as ui from '@/utils/ui'
 
 const ResetOutput = Schema.Struct({
@@ -105,5 +106,6 @@ export const reset = Command.make('reset', { file, org, confirmed }).pipe(
       ui.blank,
     ],
     json: ({ result }) => result,
+    telemetry: ({ result }) => fileStatusUsage(result.file, result.status),
   }),
 )

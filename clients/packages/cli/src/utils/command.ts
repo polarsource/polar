@@ -2,6 +2,7 @@ import { Console, Data, Effect, Schema } from 'effect'
 import { Command } from 'effect/cli'
 import { printJson } from '@/utils/json'
 import { Output } from '@/utils/output'
+import { type UsageDetails, describeUsage } from '@/utils/usage'
 
 type Json<P> = Schema.Codec<P, unknown>
 
@@ -15,6 +16,7 @@ interface OutputSpec<I, A, P, E, R, F> {
   readonly render: (result: A, input: I) => ReadonlyArray<string>
   readonly json?: (result: A) => P
   readonly failed?: (result: A) => F | undefined
+  readonly telemetry?: (result: A, input: I) => UsageDetails
 }
 
 type RequiresProjection<A, P> = A extends P
@@ -42,6 +44,9 @@ export const output =
           const say: Say['say'] = (lines) =>
             json ? Effect.void : Console.log(lines.join('\n'))
           const result = yield* spec.run(input, { say })
+          if (spec.telemetry) {
+            yield* describeUsage(spec.telemetry(result, input))
+          }
           if (json) {
             const value = spec.json
               ? spec.json(result)

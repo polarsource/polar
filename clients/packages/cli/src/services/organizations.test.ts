@@ -5,6 +5,7 @@ import { Auth } from '@/services/auth'
 import { Organizations, layer } from '@/services/organizations'
 import { Polar } from '@/services/polar'
 import { CLIConfig } from '@/services/config'
+import { HiddenNames } from '@/utils/usage'
 import {
   fakeAuth,
   fakeConfig,
@@ -303,4 +304,13 @@ test('override enumeration reports permission errors but explicit accessible IDs
   expect(await Effect.runPromise(organizations.resolve(second.id))).toEqual(
     second,
   )
+})
+
+test('resolving an organization keeps its name out of telemetry', async () => {
+  const hidden = new Set<string>()
+  const organizations = await service()
+  await Effect.runPromise(
+    organizations.resolve().pipe(Effect.provideService(HiddenNames, hidden)),
+  )
+  expect([...hidden]).toEqual([first.name])
 })

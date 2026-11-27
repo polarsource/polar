@@ -13,6 +13,7 @@ import {
 } from 'effect'
 import { HttpClient, HttpClientRequest } from 'effect/http'
 import { UsedEnvironments } from '@/services/api'
+import { HiddenNames, Usage } from '@/utils/usage'
 import { VERSION } from '@/version'
 
 const OPT_OUT_VARIABLE = 'POLAR_CLI_TELEMETRY_OPTOUT'
@@ -136,13 +137,21 @@ const redactions: ReadonlyArray<RegExp> = [
   /\b[A-Za-z0-9_-]{32,}\b/g,
 ]
 
-export const redact = (text: string) =>
-  redactions
+const NAME_MINIMUM = 3
+
+export const redact = (text: string, names: Iterable<string> = []) => {
+  const scrubbed = redactions.reduce(
+    (result, pattern) => result.replace(pattern, '<redacted>'),
+    stripVTControlCharacters(text).slice(0, 1000),
+  )
+  return [...names]
+    .filter((name) => name.length >= NAME_MINIMUM)
     .reduce(
-      (result, pattern) => result.replace(pattern, '<redacted>'),
-      stripVTControlCharacters(text).slice(0, 1000),
+      (result, name) => result.replaceAll(name, '<organization>'),
+      scrubbed,
     )
     .slice(0, 200)
+}
 
 const field = (value: unknown, key: string): unknown =>
   typeof value === 'object' && value !== null && key in value
@@ -187,7 +196,7 @@ export const describeFailure = (error: unknown): Failure => {
   return {
     error: name,
     ...(typeof message === 'string' && message
-      ? { errorMessage: redact(message) }
+      ? { errorMessage: message }
       : {}),
     ...(typeof code === 'number' ? { errorCode: code } : {}),
   }
@@ -265,6 +274,8 @@ export const layer = Layer.effect(
     const env = yield* Environment
     const build = yield* Build
     const used = yield* UsedEnvironments
+    const usage = yield* Usage
+    const hidden = yield* HiddenNames
     const projectKey = env[PROJECT_KEY_VARIABLE] || PROJECT_KEY
     const active =
       !isOptedOut(env) &&
@@ -282,11 +293,15 @@ export const layer = Layer.effect(
             distinct_id: `cli:${id}`,
             timestamp: new Date().toISOString(),
             properties: {
+              ...usage,
               command: result.command.join(' '),
               flags: result.flags,
               outcome: result.outcome,
               error: result.error ?? null,
-              error_message: result.errorMessage ?? null,
+              error_message:
+                result.errorMessage === undefined
+                  ? null
+                  : redact(result.errorMessage, hidden),
               error_code: result.errorCode ?? null,
               environment: [...used].sort().join(',') || null,
               duration_ms: Math.round(result.durationMs),

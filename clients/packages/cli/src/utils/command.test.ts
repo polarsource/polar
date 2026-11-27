@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest'
-import { Effect, Exit } from 'effect'
+import { Effect, Exit, Schema } from 'effect'
 import { Command } from 'effect/cli'
-import { textOnly } from '@/utils/command'
+import { output, textOnly } from '@/utils/command'
+import { Usage, type UsageValue } from '@/utils/usage'
 import { runCli } from '@/utils/test-utils/cli'
 
 const token = (opened: string[]) =>
@@ -49,4 +50,22 @@ describe('textOnly', () => {
     expect(opened).toEqual([])
     expect(cli.output()).toBe('')
   })
+})
+
+test('output records what the command says about its result', async () => {
+  const usage: Record<string, UsageValue> = {}
+  const save = Command.make('save').pipe(
+    output({
+      result: Schema.Struct({ saved: Schema.Finite }),
+      run: () => Effect.succeed({ saved: 2 }),
+      render: ({ saved }) => [`Saved ${saved}`],
+      telemetry: ({ saved }) => ({
+        config_status: 'saved',
+        config_updated: saved,
+      }),
+    }),
+  )
+  const cli = runCli(save, [])
+  await Effect.runPromise(cli.effect.pipe(Effect.provideService(Usage, usage)))
+  expect(usage).toEqual({ config_status: 'saved', config_updated: 2 })
 })

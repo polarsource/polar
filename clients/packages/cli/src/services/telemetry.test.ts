@@ -25,6 +25,7 @@ import {
   type TelemetryEvent,
 } from '@/services/telemetry'
 import { fakeHttp } from '@/utils/test-utils/http'
+import { HiddenNames, Usage, type UsageValue } from '@/utils/usage'
 
 const outcome: CommandOutcome = {
   command: ['polar', 'auth', 'login'],
@@ -38,7 +39,12 @@ type Env = Record<string, string>
 const telemetry = (
   env: Env = { POLAR_CLI_POSTHOG_KEY: 'phc_test' },
   build: BuildKind = 'release',
-  { writable = true, used = new Set<PolarEnvironment>() } = {},
+  {
+    writable = true,
+    used = new Set<PolarEnvironment>(),
+    usage = {} as Record<string, UsageValue>,
+    hidden = new Set<string>(),
+  } = {},
 ) => {
   const files = new Map<string, string>()
   const events: TelemetryEvent[] = []
@@ -77,6 +83,8 @@ const telemetry = (
         Layer.succeed(Environment, env),
         Layer.succeed(Build, build),
         Layer.succeed(UsedEnvironments, used),
+        Layer.succeed(Usage, usage),
+        Layer.succeed(HiddenNames, hidden),
       ),
     ),
   )
@@ -311,18 +319,16 @@ describe('outcomes', () => {
     })
   })
 
-  test('appends the hint to the message without terminal colors', () => {
-    expect(
-      describeFailure({
-        _tag: 'TriggerError',
-        message: 'The API rejected the request',
-        hint: `${createColors(true).cyan('data.amount')}: Input should be a valid integer`,
-      }),
-    ).toEqual({
-      error: 'TriggerError',
-      errorMessage:
-        'The API rejected the request\ndata.amount: Input should be a valid integer',
+  test('appends the hint to the message, and redacting drops terminal colors', () => {
+    const { error, errorMessage } = describeFailure({
+      _tag: 'TriggerError',
+      message: 'The API rejected the request',
+      hint: `${createColors(true).cyan('data.amount')}: Input should be a valid integer`,
     })
+    expect(error).toBe('TriggerError')
+    expect(redact(errorMessage ?? '')).toBe(
+      'The API rejected the request\ndata.amount: Input should be a valid integer',
+    )
   })
 
   test('names the flag, argument or subcommand behind a usage mistake, never a value', () => {
@@ -363,7 +369,7 @@ describe('outcomes', () => {
     })
     expect(unknown('polar_oat_short')).toEqual({
       error: 'ShowHelp:UnknownSubcommand',
-      errorMessage: '<redacted>',
+      errorMessage: 'polar_oat_short',
     })
     expect(unknown('342c8722-fcad-416b-8232-8877dcf8f90e')).toEqual({
       error: 'ShowHelp:UnknownSubcommand',
@@ -510,25 +516,28 @@ describe('redact', () => {
     expect(redact('/Users/seb/polar_oat_a')).toBe('<redacted>')
   })
 
-  test('applies to failure messages and ignores non-numeric codes', () => {
-    expect(
-      describeFailure(
-        new AuthError({
-          message:
-            'Organization 342c8722-fcad-416b-8232-8877dcf8f90e is missing.',
-        }),
-      ),
-    ).toEqual({
-      error: 'AuthError',
-      errorMessage: 'Organization <redacted> is missing.',
-    })
+  test('a name that is part of a path does not stop the path being redacted', () => {
+    expect(redact('Unable to read /home/alice/.polar/config', ['home'])).toBe(
+      'Unable to read <redacted>',
+    )
+  })
+
+  test('replaces the given names before anything is cut off', () => {
+    const message = `${'x '.repeat(97)}Acme Inc is over the limit`
+    expect(redact(message, ['Acme Inc', 'ab'])).toBe(`${'x '.repeat(97)}<organ`)
+    expect(redact('a lab for Acme Inc', ['Acme Inc', 'ab'])).toBe(
+      'a lab for <organization>',
+    )
+  })
+
+  test('failure descriptions keep the message and ignore non-numeric codes', () => {
     const notFound = Object.assign(
       new Error("ENOENT: no such file '/Users/seb/.polar/x'"),
       { code: 'ENOENT' },
     )
     expect(describeFailure(notFound)).toEqual({
       error: 'Error',
-      errorMessage: "ENOENT: no such file '<redacted>",
+      errorMessage: "ENOENT: no such file '/Users/seb/.polar/x'",
     })
   })
 })
@@ -701,5 +710,35 @@ describe('send', () => {
     await expect(run()).resolves.toBeUndefined()
     http.routes[`POST ${posthog}`] = () => new Response(null, { status: 500 })
     await expect(run()).resolves.toBeUndefined()
+  })
+})
+
+describe('command details', () => {
+  test('adds what the command reported without replacing the standard properties', async () => {
+    const { record, events } = telemetry(undefined, 'release', {
+      usage: { config_status: 'conflict', config_conflicts: 1, command: 'x' },
+    })
+    await record()
+    expect(events[0]!.properties).toMatchObject({
+      command: 'polar auth login',
+      config_status: 'conflict',
+      config_conflicts: 1,
+    })
+  })
+
+  test('redacts the error message once, as the event is built', async () => {
+    const { record, events } = telemetry(undefined, 'release', {
+      hidden: new Set(['Acme Inc']),
+    })
+    await record({
+      ...outcome,
+      outcome: 'failure',
+      error: 'BillingConfigError',
+      errorMessage:
+        'The draft of Acme Inc (sandbox) is missing 342c8722-fcad-416b-8232-8877dcf8f90e',
+    })
+    expect(events[0]!.properties['error_message']).toBe(
+      'The draft of <organization> (sandbox) is missing <redacted>',
+    )
   })
 })

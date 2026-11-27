@@ -9,6 +9,7 @@ import {
 import { Auth } from '@/services/auth'
 import { CLIConfig } from '@/services/config'
 import { Polar } from '@/services/polar'
+import { hideName } from '@/utils/usage'
 
 export class Organizations extends Context.Service<
   Organizations,
@@ -178,7 +179,7 @@ export const layer = Layer.effect(
                 : error,
             ),
           )
-        }),
+        }).pipe(Effect.tap(({ name }) => hideName(name))),
     })
   }),
 )

@@ -4,7 +4,6 @@ import structlog
 from dramatiq.asyncio import get_event_loop_thread
 
 from polar.kit.http import SSRFSafeTransport
-from polar.logfire import instrument_httpx
 from polar.logging import Logger
 
 log: Logger = structlog.get_logger()
@@ -23,6 +22,8 @@ async def _close_client() -> None:
 
 def setup_httpx() -> None:
     global _httpx
+    from polar.logfire import instrument_httpx
+
     instrument_httpx()
     _httpx = httpx2.AsyncClient(
         transport=SSRFSafeTransport(max_keepalive_connections=40, keepalive_expiry=30.0)

@@ -21,6 +21,8 @@ if TYPE_CHECKING:
     from mypy_boto3_sqs.client import SQSClient
     from mypy_boto3_sqs.type_defs import SendMessageBatchRequestEntryTypeDef
 
+    sqs_client: SQSClient
+
 log: Logger = structlog.get_logger()
 
 # SQS hard limits.
@@ -80,6 +82,10 @@ def __getattr__(name: str) -> Any:
 
         globals()[name] = boto3
         return boto3
+    if name == "sqs_client":
+        client = get_sqs_client()
+        globals()[name] = client
+        return client
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -137,9 +143,6 @@ def get_consumer_scheduler_client() -> "EventBridgeSchedulerClient":
             retries={"max_attempts": 2, "mode": "standard"},
         ),
     )
-
-
-sqs_client = get_sqs_client()
 
 
 def actor_to_queue_name(actor_name: str) -> str:
@@ -340,10 +343,11 @@ def send_jobs_sync(jobs: list[Job]) -> None:
             entry["DelaySeconds"] = min(round(job.delay / 1000), MAX_DELAY_SECONDS)
         entries.append(entry)
 
+    client: SQSClient = getattr(sys.modules[__name__], "sqs_client")
     for queue_name, entries in by_queue.items():
-        queue_url = resolve_queue_url(sqs_client, queue_name)
+        queue_url = resolve_queue_url(client, queue_name)
         for batch in pack_batches(entries):
-            response = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=batch)
+            response = client.send_message_batch(QueueUrl=queue_url, Entries=batch)
             failed = response.get("Failed", [])
             if failed:
                 log.error(

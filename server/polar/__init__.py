@@ -21,6 +21,15 @@ if TYPE_CHECKING:
     from polar.base import deserialize as deserialize
 
 
+__all__ = (
+    "PolarError",
+    "PolarNetworkError",
+    "PolarRateLimitError",
+    "PolarServerError",
+    "deserialize",
+)
+
+
 def __getattr__(name: str) -> Any:
     if name in _SDK_EXPORTS:
         from polar import base

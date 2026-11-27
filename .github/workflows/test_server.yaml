@@ -614,7 +614,8 @@ jobs:
             sub_shard=$(( ${{ matrix.shard }} + i * 4 ))
             (
               set -euo pipefail
-              mapfile -t files < <(python -m scripts.pytest_shards --shards 32 --shard "$sub_shard")
+              files_out=$(python -m scripts.pytest_shards --shards 32 --shard "$sub_shard")
+              mapfile -t files <<< "$files_out"
               split_args=(-p no:split)
               if [ "${{ github.event_name }}" = "push" ]; then
                 split_args=(--store-durations --clean-durations --durations-path "$RUNNER_TEMP/dur-$i.json")

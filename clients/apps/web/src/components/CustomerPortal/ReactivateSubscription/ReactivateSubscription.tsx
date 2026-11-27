@@ -17,8 +17,9 @@ import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
-import { PortalEmptyState } from '../PortalPrimitives'
+import { PortalText } from '../PortalPrimitives'
 import { ReactivateSubscriptionForm } from './ReactivateSubscriptionForm'
+import { ReactivationCard } from './ReactivationCard'
 import { ReactivationSummary } from './ReactivationSummary'
 
 export const ReactivateSubscription = ({
@@ -54,15 +55,19 @@ export const ReactivateSubscription = ({
 
   if (subscription.status !== 'trial_ended' || order === null) {
     return (
-      <PortalEmptyState
-        title="Nothing to reactivate"
-        description="This subscription doesn't need to be reactivated."
-        actions={
+      <ReactivationCard alignItems="center" textAlign="center" rowGap="xs">
+        <Box as="span" color="text-primary">
+          Nothing to reactivate
+        </Box>
+        <PortalText tone="secondary" className="text-sm">
+          This subscription doesn&apos;t need to be reactivated.
+        </PortalText>
+        <Box marginTop="l">
           <Link href={subscriptionHref}>
             <Button variant="secondary">Back to subscription</Button>
           </Link>
-        }
-      />
+        </Box>
+      </ReactivationCard>
     )
   }
 

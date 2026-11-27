@@ -1,8 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
-import stripe as stripe_lib
 from sqlalchemy import (
     TIMESTAMP,
     Boolean,
@@ -17,6 +16,9 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.db.models.base import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
+
+if TYPE_CHECKING:
+    import stripe as stripe_lib
 
 
 class ExternalEventSource(StrEnum):
@@ -60,7 +62,9 @@ class StripeEvent(ExternalEvent):
     )
 
     @property
-    def stripe_data(self) -> stripe_lib.Event:
+    def stripe_data(self) -> "stripe_lib.Event":
+        import stripe as stripe_lib
+
         return stripe_lib.Event.construct_from(self.data, key=None)
 
     __mapper_args__ = {

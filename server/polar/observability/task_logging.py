@@ -11,7 +11,6 @@ from typing import (
 )
 
 import dramatiq
-import sentry_sdk
 from typing_extensions import is_typeddict
 
 if TYPE_CHECKING:
@@ -97,6 +96,8 @@ def task_log_context(
 def set_sentry_task_context(
     message: dramatiq.Message[Any] | dramatiq.MessageProxy,
 ) -> None:
+    import sentry_sdk
+
     context = task_log_context(message)
 
     def process_event(event: Event, hint: Hint) -> Event:

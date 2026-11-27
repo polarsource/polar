@@ -33,7 +33,7 @@ from polar.kit.metadata import MetadataMixin
 from polar.kit.utils import utc_now
 from polar.models.order_item import OrderItem
 from polar.product.guard import has_future_charges
-from polar.tax.calculation import TaxBreakdownItem
+from polar.tax.calculation.base import TaxBreakdownItem
 from polar.tax.tax_id import TaxID, TaxIDType
 
 if TYPE_CHECKING:

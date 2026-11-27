@@ -10,7 +10,6 @@ from collections import Counter
 import structlog
 
 from polar.config import settings
-from polar.integrations.aws.s3.client import client as s3_client
 from polar.kit.utils import utc_now
 
 log = structlog.get_logger()
@@ -116,6 +115,8 @@ def _take_and_upload_snapshot(bucket: str) -> None:
     )
 
     data = json.dumps(snapshot, indent=2, default=str).encode()
+
+    from polar.integrations.aws.s3.client import client as s3_client
 
     s3_client.put_object(
         Bucket=bucket,

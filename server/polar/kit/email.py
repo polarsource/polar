@@ -1,8 +1,8 @@
 import functools
-from typing import Annotated
+from typing import Annotated, Any
 
 import email_validator
-from email_validator import EmailNotValidError, caching_resolver
+from email_validator import EmailNotValidError, ValidatedEmail, caching_resolver
 from email_validator import validate_email as _validate_email
 from pydantic import AfterValidator, EmailStr
 from pydantic_core import PydanticCustomError
@@ -12,11 +12,19 @@ from polar.config import settings
 if settings.is_testing() or settings.is_development():
     email_validator.TEST_ENVIRONMENT = True
 
-_email_dns_resolver = caching_resolver()
 
-validate_email = functools.partial(
-    _validate_email, check_deliverability=True, dns_resolver=_email_dns_resolver
-)
+@functools.lru_cache(maxsize=1)
+def _get_email_dns_resolver() -> Any:
+    return caching_resolver()
+
+
+def validate_email(email: str, **kwargs: Any) -> ValidatedEmail:
+    kwargs.setdefault("check_deliverability", True)
+    if "dns_resolver" not in kwargs:
+        kwargs["dns_resolver"] = _get_email_dns_resolver()
+    return _validate_email(email, **kwargs)
+
+
 validate_email_syntax = functools.partial(_validate_email, check_deliverability=False)
 
 

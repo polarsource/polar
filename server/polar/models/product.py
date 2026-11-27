@@ -43,7 +43,7 @@ from polar.kit.schemas import SetSchemaReference
 from polar.kit.trial import TrialConfigurationMixin
 from polar.kit.visibility import Visibility, VisibilityMixin
 from polar.models.product_price import PRICES_ORDER_BY, ProductPriceAmountType
-from polar.tax.calculation import TaxCode
+from polar.tax.calculation.base import TaxCode
 
 from .product_price import ProductPrice
 

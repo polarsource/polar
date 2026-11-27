@@ -10,7 +10,6 @@ from sqlalchemy import Connection, event
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSessionMaker as AsyncSessionMakerType
 from polar.kit.db.postgres import create_async_sessionmaker
-from polar.logfire import instrument_sqlalchemy
 from polar.logging import Logger
 from polar.postgres import (
     AsyncEngine,
@@ -91,6 +90,8 @@ def setup_sqlalchemy(
 
         for engine in instrument_engines:
             event.listen(engine, "begin", set_idle_transaction_timeout)
+
+    from polar.logfire import instrument_sqlalchemy
 
     instrument_sqlalchemy(instrument_engines)
     log.info("Created database engine", pool_name=pool_name)

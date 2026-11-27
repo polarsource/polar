@@ -8,7 +8,6 @@ from tests.fixtures.http import *
 from tests.fixtures.locker import *
 from tests.fixtures.random_objects import *
 from tests.fixtures.redis import *
-from tests.fixtures.stripe import *
 from tests.fixtures.tinybird import *
 from tests.fixtures.worker import *
 

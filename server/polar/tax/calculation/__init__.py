@@ -1,5 +1,7 @@
+import sys
 import uuid
 from datetime import datetime
+from typing import Any
 
 import structlog
 
@@ -30,18 +32,31 @@ from .base import (
     TaxRevertError,
     TaxServiceProtocol,
 )
-from .numeral import numeral_tax_service
-from .stripe import stripe_tax_service
 
 log: Logger = structlog.get_logger(__name__)
 
 
+def __getattr__(name: str) -> Any:
+    if name == "stripe_tax_service":
+        from .stripe import stripe_tax_service
+
+        globals()[name] = stripe_tax_service
+        return stripe_tax_service
+    if name == "numeral_tax_service":
+        from .numeral import numeral_tax_service
+
+        globals()[name] = numeral_tax_service
+        return numeral_tax_service
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
 def _get_tax_service(processor: TaxProcessor) -> TaxServiceProtocol:
+    module = sys.modules[__name__]
     match processor:
         case TaxProcessor.stripe:
-            return stripe_tax_service
+            return getattr(module, "stripe_tax_service")
         case TaxProcessor.numeral:
-            return numeral_tax_service
+            return getattr(module, "numeral_tax_service")
 
 
 TAX_EXCLUSIVE_COUNTRIES = {

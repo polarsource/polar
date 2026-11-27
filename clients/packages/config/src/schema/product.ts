@@ -18,7 +18,13 @@ import {
   tier,
   units,
 } from './price'
-import type { PriceDefinition } from './price'
+import type {
+  FixedPrice,
+  FreePrice,
+  MeteredPrice,
+  PriceDefinition,
+  QuantityPrice,
+} from './price'
 import { Visibility, withVisibility } from './visibility'
 
 const IntervalUnit = Schema.Literals(['day', 'week', 'month', 'year'])
@@ -220,6 +226,42 @@ type Prices<Meter extends string> = readonly [
   ...PriceDefinition<Meter>[],
 ]
 
+type PriceSlot<Price> = Price extends FreePrice | FixedPrice
+  ? 'Only one fixed or free price is allowed.'
+  : Price extends QuantityPrice
+    ? 'Only one seat-based or unit-based price is allowed.'
+    : Price extends MeteredPrice<infer Charged>
+      ? string extends Charged
+        ? never
+        : `Meter "${Charged}" is used by more than one price.`
+      : never
+
+type PriceConflict<Issue extends string> = { readonly issue: Issue }
+
+// Mirrors compositionIssues, so a product that can't be priced fails to type-check.
+type ComposedPrices<
+  List extends ReadonlyArray<unknown>,
+  Taken extends string = never,
+> = List extends readonly [infer Head, ...infer Rest]
+  ? [
+      [PriceSlot<Head>] extends [never]
+        ? unknown
+        : PriceSlot<Head> extends Taken
+          ? PriceConflict<PriceSlot<Head>>
+          : unknown,
+      ...ComposedPrices<Rest, Taken | PriceSlot<Head>>,
+    ]
+  : List extends readonly []
+    ? []
+    : unknown[]
+
+type MetersOf<List extends ReadonlyArray<unknown>> =
+  List[number] extends infer Price
+    ? Price extends MeteredPrice<infer Charged>
+      ? Charged
+      : never
+    : never
+
 // `undefined` until `.prices()` is called, then the meters the prices charge by.
 type PriceList<Priced> = [Priced] extends [string] ? Prices<Priced> : undefined
 
@@ -255,19 +297,18 @@ class ProductBuilder<
   }
 
   /** The product's prices. Metered prices stack on top of the others. Every price must use the same currencies. */
-  prices<Charged extends Meter = never>(
-    price: PriceDefinition<Charged>,
-    ...prices: PriceDefinition<Charged>[]
+  prices<const List extends Prices<Meter>>(
+    ...prices: List & ComposedPrices<List>
   ): ProductBuilder<
     Meter,
     Benefit,
-    Charged,
+    MetersOf<List>,
     Billing,
     Granted,
     this[typeof deprecatedKey],
     Field
   > {
-    return this.with({ priceList: [price, ...prices] })
+    return this.with({ priceList: prices })
   }
 
   /** Bills every day, week, month or year. */

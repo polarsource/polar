@@ -589,7 +589,7 @@ class ConfigSettingsCustomerNotifications(Schema):
     send_renewal_reminder: bool | None = Field(
         default=None,
         description=(
-            "Whether to email customers when a subscription with a long billing cycle renews in 7 days."
+            "Whether to email customers when a subscription with a long billing cycle renews within 30 days."
         ),
     )
     send_subscription_cycled: bool | None = Field(

@@ -94,6 +94,7 @@ from polar.models.benefit import BenefitType
 from polar.models.catalog import CatalogStatus
 from polar.models.custom_field import CustomFieldText, CustomFieldType
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.organization import OrganizationCustomerEmailSettings
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole
@@ -6791,6 +6792,45 @@ class TestCatalogDrafts:
             is False
         )
         assert organization.customer_email_settings["subscription_cycled"] is True
+
+    async def test_publish_stores_the_inherited_card_expiring_setting(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        stored = dict(organization.customer_email_settings)
+        del stored["payment_method_expiration_reminder"]
+        organization.customer_email_settings = cast(
+            OrganizationCustomerEmailSettings, stored
+        )
+        await save_fixture(organization)
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "settings": {
+                        "customer_notifications": {"send_subscription_cycled": False}
+                    }
+                }
+            ),
+            publish=False,
+        )
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+
+        await catalog_service.publish_draft(session, auth_subject, organization, draft)
+
+        assert organization.customer_email_settings["subscription_cycled"] is False
+        assert (
+            organization.customer_email_settings["payment_method_expiration_reminder"]
+            is True
+        )
 
     async def test_reverting_settings_drops_the_draft(
         self,

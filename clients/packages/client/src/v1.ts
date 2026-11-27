@@ -18670,7 +18670,7 @@ export interface components {
       send_trial_converted?: boolean | null
       /**
        * Send Renewal Reminder
-       * @description Whether to email customers when a subscription with a long billing cycle renews in 7 days.
+       * @description Whether to email customers when a subscription with a long billing cycle renews within 30 days.
        */
       send_renewal_reminder?: boolean | null
       /**

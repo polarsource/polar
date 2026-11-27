@@ -39,7 +39,7 @@ export interface PolarEventOptions {
 
 export class PolarEventClient {
   private readonly running: Pick<EventQueue, "close">[] = [];
-  private startingOutpost?: Promise<OutpostBackend>;
+  private startingOutpost?: Promise<OutpostBackend | undefined>;
   private startingQueue?: Promise<void>;
   private outpost?: OutpostBackend;
   private readonly queue: EventQueue | null;
@@ -188,7 +188,7 @@ export class PolarEventClient {
     this.activeOperations++;
   }
 
-  private startOutpost(): Promise<OutpostBackend> | undefined {
+  private startOutpost(): Promise<OutpostBackend | undefined> | undefined {
     if (this.options.outpost) {
       this.startingOutpost ??= this.openOutpost(this.options.outpost);
       return this.startingOutpost;
@@ -219,11 +219,27 @@ export class PolarEventClient {
       onAck: outpost || this.options.onEventAck ? this.onAck.bind(this) : undefined,
       onRejected: outpost || this.options.onEventRejected ? this.onRejected.bind(this) : undefined,
     };
-    const redis = outpost?.redisForUrl(queue.redisUrl) as
-      | Parameters<RedisEventQueue["startWithRedis"]>[1]
-      | undefined;
-    if (redis && queue.startWithRedis) await queue.startWithRedis(options, redis);
-    else await queue.start(options);
+    try {
+      const redis = outpost?.redisForUrl(queue.redisUrl) as
+        | Parameters<RedisEventQueue["startWithRedis"]>[1]
+        | undefined;
+      if (redis && queue.startWithRedis) await queue.startWithRedis(options, redis);
+      else await queue.start(options);
+    } catch (error) {
+      if (!outpost) throw error;
+      this.outpost = undefined;
+      const timeout = this.shutdownDeadline === undefined
+        ? deliveryTimeout()
+        : Math.max(0, this.shutdownDeadline - Date.now());
+      const cleanup = this.closeResources(timeout);
+      this.startingOutpost = cleanup.then(() => undefined, () => undefined);
+      try {
+        await cleanup;
+      } catch (cleanupError) {
+        throw new AggregateError([error, cleanupError], "Polar client startup and cleanup failed");
+      }
+      throw error;
+    }
     await this.registerResource(queue);
   }
 

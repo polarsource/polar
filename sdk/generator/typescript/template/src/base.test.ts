@@ -460,6 +460,37 @@ test("close bounds its wait for an active custom flush and still closes resource
   }
 });
 
+test("closes Outpost when the delivery queue fails to start", async () => {
+  vi.spyOn(Outpost.prototype, "start").mockImplementation(async function (this: Outpost) {
+    return this;
+  });
+  const closeOutpost = vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
+  const failure = new Error("queue startup failed");
+  const queue = {
+    start: vi.fn().mockRejectedValue(failure),
+    enqueue: vi.fn(),
+    flush: vi.fn(),
+    close: vi.fn(),
+  };
+  const polar = createPolar({
+    accessToken: "token",
+    eventQueue: queue,
+    outpost: outpost({ redis: "redis://localhost" }),
+  });
+  const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response('{"items":[]}'));
+  try {
+    await expect(polar.track(event)).rejects.toBe(failure);
+    expect(closeOutpost).toHaveBeenCalledOnce();
+    expect(queue.enqueue).not.toHaveBeenCalled();
+    await expect(polar.flush()).rejects.toBe(failure);
+    await expect(polar.meter("meter", event)).resolves.toBeNull();
+    expect(fetch).toHaveBeenCalledOnce();
+  } finally {
+    await polar.close();
+  }
+  expect(closeOutpost).toHaveBeenCalledOnce();
+});
+
 test("startup that outlives a close deadline cleans up when it eventually completes", async () => {
   vi.spyOn(Date, "now").mockReturnValue(0);
   let release!: () => void;

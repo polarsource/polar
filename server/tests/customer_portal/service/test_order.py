@@ -395,6 +395,48 @@ class TestPay:
         assert draft_order.status == OrderStatus.draft
         submit.assert_not_awaited()
 
+    async def test_rejects_pending_order_of_ended_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        customer.stripe_customer_id = "cus_test"
+        subscription = await create_subscription(
+            save_fixture,
+            customer=customer,
+            product=product,
+            status=SubscriptionStatus.canceled,
+            ended_at=utc_now(),
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        update = mocker.patch(
+            "polar.customer_portal.service.order.order_service.update"
+        )
+        submit = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent"
+        )
+        order_pay = CustomerOrderPayConfirmationToken(
+            billing_address=AddressInput.model_validate({"country": "FR"}),
+            payment_processor=PaymentProcessor.stripe,
+            confirmation_token_id="ctoken_test",
+        )
+
+        with pytest.raises(OrderNotEligibleForRetry):
+            await customer_order_service.pay(session, order, order_pay)
+
+        assert order.status == OrderStatus.pending
+        update.assert_not_called()
+        submit.assert_not_awaited()
+
     async def test_taxable_draft_requires_billing_address(
         self, session: AsyncSession, draft_order: Order, mocker: MockerFixture
     ) -> None:

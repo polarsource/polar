@@ -595,6 +595,39 @@ class TestConfirmRetryPayment:
             "detail": "Payment method does not belong to customer",
         }
 
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_ended_subscription(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            customer=customer,
+            product=product,
+            status=SubscriptionStatus.canceled,
+            ended_at=utc_now(),
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+
+        response = await client.post(
+            f"/v1/customer-portal/orders/{order.id}/confirm-payment",
+            json={"confirmation_token_id": "ctoken_test"},
+        )
+
+        assert response.status_code == 422, response.text
+        assert response.json()["error"] == "OrderNotEligibleForRetry"
+        stripe_service_mock.create_payment_intent.assert_not_awaited()
+
     async def test_anonymous(
         self,
         client: AsyncClient,

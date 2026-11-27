@@ -6,6 +6,7 @@ from pydantic.json_schema import SkipJsonSchema
 from polar.enums import PaymentProcessor
 from polar.kit.schemas import MultipleQueryFilter, Schema, SetSchemaReference
 from polar.kit.versioning import QuerySchema, Version
+from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
 from polar.order.schemas import OrderBase, OrderItemSchema, OrderUpdateBase
 from polar.product.schemas import (
@@ -191,3 +192,6 @@ class CustomerPortalOrderListParams(QuerySchema):
     query: str | None = Field(
         None, description="Search by product or organization name."
     )
+    status: Annotated[
+        MultipleQueryFilter[OrderStatus] | None, Version(starting_from=V2027_01)
+    ] = Field(None, title="Status Filter", description="Filter by order status.")

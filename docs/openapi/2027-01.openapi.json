@@ -4080,6 +4080,30 @@
             "description": "Search by product or organization name."
           },
           {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/OrderStatus"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrderStatus"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status Filter",
+              "description": "Filter by order status."
+            },
+            "description": "Filter by order status."
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,

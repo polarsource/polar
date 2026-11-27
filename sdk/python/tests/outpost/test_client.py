@@ -2168,19 +2168,13 @@ async def test_settles_an_event_once_however_many_times_confirm_names_it(
         events = [_usage("event-0", 10), _usage("event-1", 10)]
         for event in events:
             await outpost.track(event)
-        outbox = "outpost:v1:org-1:outbox"
         pending = f"outpost:v1:org-1:pending:external:alice:tokens:{BUCKET}"
         await redis.eval(
             CONFIRM_SCRIPT,
-            4,
-            outbox,
-            outbox,
+            2,
             key,
             pending,
             "",
-            "",
-            0,
-            0,
             BUCKET,
             2,
             "event-0",
@@ -2206,6 +2200,67 @@ async def test_settles_a_hot_buckets_events_on_polars_receipt(
         assert await _consumed(outpost) == 20
     assert await redis.hget(key, f"pending:{BUCKET}:count") is None
     assert await redis.hget(key, f"bucket:{BUCKET}:count") == b"2"
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("rejected_before_apply", [False, True])
+async def test_rejection_wins_over_local_reduction(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    rejected_before_apply: bool,
+) -> None:
+    url, redis = redis_connection
+    key = "outpost:v1:org-1:state:external:alice:tokens"
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        accepted, pending, refused = (
+            _usage("accepted", 3),
+            _usage("pending", 5),
+            _usage("refused", 8),
+        )
+        await outpost.track(accepted)
+        await outpost._on_ack([accepted])
+        await outpost.track(pending)
+        if rejected_before_apply:
+            await outpost._on_rejected([refused], "permanent_error")
+        await outpost.track(refused)
+        await outpost._on_rejected([refused], "permanent_error")
+        await outpost._on_rejected([refused], "permanent_error")
+        await outpost.track(refused)
+        rejected_key = f"outpost:v1:org-1:rejected:external:alice:tokens:{BUCKET}"
+        assert await redis.hexists(rejected_key, "refused")
+        assert await _consumed(outpost) == 8
+        assert await redis.hmget(
+            key, *(f"bucket:{BUCKET}:{stat}" for stat in ("count", "min", "max"))
+        ) == [b"2", b"3", b"5"]
+
+
+@pytest.mark.anyio
+async def test_rejected_extremum_falls_back_until_legacy_bucket_seals(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    configuration: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    configuration["reducers"][0]["aggregation"]["func"] = "max"
+    key = "outpost:v1:org-1:state:external:alice:tokens"
+    await _seal(redis, BUCKET)
+    await redis.hset(
+        key,
+        mapping={
+            f"bucket:{BUCKET}:{field}": value
+            for field, value in {"count": 1, "sum": 3, "min": 3, "max": 3}.items()
+        },
+    )
+    async with Outpost(url, client=polar_client) as outpost:
+        refused = _usage("refused", 8)
+        await outpost.track(refused)
+        await outpost._on_rejected([refused], "permanent_error")
+        with pytest.raises(NotReadyError, match="bucket extremum"):
+            await _consumed(outpost)
+        cutoff = BUCKET + BUCKET_SIZE
+        await redis.eval(APPLY_SNAPSHOT_SCRIPT, 1, key, cutoff, cutoff + 1, 1, 3, 3, 3)
+        assert await _consumed(outpost) == 3
 
 
 @pytest.mark.anyio
@@ -2306,6 +2361,29 @@ async def test_queues_an_event_no_meter_counts(
 
 
 OUTBOX = "outpost:v1:org-1:outbox"
+
+
+@pytest.mark.anyio
+async def test_keeps_stream_entry_when_outpost_cannot_settle_delivery(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        event = _usage("event-0", 10)
+        await outpost.track(event)
+        with monkeypatch.context() as patch:
+            patch.setattr(
+                outpost,
+                "_confirm_script",
+                AsyncMock(side_effect=ResponseError("unavailable")),
+            )
+            await outpost.flush()
+            assert await _queued(redis) == [event]
+        await outpost.flush()
+        assert await redis.xlen(OUTBOX) == 0
 
 
 def _delivered(ingest: dict[str, typing.Any]) -> list[list[str]]:
@@ -3072,7 +3150,11 @@ async def test_cutoff_keeps_microsecond_precision(
     async def track(bucket_start: int, tokens: int, external_id: str) -> None:
         pending_key = f"outpost:v1:org-1:pending:{identity}:{bucket_start}"
         await write(
-            keys=[key, pending_key],
+            keys=[
+                key,
+                pending_key,
+                f"outpost:v1:org-1:rejected:{identity}:{bucket_start}",
+            ],
             args=[bucket_start, tokens, external_id, ""],
         )
 

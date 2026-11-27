@@ -7,6 +7,8 @@ import {
   type Reducer,
 } from "./reducer";
 
+import { NotReadyError } from "./errors";
+
 const BUCKET_PREFIX = "bucket:";
 const PENDING_PREFIX = "pending:";
 export const COLD_PREFIX = "cold:";
@@ -43,6 +45,7 @@ export const decodeState = (value: string[]): State => {
   for (let i = 0; i < value.length; i += 2) {
     const field = value[i];
     const raw = value[i + 1];
+    if (field.startsWith("invalid:")) throw new NotReadyError("Outpost cannot read an unconfirmed bucket extremum");
     const buckets = field.startsWith(BUCKET_PREFIX)
       ? state.buckets
       : field.startsWith(PENDING_PREFIX)

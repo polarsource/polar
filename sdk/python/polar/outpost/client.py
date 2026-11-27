@@ -53,11 +53,8 @@ from polar.metering.errors import (
 from polar.metering.events import EventInput
 from polar.metering.meter import CustomerMeter
 from polar.metering.outbox.redis import (
-    CONFIRM_SCRIPT,
     DRAIN_INTERVAL,
-    FLUSHER_LOCK_TTL,
     RedisOutbox,
-    _Delivery,
     _encode_event,
     _retry_after,
 )
@@ -267,6 +264,8 @@ for i = 1, #ARGV do
                 start = tonumber(start)
                 if kind == 'bucket' then
                     keep = cold_until == nil or start >= cold_until
+                elseif kind == 'invalid' then
+                    keep = cold_until == nil or start >= cold_until
                 elseif kind == 'pending' then
                     keep = cold_until ~= nil and start < cold_until
                 end
@@ -333,6 +332,9 @@ local pending = 'pending:' .. ARGV[1] .. ':'
 -- ARGV[2] is the event's value, or nothing when it only counts.
 local value = ARGV[2] ~= '' and tonumber(ARGV[2]) or nil
 assert(ARGV[2] == '' or (value and value == value and math.abs(value) ~= math.huge), 'Invalid value')
+if redis.call('HEXISTS', KEYS[3], ARGV[3]) == 1 then
+    return 0
+end
 local total = tonumber(redis.call('HGET', KEYS[1], bucket .. 'sum') or '0') + (value or 0)
 assert(total == total and math.abs(total) ~= math.huge, 'Aggregation values must be finite')
 -- One event pending, under its external_id, ARGV[3]. An external_id Polar has not confirmed yet:
@@ -340,14 +342,14 @@ assert(total == total and math.abs(total) ~= math.huge, 'Aggregation values must
 if redis.call('HSETNX', KEYS[2], ARGV[3], ARGV[2]) == 0 then
     return 0
 end
--- The write that first sees an event queues it for Polar, as Polar ingests it: KEYS[3] is the
+-- The write that first sees an event queues it for Polar, as Polar ingests it: KEYS[4] is the
 -- stream, ARGV[4] the event, or nothing for the other reducers the event matches. A flusher
--- holding the first slot, KEYS[4], reads the stream again once it lets go: it delivers the event.
+-- holding the first slot, KEYS[5], reads the stream again once it lets go: it delivers the event.
 -- Otherwise the write returns 2, and the instance drains the stream on its next flush.
 local written = 1
 if ARGV[4] ~= '' then
-    redis.call('XADD', KEYS[3], '*', 'event', ARGV[4])
-    if redis.call('EXISTS', KEYS[4]) == 0 then
+    redis.call('XADD', KEYS[4], '*', 'event', ARGV[4])
+    if redis.call('EXISTS', KEYS[5]) == 0 then
         written = 2
     end
 end
@@ -375,6 +377,151 @@ return written
 """
 
 WRITE_BUCKET_SHA = hashlib.sha1(WRITE_BUCKET_SCRIPT.encode()).hexdigest()
+
+CONFIRM_SCRIPT = """
+-- KEYS holds a state and pending hash per group, plus a rejection hash in reject mode.
+-- ARGV starts with the mode, then each group's bucket start, ID count and IDs.
+local BATCH = 1000
+local mode = ARGV[1]
+-- An entry is the event's value, or nothing when it only counts.
+local function value_of(entry)
+    return entry ~= '' and tonumber(entry) or nil
+end
+local function settle(state, pending_key, start, ids, rejection_key)
+    local bucket = 'bucket:' .. start .. ':'
+    local pending = 'pending:' .. start .. ':'
+    local confirmed = 'confirmed:' .. start .. ':'
+    local invalid = 'invalid:' .. start .. ':'
+    local cutoff = tonumber(redis.call('HGET', state, 'cold_until'))
+    local hot = not cutoff or tonumber(start) >= cutoff
+    -- Polar received the events but no snapshot counts them yet: a cold bucket keeps them
+    -- pending for the snapshot that will, a hot one counts them whole either way.
+    if mode == 'ack' and not hot then
+        return 0
+    end
+    if rejection_key then
+        for offset = 1, #ids, BATCH do
+            local fields = {}
+            for i = offset, math.min(offset + BATCH - 1, #ids) do
+                fields[#fields + 1] = ids[i]
+                fields[#fields + 1] = '1'
+            end
+            redis.call('HSET', rejection_key, unpack(fields))
+        end
+        redis.call('EXPIRE', rejection_key, 3900)
+    end
+    local gone, seen = {}, {}
+    local removed, sum = 0, 0
+    local current = redis.call('HMGET', state, pending .. 'min', pending .. 'max')
+    local min, max = tonumber(current[1]), tonumber(current[2])
+    local extremum = false
+    local removed_min, removed_max
+    for offset = 1, #ids, BATCH do
+        local last = math.min(offset + BATCH - 1, #ids)
+        local entries = redis.call('HMGET', pending_key, unpack(ids, offset, last))
+        for i, entry in ipairs(entries) do
+            local id = ids[offset + i - 1]
+            if entry and not seen[id] then
+                seen[id] = true
+                table.insert(gone, id)
+                removed = removed + 1
+                local value = value_of(entry)
+                if value then
+                    sum = sum + value
+                    removed_min = not removed_min and value or math.min(removed_min, value)
+                    removed_max = not removed_max and value or math.max(removed_max, value)
+                    if value == min or value == max then extremum = true end
+                end
+            end
+        end
+    end
+    if removed == 0 then
+        return 0
+    end
+    for offset = 1, #gone, BATCH do
+        redis.call('HDEL', pending_key, unpack(gone, offset, math.min(offset + BATCH - 1, #gone)))
+    end
+    local count = tonumber(redis.call('HINCRBY', state, pending .. 'count', -removed))
+    redis.call('HINCRBYFLOAT', state, pending .. 'sum', -sum)
+    if count <= 0 then
+        redis.call('HDEL', state, pending .. 'count', pending .. 'sum', pending .. 'min', pending .. 'max')
+        local cutoff = redis.call('HGET', state, 'cold_until')
+        -- Polar counts the whole bucket once it is cold: the local copy has nothing left to add.
+        if cutoff and tonumber(start) < tonumber(cutoff) then
+            redis.call('HDEL', state, bucket .. 'count', bucket .. 'sum', bucket .. 'min', bucket .. 'max')
+        end
+    elseif extremum then
+        -- Extrema cannot be decremented: read them off the events still pending.
+        min, max = nil, nil
+        for _, entry in ipairs(redis.call('HVALS', pending_key)) do
+            local value = value_of(entry)
+            if value then
+                if not min or value < min then min = value end
+                if not max or value > max then max = value end
+            end
+        end
+        for func, value in pairs({min = min, max = max}) do
+            redis.call('HSET', state, pending .. func, tostring(value))
+        end
+        if not min then redis.call('HDEL', state, pending .. 'min') end
+        if not max then redis.call('HDEL', state, pending .. 'max') end
+    end
+    if mode == 'ack' then
+        redis.call('HINCRBY', state, confirmed .. 'count', removed)
+        if removed_min then
+            local accepted = redis.call('HMGET', state, confirmed .. 'min', confirmed .. 'max')
+            local low, high = tonumber(accepted[1]), tonumber(accepted[2])
+            redis.call('HSET', state,
+                confirmed .. 'min', low and math.min(low, removed_min) or removed_min,
+                confirmed .. 'max', high and math.max(high, removed_max) or removed_max)
+        end
+    elseif rejection_key and hot then
+        local remaining = tonumber(redis.call('HINCRBY', state, bucket .. 'count', -removed))
+        if remaining <= 0 then
+            redis.call('HDEL', state, bucket .. 'count', bucket .. 'sum', bucket .. 'min', bucket .. 'max')
+        else
+            redis.call('HINCRBYFLOAT', state, bucket .. 'sum', -sum)
+            local legacy = remaining - count > tonumber(redis.call('HGET', state, confirmed .. 'count') or '0')
+            for _, func in ipairs({'min', 'max'}) do
+                local removed_edge = func == 'min' and removed_min or removed_max
+                if removed_edge and removed_edge == tonumber(redis.call('HGET', state, bucket .. func)) then
+                    if legacy then
+                        -- Older SDKs did not keep confirmed extrema. Let the read fall back until the bucket seals.
+                        redis.call('HSET', state, invalid .. func, '1')
+                    else
+                        local edges = redis.call('HMGET', state, confirmed .. func, pending .. func)
+                        local a, b = tonumber(edges[1]), tonumber(edges[2])
+                        local edge
+                        if a and b then
+                            edge = func == 'min' and math.min(a, b) or math.max(a, b)
+                        else
+                            edge = a or b
+                        end
+                        if edge then
+                            redis.call('HSET', state, bucket .. func, edge)
+                        else
+                            redis.call('HDEL', state, bucket .. func)
+                        end
+                    end
+                end
+            end
+        end
+    end
+    redis.call('EXPIRE', state, 86400)
+    return removed
+end
+local removed, cursor = 0, 2
+local stride = mode == 'reject' and 3 or 2
+for key = 1, #KEYS, stride do
+    local start, count = ARGV[cursor], tonumber(ARGV[cursor + 1])
+    local ids = {}
+    for i = cursor + 2, cursor + 1 + count do table.insert(ids, ARGV[i]) end
+    local rejected = stride == 3 and KEYS[key + 2] or nil
+    removed = removed + settle(KEYS[key], KEYS[key + 1], start, ids, rejected)
+    cursor = cursor + 2 + count
+end
+return removed
+"""
 
 APPLY_SNAPSHOT_SCRIPT = """
 local cutoff = tonumber(ARGV[1])
@@ -423,6 +570,9 @@ for field, value in pairs(fields) do
                 table.insert(dropped, field)
                 seals = true
             end
+        elseif (kind == 'confirmed' or kind == 'invalid') and tonumber(start) < cutoff then
+            table.insert(dropped, field)
+            seals = true
         end
     end
 end
@@ -494,26 +644,18 @@ def _throttled(
 
 def _confirm_arguments(
     prefix: str,
-    hot_only: bool,
+    mode: str,
     groups: collections.abc.Mapping[tuple[str, int], list[str]],
-    delivery: _Delivery | None = None,
 ) -> tuple[list[str], list[str | int]]:
-    """The keys and arguments of one CONFIRM call settling every (identity, bucket)."""
-    outbox = f"{prefix}:outbox"
-    keys: list[str] = [outbox, delivery.lock_key if delivery else outbox]
-    entries = delivery.entries if delivery else []
-    args: list[str | int] = [
-        "1" if hot_only else "",
-        delivery.token if delivery else "",
-        int(FLUSHER_LOCK_TTL * 1000),
-        len(entries),
-        *entries,
-    ]
+    keys: list[str] = []
+    args: list[str | int] = [mode]
     for (identity, bucket_start), ids in groups.items():
         keys += [
             f"{prefix}:state:{identity}",
             f"{prefix}:pending:{identity}:{bucket_start}",
         ]
+        if mode == "reject":
+            keys.append(f"{prefix}:rejected:{identity}:{bucket_start}")
         args += [bucket_start, len(ids), *ids]
     return keys, args
 
@@ -698,12 +840,15 @@ class Outpost:
                 anyio.create_task_group()
             )
             self._outbox = RedisOutbox(
-                self.redis_url, stream=self._outbox_key, client=self._client
+                self.redis_url,
+                stream=self._outbox_key,
+                client=self._client,
+                on_ack=self._on_ack,
+                on_rejected=self._on_rejected,
             )
             await self._outbox._start(
                 self._redis,
                 self._tasks,
-                settle=self._settle_delivery,
                 request_timeout=TIMEOUT,
             )
             self._connection_id = str(uuid.uuid4())
@@ -816,6 +961,7 @@ class Outpost:
                 arguments: list[str | int | float] = [
                     f"{self._prefix}:state:{identity}",
                     f"{self._prefix}:pending:{identity}:{bucket_start}",
+                    f"{self._prefix}:rejected:{identity}:{bucket_start}",
                     self._outbox_key,
                     f"{self._outbox_key}:flusher:0",
                     bucket_start,
@@ -829,14 +975,14 @@ class Outpost:
             if len(writes) == 1:
                 try:
                     results = [
-                        await self._redis.evalsha(WRITE_BUCKET_SHA, 4, *writes[0])
+                        await self._redis.evalsha(WRITE_BUCKET_SHA, 5, *writes[0])
                     ]
                 except NoScriptError as error:
                     results = [error]
             else:
                 async with self._redis.pipeline(transaction=False) as pipeline:
                     for arguments in writes:
-                        pipeline.evalsha(WRITE_BUCKET_SHA, 4, *arguments)
+                        pipeline.evalsha(WRITE_BUCKET_SHA, 5, *arguments)
                     results = await pipeline.execute(raise_on_error=False)
             first_error: Exception | None = None
             for index, (arguments, result) in enumerate(
@@ -846,7 +992,7 @@ class Outpost:
                 if isinstance(result, NoScriptError):
                     try:
                         result = results[index] = await self._redis.eval(
-                            WRITE_BUCKET_SCRIPT, 4, *arguments
+                            WRITE_BUCKET_SCRIPT, 5, *arguments
                         )
                     except RedisError as error:
                         result = error
@@ -1413,34 +1559,27 @@ class Outpost:
             await anyio.sleep(DRAIN_INTERVAL)
             await self._drain_outbox_quietly()
 
-    async def _settle_delivery(
-        self, events: list[EventInput], refused: list[EventInput], delivery: _Delivery
-    ) -> None:
+    async def _on_ack(self, events: list[EventInput]) -> None:
         assert self._confirm_script is not None
-        # Polar will never count a refused event: it settles everywhere, hot bucket or
-        # cold.
-        if refused and events:
-            await self._confirm_script(
-                *_confirm_arguments(self._prefix, False, self._settlements(refused))
-            )
-        await self._confirm_script(
-            *_confirm_arguments(
-                self._prefix,
-                bool(events),
-                self._settlements(events or refused),
-                delivery,
-            )
-        )
-        if refused and self._on_dropped is not None:
-            try:
-                await self._on_dropped(refused, "permanent_error")
-            except Exception as error:  # noqa: BLE001
-                log.warning("Outpost on_dropped failed: %s", error)
-        if events and self._on_delivered is not None:
+        if groups := self._settlements(events):
+            await self._confirm_script(*_confirm_arguments(self._prefix, "ack", groups))
+        if self._on_delivered is not None:
             try:
                 await self._on_delivered(events)
             except Exception as error:  # noqa: BLE001
                 log.warning("Outpost on_delivered failed: %s", error)
+
+    async def _on_rejected(self, events: list[EventInput], reason: DropReason) -> None:
+        assert self._confirm_script is not None
+        if reason == "permanent_error" and (groups := self._settlements(events)):
+            await self._confirm_script(
+                *_confirm_arguments(self._prefix, "reject", groups)
+            )
+        if self._on_dropped is not None:
+            try:
+                await self._on_dropped(events, reason)
+            except Exception as error:  # noqa: BLE001
+                log.warning("Outpost on_dropped failed: %s", error)
 
     def _settlements(
         self, events: collections.abc.Sequence[EventInput]
@@ -1885,7 +2024,7 @@ class Outpost:
                     pipeline.hgetall(key)
                     keys, args = _confirm_arguments(
                         self._prefix,
-                        False,
+                        "",
                         {
                             (identity, bucket_start): ids
                             for bucket_start, ids in confirmed.items()

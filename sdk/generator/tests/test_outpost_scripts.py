@@ -13,11 +13,12 @@ def test_loads_redis_scripts_by_group() -> None:
     assert {
         group: set(scripts) for group, scripts in emitter.load_redis_scripts().items()
     } == {
-        "common": {"backoff", "confirm", "extend_lock", "release_lock"},
-        "outbox": {"outbox_backlog"},
+        "common": {"backoff", "extend_lock", "release_lock"},
+        "outbox": {"acknowledge", "outbox_backlog"},
         "outpost": {
             "apply_snapshot",
             "commit_pull",
+            "confirm",
             "prepare_snapshot",
             "push_telemetry",
             "read_states",

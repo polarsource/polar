@@ -53,11 +53,8 @@ from polar.metering.errors import (
 from polar.metering.events import EventInput
 from polar.metering.meter import CustomerMeter
 from polar.metering.outbox.redis import (
-    CONFIRM_SCRIPT,
     DRAIN_INTERVAL,
-    FLUSHER_LOCK_TTL,
     RedisOutbox,
-    _Delivery,
     _encode_event,
     _retry_after,
 )
@@ -253,6 +250,9 @@ WRITE_BUCKET_SCRIPT = """
 
 WRITE_BUCKET_SHA = hashlib.sha1(WRITE_BUCKET_SCRIPT.encode()).hexdigest()
 
+CONFIRM_SCRIPT = """
+{{ redis_scripts.outpost.confirm }}"""
+
 APPLY_SNAPSHOT_SCRIPT = """
 {{ redis_scripts.outpost.apply_snapshot }}"""
 
@@ -279,26 +279,18 @@ def _throttled(
 
 def _confirm_arguments(
     prefix: str,
-    hot_only: bool,
+    mode: str,
     groups: collections.abc.Mapping[tuple[str, int], list[str]],
-    delivery: _Delivery | None = None,
 ) -> tuple[list[str], list[str | int]]:
-    """The keys and arguments of one CONFIRM call settling every (identity, bucket)."""
-    outbox = f"{prefix}:outbox"
-    keys: list[str] = [outbox, delivery.lock_key if delivery else outbox]
-    entries = delivery.entries if delivery else []
-    args: list[str | int] = [
-        "1" if hot_only else "",
-        delivery.token if delivery else "",
-        int(FLUSHER_LOCK_TTL * 1000),
-        len(entries),
-        *entries,
-    ]
+    keys: list[str] = []
+    args: list[str | int] = [mode]
     for (identity, bucket_start), ids in groups.items():
         keys += [
             f"{prefix}:state:{identity}",
             f"{prefix}:pending:{identity}:{bucket_start}",
         ]
+        if mode == "reject":
+            keys.append(f"{prefix}:rejected:{identity}:{bucket_start}")
         args += [bucket_start, len(ids), *ids]
     return keys, args
 
@@ -483,12 +475,15 @@ class Outpost:
                 anyio.create_task_group()
             )
             self._outbox = RedisOutbox(
-                self.redis_url, stream=self._outbox_key, client=self._client
+                self.redis_url,
+                stream=self._outbox_key,
+                client=self._client,
+                on_ack=self._on_ack,
+                on_rejected=self._on_rejected,
             )
             await self._outbox._start(
                 self._redis,
                 self._tasks,
-                settle=self._settle_delivery,
                 request_timeout=TIMEOUT,
             )
             self._connection_id = str(uuid.uuid4())
@@ -601,6 +596,7 @@ class Outpost:
                 arguments: list[str | int | float] = [
                     f"{self._prefix}:state:{identity}",
                     f"{self._prefix}:pending:{identity}:{bucket_start}",
+                    f"{self._prefix}:rejected:{identity}:{bucket_start}",
                     self._outbox_key,
                     f"{self._outbox_key}:flusher:0",
                     bucket_start,
@@ -614,14 +610,14 @@ class Outpost:
             if len(writes) == 1:
                 try:
                     results = [
-                        await self._redis.evalsha(WRITE_BUCKET_SHA, 4, *writes[0])
+                        await self._redis.evalsha(WRITE_BUCKET_SHA, 5, *writes[0])
                     ]
                 except NoScriptError as error:
                     results = [error]
             else:
                 async with self._redis.pipeline(transaction=False) as pipeline:
                     for arguments in writes:
-                        pipeline.evalsha(WRITE_BUCKET_SHA, 4, *arguments)
+                        pipeline.evalsha(WRITE_BUCKET_SHA, 5, *arguments)
                     results = await pipeline.execute(raise_on_error=False)
             first_error: Exception | None = None
             for index, (arguments, result) in enumerate(
@@ -631,7 +627,7 @@ class Outpost:
                 if isinstance(result, NoScriptError):
                     try:
                         result = results[index] = await self._redis.eval(
-                            WRITE_BUCKET_SCRIPT, 4, *arguments
+                            WRITE_BUCKET_SCRIPT, 5, *arguments
                         )
                     except RedisError as error:
                         result = error
@@ -1190,34 +1186,25 @@ class Outpost:
             await anyio.sleep(DRAIN_INTERVAL)
             await self._drain_outbox_quietly()
 
-    async def _settle_delivery(
-        self, events: list[EventInput], refused: list[EventInput], delivery: _Delivery
-    ) -> None:
+    async def _on_ack(self, events: list[EventInput]) -> None:
         assert self._confirm_script is not None
-        # Polar will never count a refused event: it settles everywhere, hot bucket or
-        # cold.
-        if refused and events:
-            await self._confirm_script(
-                *_confirm_arguments(self._prefix, False, self._settlements(refused))
-            )
-        await self._confirm_script(
-            *_confirm_arguments(
-                self._prefix,
-                bool(events),
-                self._settlements(events or refused),
-                delivery,
-            )
-        )
-        if refused and self._on_dropped is not None:
-            try:
-                await self._on_dropped(refused, "permanent_error")
-            except Exception as error:  # noqa: BLE001
-                log.warning("Outpost on_dropped failed: %s", error)
-        if events and self._on_delivered is not None:
+        if groups := self._settlements(events):
+            await self._confirm_script(*_confirm_arguments(self._prefix, "ack", groups))
+        if self._on_delivered is not None:
             try:
                 await self._on_delivered(events)
             except Exception as error:  # noqa: BLE001
                 log.warning("Outpost on_delivered failed: %s", error)
+
+    async def _on_rejected(self, events: list[EventInput], reason: DropReason) -> None:
+        assert self._confirm_script is not None
+        if reason == "permanent_error" and (groups := self._settlements(events)):
+            await self._confirm_script(*_confirm_arguments(self._prefix, "reject", groups))
+        if self._on_dropped is not None:
+            try:
+                await self._on_dropped(events, reason)
+            except Exception as error:  # noqa: BLE001
+                log.warning("Outpost on_dropped failed: %s", error)
 
     def _settlements(
         self, events: collections.abc.Sequence[EventInput]
@@ -1643,7 +1630,7 @@ class Outpost:
                     pipeline.hgetall(key)
                     keys, args = _confirm_arguments(
                         self._prefix,
-                        False,
+                        "",
                         {
                             (identity, bucket_start): ids
                             for bucket_start, ids in confirmed.items()

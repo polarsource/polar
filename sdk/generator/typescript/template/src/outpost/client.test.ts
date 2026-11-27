@@ -15,8 +15,7 @@ import { Outpost, outpost, type OutpostOptions, isSampled } from "./client";
 import { MissingExternalIdError, PolarOutpostError, UnavailableRedisError } from "./errors";
 import { decodeState } from "./state";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
-import { CONFIRM_SCRIPT } from "../redis";
-import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
+import { APPLY_SNAPSHOT_SCRIPT, CONFIRM_SCRIPT } from "./scripts";
 import { SAMPLE_RATE_ATTRIBUTE, TELEMETRY_ENV } from "./telemetry";
 import { startRedisServer, type RedisServer } from "./testing";
 
@@ -1286,21 +1285,44 @@ it("settles an event once however many times CONFIRM names it", async () => {
   const outpost = await warm();
   const events = [usage("event-0", 10), usage("event-1", 10)];
   for (const event of events) await outpost.track(event);
-  const outbox = `outpost:v1:${organization}:outbox`;
   const pending = `outpost:v1:${organization}:pending:external:alice:tokens:${bucket}`;
-  await redis.eval(CONFIRM_SCRIPT, 4, outbox, outbox, key, pending, "", "", 0, 0, bucket, 2, "event-0", "event-0");
+  await redis.eval(CONFIRM_SCRIPT, 2, key, pending, "", bucket, 2, "event-0", "event-0");
   expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("1");
   expect(await redis.hget(key, `pending:${bucket}:sum`)).toBe("10");
 });
 
 it("settles a hot bucket's events on Polar's receipt", async () => {
-  const outpost = await warm();
   const events = [usage("event-0", 10), usage("event-1", 10)];
+  const onDelivered = vi.fn(async () => {
+    expect(await redis.xlen(`outpost:v1:${organization}:outbox`)).toBe(2);
+  });
+  const outpost = await warm({ onDelivered });
   for (const event of events) await outpost.track(event);
   await outpost.flush();
+  expect(onDelivered).toHaveBeenCalledWith(events);
+  await expect(onDelivered.mock.results[0].value).resolves.toBeUndefined();
+  expect(await redis.xlen(`outpost:v1:${organization}:outbox`)).toBe(0);
   expect(await redis.hget(key, `pending:${bucket}:count`)).toBeNull();
   expect(await redis.hget(key, `bucket:${bucket}:count`)).toBe("2");
   expect((await outpost.meter(meter))?.consumed_units).toBe(20);
+});
+
+it.each([false, true])("rejection wins over local reduction (before apply: %s)", async (early) => {
+  const outpost = await warm();
+  const accepted = usage("accepted", 3);
+  const pending = usage("pending", 5);
+  const refused = usage("refused", 8);
+  await outpost.track(accepted);
+  await outpost["onAck"]([accepted]);
+  await outpost.track(pending);
+  if (early) await outpost["onRejected"]([refused], "permanent_error");
+  await outpost.track(refused);
+  await outpost["onRejected"]([refused], "permanent_error");
+  await outpost["onRejected"]([refused], "permanent_error");
+  await outpost.track(refused);
+  expect(await redis.hexists(`outpost:v1:org-1:rejected:external:alice:tokens:${bucket}`, "refused")).toBe(1);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(8);
+  expect(await redis.hmget(key, `bucket:${bucket}:count`, `bucket:${bucket}:min`, `bucket:${bucket}:max`)).toEqual(["2", "3", "5"]);
 });
 
 it("keeps a cold bucket's events pending on Polar's receipt until a snapshot counts them", async () => {

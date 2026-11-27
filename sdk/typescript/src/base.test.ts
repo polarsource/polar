@@ -464,9 +464,17 @@ test("warms the actor's customer without starting the delivery queue", async () 
   }
 });
 
-test("propagates an Outpost startup failure without starting delivery or using the API", async () => {
+test("shares an Outpost startup failure and retries on the next operation", async () => {
   const failure = new UnavailableRedisError();
-  const startOutpost = vi.spyOn(Outpost.prototype, "start").mockRejectedValue(failure);
+  const startOutpost = vi
+    .spyOn(Outpost.prototype, "start")
+    .mockRejectedValueOnce(failure)
+    .mockImplementation(async function (this: Outpost) {
+      return this;
+    });
+  vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
+  const local = { meter_id: "meter", consumed_units: 2, credited_units: 3, balance: 1 };
+  vi.spyOn(Outpost.prototype, "meter").mockResolvedValue(local);
   const fetch = vi.spyOn(globalThis, "fetch");
   const queue = { start: vi.fn(), enqueue: vi.fn(), close: vi.fn(), flush: vi.fn() };
   const polar = createPolar({
@@ -476,26 +484,38 @@ test("propagates an Outpost startup failure without starting delivery or using t
   });
   try {
     const actor = polar.actor({ external_customer_id: "alice" });
-    await expect(actor.meter("meter")).rejects.toBe(failure);
-    await expect(actor.warmup()).rejects.toBe(failure);
-    await expect(polar.track(event)).rejects.toBe(failure);
-    await expect(polar.flush()).rejects.toBe(failure);
+    await Promise.all([
+      expect(actor.meter("meter")).rejects.toBe(failure),
+      expect(actor.warmup()).rejects.toBe(failure),
+      expect(polar.track(event)).rejects.toBe(failure),
+      expect(polar.flush()).rejects.toBe(failure),
+    ]);
     expect(startOutpost).toHaveBeenCalledOnce();
     expect(queue.start).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
+
+    await expect(actor.meter("meter")).resolves.toEqual(local);
+    await polar.flush();
+    expect(startOutpost).toHaveBeenCalledTimes(2);
+    expect(queue.start).toHaveBeenCalledOnce();
+    expect(queue.flush).toHaveBeenCalledOnce();
   } finally {
     await polar.close();
   }
 });
 
-test("closes Outpost when the delivery queue fails to start", async () => {
-  vi.spyOn(Outpost.prototype, "start").mockImplementation(async function (this: Outpost) {
-    return this;
-  });
+test("closes Outpost on a queue startup failure and retries both on the next read", async () => {
+  const startOutpost = vi
+    .spyOn(Outpost.prototype, "start")
+    .mockImplementation(async function (this: Outpost) {
+      return this;
+    });
   const closeOutpost = vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
+  vi.spyOn(Outpost.prototype, "meter").mockResolvedValue(null);
+  vi.spyOn(Outpost.prototype, "actor").mockResolvedValue(undefined);
   const failure = new Error("queue startup failed");
   const queue = {
-    start: vi.fn().mockRejectedValue(failure),
+    start: vi.fn().mockRejectedValueOnce(failure).mockResolvedValue(undefined),
     enqueue: vi.fn(),
     flush: vi.fn(),
     close: vi.fn(),
@@ -510,14 +530,20 @@ test("closes Outpost when the delivery queue fails to start", async () => {
     await expect(polar.track(event)).rejects.toBe(failure);
     expect(closeOutpost).toHaveBeenCalledOnce();
     expect(queue.enqueue).not.toHaveBeenCalled();
-    await expect(polar.flush()).rejects.toBe(failure);
-    await expect(polar.meter("meter", event)).rejects.toBe(failure);
-    await expect(polar.actor(event).warmup()).rejects.toBe(failure);
+    await Promise.all([
+      expect(polar.meter("meter", event)).resolves.toBeNull(),
+      polar.actor(event).warmup(),
+    ]);
+    expect(queue.start).toHaveBeenCalledTimes(2);
+    expect(startOutpost).toHaveBeenCalledTimes(2);
+    expect(closeOutpost.mock.invocationCallOrder[0]).toBeLessThan(
+      startOutpost.mock.invocationCallOrder[1],
+    );
     expect(fetch).not.toHaveBeenCalled();
   } finally {
     await polar.close();
   }
-  expect(closeOutpost).toHaveBeenCalledOnce();
+  expect(closeOutpost).toHaveBeenCalledTimes(2);
 });
 
 test("startup that outlives a close deadline cleans up when it eventually completes", async () => {

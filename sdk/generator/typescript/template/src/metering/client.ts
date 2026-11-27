@@ -42,7 +42,7 @@ export class PolarEventClient {
   private readonly running: Pick<EventQueue, "close">[] = [];
   private startingOutpost?: Promise<OutpostBackend>;
   private startingQueue?: Promise<void>;
-  private queueStartupFailure?: { error: unknown };
+  private queueNeedsRetry = false;
   private outpost?: OutpostBackend;
   private readonly queue: EventQueue | null;
   private closing?: Promise<void>;
@@ -131,7 +131,7 @@ export class PolarEventClient {
     validateActor(input);
     this.begin();
     try {
-      const outpost = await this.startOutpost();
+      const outpost = await this.startOutpostForRead();
       try {
         if (outpost) return await outpost.meter({ ...input, meter_id: meterId });
       } catch (error) {
@@ -187,7 +187,7 @@ export class PolarEventClient {
   private async warmup(customer: MeterInput): Promise<void> {
     this.begin();
     try {
-      const outpost = await this.startOutpost();
+      const outpost = await this.startOutpostForRead();
       try {
         await outpost?.actor(customer);
       } catch (error) {
@@ -205,13 +205,20 @@ export class PolarEventClient {
 
   private begin(): void {
     if (this.closing) throw new Error("Polar client is closed");
-    if (this.queueStartupFailure) throw this.queueStartupFailure.error;
     this.activeOperations++;
+  }
+
+  private async startOutpostForRead(): Promise<OutpostBackend | undefined> {
+    if (this.queueNeedsRetry && this.queue) await this.startQueue(this.queue);
+    return this.startOutpost();
   }
 
   private startOutpost(): Promise<OutpostBackend> | undefined {
     if (!this.options.outpost) return;
-    this.startingOutpost ??= this.openOutpost(this.options.outpost);
+    this.startingOutpost ??= this.openOutpost(this.options.outpost).catch((error: unknown) => {
+      this.startingOutpost = undefined;
+      throw error;
+    });
     return this.startingOutpost;
   }
 
@@ -225,7 +232,10 @@ export class PolarEventClient {
   }
 
   private startQueue(queue: EventQueue): Promise<void> {
-    this.startingQueue ??= this.openQueue(queue);
+    this.startingQueue ??= this.openQueue(queue).catch((error: unknown) => {
+      this.startingQueue = undefined;
+      throw error;
+    });
     return this.startingQueue;
   }
 
@@ -246,7 +256,7 @@ export class PolarEventClient {
       if (redis && queue.startWithRedis) await queue.startWithRedis(options, redis);
       else await queue.start(options);
     } catch (error) {
-      this.queueStartupFailure = { error };
+      this.queueNeedsRetry = true;
       if (!outpost) throw error;
       this.outpost = undefined;
       const timeout = this.shutdownDeadline === undefined
@@ -255,13 +265,14 @@ export class PolarEventClient {
       try {
         await this.closeResources(timeout);
       } catch (cleanupError) {
-        const failure = new AggregateError([error, cleanupError], "Polar client startup and cleanup failed");
-        this.queueStartupFailure = { error: failure };
-        throw failure;
+        throw new AggregateError([error, cleanupError], "Polar client startup and cleanup failed");
+      } finally {
+        this.startingOutpost = undefined;
       }
       throw error;
     }
     await this.registerResource(queue);
+    this.queueNeedsRetry = false;
   }
 
   private checkShutdownDeadline(): void {

@@ -42,6 +42,18 @@ export type IngestionEvent =
   | models.EventCreateCustomer
   | models.EventCreateExternalCustomer
 
+export type IngestionCamelCaseEvent = {
+  name: string
+  timestamp?: Date | string
+  organizationId?: string | null
+  externalId?: string | null
+  parentId?: string | null
+  metadata?: models.EventCreateCustomer['metadata']
+} & (
+  | { customerId: string; memberId?: string | null }
+  | { externalCustomerId: string; externalMemberId?: string | null }
+)
+
 // The options of the old SDK that 0.4 users pass, mapped onto the new one
 export type IngestionTokenConfig = {
   accessToken?: string
@@ -87,6 +99,51 @@ const encodeCustomer = Schema.encodeSync(
     ),
     Schema.Struct({ customer_id: Schema.String }),
     Schema.Struct({ external_customer_id: Schema.String }),
+  ]),
+)
+
+const optionalString = Schema.optional(Schema.NullOr(Schema.String))
+
+const eventFields = {
+  name: Schema.String,
+  timestamp: Schema.optional(Schema.Unknown),
+  organizationId: optionalString,
+  externalId: optionalString,
+  parentId: optionalString,
+  metadata: Schema.optional(Schema.Unknown),
+}
+
+const eventKeys = {
+  organizationId: 'organization_id',
+  externalId: 'external_id',
+  parentId: 'parent_id',
+} as const
+
+const encodeEvent = Schema.encodeUnknownSync(
+  Schema.Union([
+    Schema.Struct({
+      ...eventFields,
+      customerId: Schema.String,
+      memberId: optionalString,
+    }).pipe(
+      Schema.encodeKeys({
+        ...eventKeys,
+        customerId: 'customer_id',
+        memberId: 'member_id',
+      }),
+    ),
+    Schema.Struct({
+      ...eventFields,
+      externalCustomerId: Schema.String,
+      externalMemberId: optionalString,
+    }).pipe(
+      Schema.encodeKeys({
+        ...eventKeys,
+        externalCustomerId: 'external_customer_id',
+        externalMemberId: 'external_member_id',
+      }),
+    ),
+    Schema.Record(Schema.String, Schema.Unknown),
   ]),
 )
 
@@ -167,7 +224,9 @@ export function Ingestion(metering: Metering): {
 }
 export function Ingestion(config?: IngestionTokenConfig): {
   strategy: IngestionStrategyAttacher
-  ingest: (events: IngestionEvent[]) => Promise<models.EventsIngestResponse>
+  ingest: (
+    events: (IngestionEvent | IngestionCamelCaseEvent)[],
+  ) => Promise<models.EventsIngestResponse>
 }
 export function Ingestion(config?: IngestionTokenConfig | Metering) {
   if (config && 'track' in config) {
@@ -189,7 +248,9 @@ export function Ingestion(config?: IngestionTokenConfig | Metering) {
 
       return strategy
     }) satisfies IngestionStrategyAttacher,
-    ingest: (events: IngestionEvent[]) =>
-      createTokenClient(config).events.ingest({ events }),
+    ingest: async (events: (IngestionEvent | IngestionCamelCaseEvent)[]) =>
+      createTokenClient(config).events.ingest({
+        events: events.map((event) => encodeEvent(event) as IngestionEvent),
+      }),
   }
 }

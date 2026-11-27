@@ -93,11 +93,15 @@ class MockAdapter {
   }
 }
 
-const track = (turns: Turn[]) => {
+class StreamingMockAdapter extends MockAdapter {
+  structuredOutputStream() {
+    return this.chatStream()
+  }
+}
+
+const track = (turns: Turn[], Adapter = MockAdapter) => {
   // Typed as a real adapter, so this also checks TanStack AI's type fits the strategy
-  const llm = new LLMStrategy(
-    new MockAdapter(turns) as unknown as AnyTextAdapter,
-  )
+  const llm = new LLMStrategy(new Adapter(turns) as unknown as AnyTextAdapter)
   const execute = vi.spyOn(llm, 'execute').mockResolvedValue()
 
   return { adapter: llm.client({ customerId }), execute }
@@ -213,6 +217,28 @@ describe('LLMStrategy with a TanStack AI adapter', () => {
     const { adapter, execute } = track([
       { usage: tanStackUsage, fail: 'throw' },
     ])
+
+    await expect(
+      chat({
+        adapter,
+        threadId,
+        messages,
+        outputSchema: {
+          type: 'object',
+          properties: { answer: { type: 'string' } },
+          required: ['answer'],
+        },
+      }),
+    ).rejects.toThrow('Maximum tokens reached')
+
+    expect(execute).toHaveBeenCalledExactlyOnceWith(...tenTokens)
+  })
+
+  it('should ingest the usage of streamed structured output that throws', async () => {
+    const { adapter, execute } = track(
+      [{ usage: tanStackUsage, fail: 'throw' }],
+      StreamingMockAdapter,
+    )
 
     await expect(
       chat({

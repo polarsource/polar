@@ -34,4 +34,4 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             console.print("[red]bun not found. Install it from https://bun.sh[/red]")
             raise typer.Exit(1)
         cmd = ["bun", "--no-env-file", str(CLI_ENTRY), *ctx.args]
-        os.execvpe(cmd[0], cmd, {**os.environ, "POLAR_PREVIEW": "1"})
+        os.execvp(cmd[0], cmd)

@@ -9,26 +9,21 @@ import { polar } from '@/commands/home'
 import { update } from '@/commands/update'
 import { webhook } from '@/commands/webhook'
 
-// Add new preview commands in this array, e.g [config, newFeature]
-const previews = [config].map((command) =>
-  command.pipe(Command.withDescription(`${command.description} (preview)`)),
-)
+const cliCommands = [auth, agent, config, webhook, update]
 
-interface ProgramOptions {
-  readonly preview: boolean
-}
-
-export const program = ({ preview }: ProgramOptions) =>
+export const programWithout = (hidden: ReadonlyArray<string>) =>
   polar.pipe(
     Command.withSubcommands([
       {
         group: 'CLI COMMANDS',
-        commands: [auth, agent, webhook, update, ...(preview ? previews : [])],
+        commands: cliCommands.filter(({ name }) => !hidden.includes(name)),
       },
       { group: 'API RESOURCES', commands },
     ]),
     Command.withGlobalFlags([Output]),
   )
+
+export const program = programWithout([])
 
 const sharedBuiltIns = [
   GlobalFlag.Version,

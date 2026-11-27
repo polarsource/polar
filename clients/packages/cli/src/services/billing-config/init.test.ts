@@ -303,6 +303,21 @@ describe('init', () => {
     expect(api.requests).toHaveLength(0)
   })
 
+  test('suggests updating or JSON when the catalog cannot be written as TypeScript', async () => {
+    await project()
+    api.routes[`GET ${exportUrl}`] = () =>
+      exported({ ...EMPTY, settings: { unknown: {} } })
+
+    const error = await failure(run())
+
+    expect(error.message).toBe(
+      "This version of the CLI can't write your catalog as TypeScript",
+    )
+    expect(error.hint).toBe(
+      'Run polar update and try again, or pass --format json to create a JSON config instead. Not supported yet: settings.unknown',
+    )
+  })
+
   test('refuses file types it cannot write and a mismatched --format', async () => {
     expect((await failure(run({ file: 'polar.config.mjs' }))).message).toBe(
       'polar.config.mjs is not a file init can write',

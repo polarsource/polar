@@ -130,6 +130,9 @@ export default {
           _mode: 'plural',
         },
         updateFailed: 'Nu s-a putut actualiza numărul de unități',
+        range: '{min} - {max} {unitLabelPlural}',
+        minimum: 'Minim {min} {unitLabelPlural}',
+        maximum: 'Maxim {max} {unitLabelPlural}',
       },
       discount: {
         until: 'Până la {date}',

@@ -512,7 +512,7 @@ export const defineConfig = <
   Events extends EventDefinitions | undefined = undefined,
 >(
   input: {
-    /** Organization settings: payment defaults, how subscriptions behave, what customers can do in the customer portal and which emails Polar sends them. */
+    /** Organization settings: payment defaults, how subscriptions behave, what customers can do in the customer portal and which emails Polar sends them. A setting you leave out is set to its default, the value a new organization gets. Leave out `settings` to keep the current ones. */
     readonly settings?: SettingsInput
     /** The events your app sends, keyed by name. Meters count them. */
     readonly events?: (helpers: EventHelpers) => Events

@@ -728,6 +728,13 @@ test('renders settings as an object literal, a group per line', async () => {
   )
 })
 
+test('renders settings without any setting as an empty object', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({ settings: {}, meters: [] }),
+  )
+  expect(source).toContain('  settings: {},\n')
+})
+
 test('renders the subscription settings an organization exports', async () => {
   const source = await Effect.runPromise(
     generateConfig({

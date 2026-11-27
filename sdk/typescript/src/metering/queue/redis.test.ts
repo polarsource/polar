@@ -6,7 +6,7 @@ import type { EventQueue } from "./index";
 
 import { ClientBase } from "../../base";
 import { startRedisServer } from "../../outpost/testing";
-import { createIngest } from "../client";
+import { createIngest } from "../event";
 import { RedisEventQueue } from "./redis";
 
 it("skips periodic drains until the queue has work", async () => {

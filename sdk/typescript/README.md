@@ -97,53 +97,40 @@ const customerState = await getStateExternalCustomers(polar)("customer_external_
 console.log(customerState);
 ```
 
-## Metering
+## Actors and event delivery
 
-The metering helper buffers and batches events, with optional local reduction through Outpost.
-Create one shared helper outside your request handler. Resources start on the first operation;
-there is no explicit startup or async disposal step.
+Create one shared client outside your request handler. Bind a customer and optional member
+with `polar.actor()`.
 
 ```typescript
 import { createPolar } from "@polar-sh/sdk/2026-10";
 
 const polar = createPolar({ accessToken: "polar_oat_xxx" });
-const metering = polar.metering();
 
 async function recordUsage() {
-    await metering.track({
-        name: "api_request",
-        external_customer_id: "customer_123",
-        metadata: { tokens: 42 },
-    });
+    const actor = polar.actor({ external_customer_id: "customer_123" });
+    await actor.track({ name: "api_request", metadata: { tokens: 42 } });
+    const usage = await actor.meter("meter_uuid");
 }
 ```
 
-`track()` resolves when the event is queued, not when Polar accepts it. Events without a
-`timestamp` or `external_id` receive one when you call `track()`.
-
-### Actor context
-
-Bind a customer once when tracking several events. Actor creation may warm Outpost state.
-
-```typescript
-const actor = await metering.actor({ external_customer_id: "customer_123" });
-await actor.track({ name: "api_request", metadata: { tokens: 42 } });
-await actor.track({ name: "api_request", metadata: { tokens: 17 } });
-```
+Use `polar.track(...)` or `polar.meter(...)` to pass the customer ID on each call.
+`track()` resolves once the queue accepts the event. It assigns a timestamp and external ID
+when omitted. Meter reads are customer-wide and work without a queue.
 
 ### Delivery
 
 On long-running servers such as Express, the buffer sends batches by size or interval.
-Call `await metering.close()` during graceful shutdown to drain events and release resources.
-Closing stops new operations and is idempotent; a closed helper cannot be reused.
+Call `await polar.close()` during graceful shutdown to drain events and release resources.
+Closing stops new event and meter operations and is idempotent.
 
 In serverless handlers, flush before returning so the function does not freeze with events
 in the queue:
 
 ```typescript
 export async function POST() {
-    await metering.track({ name: "api_request", external_customer_id: "customer_123" });
-    await metering.flush();
+    await polar.track({ name: "api_request", external_customer_id: "customer_123" });
+    await polar.flush();
     return Response.json({ ok: true });
 }
 ```
@@ -156,8 +143,8 @@ the `flush()` promise from the callback so Next.js can wait for delivery.
 import { after } from "next/server";
 
 export async function POST() {
-    await metering.track({ name: "api_request", external_customer_id: "customer_123" });
-    after(() => metering.flush());
+    await polar.track({ name: "api_request", external_customer_id: "customer_123" });
+    after(() => polar.flush());
 
     return Response.json({ ok: true });
 }
@@ -171,7 +158,7 @@ is no earlier than its own: the newer one releases it and waits for its events t
 keeps a serverless function alive, so concurrent requests do not each stay open for a round
 trip to Polar. A resolved `flush()` therefore does not prove Polar accepted the request's events
 when other requests flush at the same time. Concurrent requests share HTTP batches; calling
-`flush()` does not close the helper or create a separate buffer. This is a shared queue barrier, not request-specific delivery.
+`flush()` does not close the client or create a separate buffer. This is a shared queue barrier, not request-specific delivery.
 
 Dropped events are retained for reporting until a completed flush or close acknowledges them.
 The newest overlapping flush reports failures within its boundary, including background drops
@@ -182,8 +169,8 @@ retained event records. Callbacks alone do not acknowledge failures.
 `flush()` and `close()` wait up to 30 seconds by default. Override the wait per call:
 
 ```typescript
-await metering.flush({ timeoutMs: 60_000 });
-await metering.close({ timeoutMs: 10_000 });
+await polar.flush({ timeoutMs: 60_000 });
+await polar.close({ timeoutMs: 10_000 });
 ```
 
 A flush timeout stops only the caller's wait; delivery and other callers continue. It does not
@@ -207,40 +194,48 @@ termination still requires external durable storage and replay for strict no-los
 Read a customer's meter directly or through an actor:
 
 ```typescript
-const meter = await metering.meter("meter_uuid", {
+const meter = await polar.meter("meter_uuid", {
     external_customer_id: "customer_123",
 });
+const actor = polar.actor({ external_customer_id: "customer_123" });
 const actorMeter = await actor.meter("meter_uuid");
 if (meter !== null) console.log(meter.consumed_units, meter.credited_units, meter.balance);
 ```
 
 ### Local reduction with Outpost
 
-Pass `outpost()` from `@polar-sh/sdk/outpost` to `polar.metering()` to enable Redis-backed
-local reduction. This provides low-latency meter reads across clients. Outpost requires the
-optional `ioredis` and `@opentelemetry/*` peer dependencies.
+Pass `outpost()` from `@polar-sh/sdk/outpost` to `createPolar` to enable Redis-backed local meter reads.
+The client opens Outpost on first use and shares its authenticated HTTP transport.
+Outpost requires the optional `ioredis` and `@opentelemetry/*` peer dependencies.
 
 ```typescript
 import { outpost } from "@polar-sh/sdk/outpost";
 
-const metering = polar.metering({ outpost: outpost() });
+const polar = createPolar({
+    accessToken: "polar_oat_xxx",
+    outpost: outpost({ redis: "redis://localhost:6379" }),
+});
 ```
 
-`outpost()` uses `REDIS_URL` by default. Pass a URL explicitly with
-`outpost({ redis: "redis://localhost:6379" })`. The queue queues events for Polar and
-Outpost applies them locally. If Outpost cannot answer a meter read, metering reads the value
-from the Polar API. `snapshotTimeout` sets how long Outpost waits for an initial snapshot.
+Outpost applies events locally after enqueue succeeds. If Outpost cannot answer a meter read,
+the client queries the Polar API. `snapshotTimeout` controls the wait for an initial snapshot.
+If the client cannot connect to Redis when opening Outpost or a Redis queue, the
+operation rejects. The next operation on that client retries startup.
+
+Call `await actor.warmup()` to warm the customer's state across all configured Outpost
+reducers before reading a meter.
 
 ### Choose a queue
 
-`polar.metering()` creates a `MemoryEventQueue` by default. Pass `queue` to configure it or
-supply another implementation of the `EventQueue` interface from `@polar-sh/sdk/metering`.
+The client uses a `MemoryEventQueue` by default and opens it on the first `track()` or
+`flush()`. Pass `eventQueue` to customize delivery or `eventQueue: null` to disable it.
 
 ```typescript
 import { MemoryEventQueue } from "@polar-sh/sdk/metering";
 
-const metering = polar.metering({
-    queue: new MemoryEventQueue({ batchSize: 50 }),
+const polar = createPolar({
+    accessToken: "polar_oat_xxx",
+    eventQueue: new MemoryEventQueue({ batchSize: 50 }),
 });
 ```
 
@@ -252,13 +247,14 @@ import { RedisEventQueue } from "@polar-sh/sdk/metering/queue/redis";
 import { outpost } from "@polar-sh/sdk/outpost";
 
 const redis = "redis://localhost:6379";
-const metering = polar.metering({
-    queue: new RedisEventQueue(redis, { stream: "my-app:metering" }),
+const polar = createPolar({
+    accessToken: "polar_oat_xxx",
+    eventQueue: new RedisEventQueue(redis, { stream: "my-app:metering" }),
     outpost: outpost({ redis }),
 });
 ```
 
-Metering opens a single Redis client when the queue and Outpost use the same URL. Both also
+The SDK opens a single Redis client when the queue and Outpost use the same URL. Both also
 accept an existing `ioredis` client, which your application manages and closes.
 
 #### MemoryEventQueue options
@@ -271,19 +267,19 @@ accept an existing `ioredis` client, which your application manages and closes.
 
 #### Outpost options
 
-| Option            | Default                          | Meaning                                                  |
-| ----------------- | -------------------------------- | -------------------------------------------------------- |
-| `redis`           | `REDIS_URL` environment variable | Redis instance used by Outpost.                          |
-| `telemetry`       | `true`                           | Send Outpost metrics and traces to Polar.                |
-| `snapshotTimeout` | `5000`                           | Milliseconds a cold read waits for its initial snapshot. |
+| Option            | Default  | Meaning                                                  |
+| ----------------- | -------- | -------------------------------------------------------- |
+| `redis`           | Required | Redis instance used by Outpost.                          |
+| `telemetry`       | `true`   | Send Outpost metrics and traces to Polar.                |
+| `snapshotTimeout` | `5000`   | Milliseconds a cold read waits for its initial snapshot. |
 
 Telemetry can also be disabled with `POLAR_OUTPOST_TELEMETRY=0`.
 
 ### Delivery callbacks
 
-Pass `onAck(events)` and `onRejected(events, reason)` to `polar.metering()` to observe delivery.
-Metering runs the corresponding Outpost hook first when Outpost is enabled. If your callback
-throws, Metering logs the error type and continues settling the events.
+Pass `onEventAck(events)` and `onEventRejected(events, reason)` to `createPolar` to observe
+delivery. The client runs the corresponding Outpost hook first when Outpost is enabled.
+If your callback throws, the client logs the error type and continues settling the events.
 
 ## Webhooks
 

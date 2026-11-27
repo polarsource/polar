@@ -1,11 +1,16 @@
 import builtins
 import collections.abc
+import contextlib
 import dataclasses
+import datetime
+import enum
 import types
 import typing
+import uuid
 
 import adaptix
 import adaptix.load_error
+import anyio
 import httpx2
 import typing_extensions
 from adaptix._internal.morphing.provider_template import LoaderProvider
@@ -15,6 +20,31 @@ from adaptix._internal.provider.location import GenericParamLoc
 from adaptix.provider import CannotProvide, Mediator
 
 from polar import _httpx_compat
+from polar._errors import PolarError
+from polar.actor import Actor, validate_actor
+from polar.logging import get_logger
+from polar.metering.errors import (
+    DropReason,
+    MeteringTimeoutError,
+    UnknownMeterError,
+    validate_timeout,
+)
+from polar.metering.events import (
+    EventCustomerInput,
+    EventExternalCustomerInput,
+    EventInput,
+    ingest_events,
+)
+from polar.metering.meter import CustomerMeter, CustomerMeterList
+from polar.metering.queue import EventQueue, OnAck, OnRejected
+from polar.metering.queue.memory import MemoryEventQueue
+
+if typing.TYPE_CHECKING:
+    from redis.asyncio import Redis
+
+    from polar.outpost import Outpost
+
+log = get_logger(__name__)
 
 _EnvironmentT = typing.TypeVar("_EnvironmentT", bound=str)
 _ModelT = typing.TypeVar("_ModelT")
@@ -97,12 +127,6 @@ class _ScalarUnionProvider(LoaderProvider):
             return fallback(data)
 
         return load
-
-
-class PolarError(Exception):
-    def __init__(self, message: str):
-        self.message = message
-        super().__init__(message)
 
 
 class PolarNetworkError(PolarError):
@@ -277,6 +301,324 @@ class AsyncClientBase(BuildRequestMixin):
             return await self._client.send(request)
         except httpx2.RequestError as e:
             raise PolarNetworkError(str(e)) from e
+
+
+class PolarSyncBase:
+    """Base for versioned synchronous Polar clients."""
+
+    version: str
+
+    def __init__(
+        self,
+        base_url: str,
+        access_token: str,
+        timeout: RequestTimeout | None,
+        organization_id: str | None,
+    ) -> None:
+        self._client = SyncClientBase(
+            base_url, self.version, access_token, timeout, organization_id
+        )
+
+    def __enter__(self) -> typing.Self:
+        self._client.__enter__()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc_val: BaseException | None = None,
+        exc_tb: types.TracebackType | None = None,
+    ) -> None:
+        self._client.__exit__(exc_type, exc_val, exc_tb)
+
+
+class _DefaultEventQueue(enum.Enum):
+    MEMORY = "memory"
+
+
+class OutpostOptions(typing.TypedDict):
+    redis: "str | Redis"
+    telemetry: typing.NotRequired[bool]
+    snapshot_timeout: typing.NotRequired[float]
+
+
+class PolarAsyncBase:
+    """Base for versioned asynchronous Polar clients."""
+
+    version: str
+    outpost: "Outpost | None"
+
+    def __init__(
+        self,
+        base_url: str,
+        access_token: str,
+        timeout: RequestTimeout | None,
+        organization_id: str | None,
+        *,
+        event_queue: EventQueue
+        | None
+        | typing.Literal[_DefaultEventQueue.MEMORY] = _DefaultEventQueue.MEMORY,
+        on_event_ack: OnAck | None = None,
+        on_event_rejected: OnRejected | None = None,
+        outpost: OutpostOptions | None = None,
+    ) -> None:
+        self._client = AsyncClientBase(
+            base_url, self.version, access_token, timeout, organization_id
+        )
+
+        self._event_queue = (
+            MemoryEventQueue()
+            if event_queue is _DefaultEventQueue.MEMORY
+            else event_queue
+        )
+        self._active_queue: EventQueue | None = None
+        self._caller_on_ack = on_event_ack
+        self._caller_on_rejected = on_event_rejected
+        self.outpost = None
+        if outpost is not None:
+            from polar.outpost import Outpost
+
+            self.outpost = Outpost.create(self, **outpost)
+        self._stack = contextlib.AsyncExitStack()
+
+    async def __aenter__(self) -> typing.Self:
+        async with contextlib.AsyncExitStack() as stack:
+            await stack.enter_async_context(self._client)
+            if self.outpost is not None:
+                await stack.enter_async_context(self.outpost)
+            if self._event_queue is not None:
+                self._active_queue = await stack.enter_async_context(
+                    self._open_queue(self._event_queue)
+                )
+            self._stack = stack.pop_all()
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc_val: BaseException | None = None,
+        exc_tb: types.TracebackType | None = None,
+    ) -> None:
+        self._active_queue = None
+        await self._stack.__aexit__(exc_type, exc_val, exc_tb)
+
+    async def flush(self, *, timeout: float = 30.0) -> None:
+        """Wait for the configured queue to deliver earlier events."""
+        queue = self._require_event_queue()
+        validate_timeout(timeout)
+        deadline = anyio.current_time() + timeout
+        try:
+            with anyio.fail_after(timeout):
+                await queue.flush(timeout=timeout)
+                if self.outpost is not None:
+                    await self.outpost.flush(
+                        timeout=max(0.0, deadline - anyio.current_time())
+                    )
+        except MeteringTimeoutError:
+            raise
+        except TimeoutError as error:
+            raise MeteringTimeoutError(timeout) from error
+
+    @typing.overload
+    async def track(self, **event: typing.Unpack[EventCustomerInput]) -> None: ...
+
+    @typing.overload
+    async def track(
+        self, **event: typing.Unpack[EventExternalCustomerInput]
+    ) -> None: ...
+
+    async def track(self, **event: typing.Any) -> None:
+        """Enqueue an event and apply it to Outpost when enabled.
+
+        Args:
+            **event: Event fields with exactly one customer_id or
+                external_customer_id. Member IDs must match the identifier kind.
+                An event without a timestamp is dated now, once, before any
+                queue sees it.
+
+        Raises:
+            RuntimeError: The client has no open event queue.
+            ValueError: Customer or member identifiers are inconsistent.
+        """
+        queue = self._require_event_queue()
+        validate_actor(
+            event.get("customer_id"),
+            event.get("member_id"),
+            event.get("external_customer_id"),
+            event.get("external_member_id"),
+        )
+        event.setdefault("timestamp", datetime.datetime.now(datetime.UTC).isoformat())
+        if not event.get("external_id"):
+            event["external_id"] = str(uuid.uuid4())
+        actor_event = typing.cast(EventInput, event)
+        await queue.enqueue(actor_event)
+        if self.outpost is not None:
+            try:
+                await self.outpost.track(actor_event)
+            except Exception as error:  # noqa: BLE001
+                log.warning(
+                    "Outpost failed to reduce an enqueued event (%s)",
+                    type(error).__name__,
+                )
+
+    @typing.overload
+    def actor(self, *, customer_id: str, member_id: str | None = None) -> Actor: ...
+
+    @typing.overload
+    def actor(
+        self, *, external_customer_id: str, external_member_id: str | None = None
+    ) -> Actor: ...
+
+    def actor(
+        self,
+        *,
+        customer_id: str | None = None,
+        member_id: str | None = None,
+        external_customer_id: str | None = None,
+        external_member_id: str | None = None,
+    ) -> Actor:
+        """Create customer-bound helper.
+
+        Args:
+            customer_id: Polar customer ID; mutually exclusive with external_customer_id.
+            member_id: Polar member ID, paired with customer_id.
+            external_customer_id: Customer ID in your application.
+            external_member_id: Member ID paired with external_customer_id.
+
+        Returns:
+            A helper that attaches this identity to events and reads customer meters.
+
+        Raises:
+            ValueError: Customer or member identifiers are inconsistent.
+        """
+        validate_actor(customer_id, member_id, external_customer_id, external_member_id)
+        return Actor(
+            self,
+            customer_id=customer_id,
+            member_id=member_id,
+            external_customer_id=external_customer_id,
+            external_member_id=external_member_id,
+        )
+
+    @typing.overload
+    async def meter(
+        self, meter_id: str, *, customer_id: str
+    ) -> CustomerMeter | None: ...
+
+    @typing.overload
+    async def meter(
+        self, meter_id: str, *, external_customer_id: str
+    ) -> CustomerMeter | None: ...
+
+    async def meter(
+        self,
+        meter_id: str,
+        *,
+        customer_id: str | None = None,
+        external_customer_id: str | None = None,
+    ) -> CustomerMeter | None:
+        """Read a meter value.
+
+        If enabled, the local value from Outpost will be read. Otherwise, it'll
+        fall back to the Polar API.
+
+        Args:
+            meter_id: Polar meter ID.
+            customer_id: Polar customer ID; mutually exclusive with external_customer_id.
+            external_customer_id: Customer ID in your application.
+
+        Returns:
+            Consumption, credits, and balance, or None if no meter is found.
+
+        Raises:
+            ValueError: Exactly one customer identifier was not provided.
+        """
+        validate_actor(customer_id, None, external_customer_id, None)
+        if self.outpost is not None:
+            from polar.outpost.errors import PolarOutpostError
+
+            try:
+                return await self.outpost.meter(
+                    meter_id=meter_id,
+                    customer_id=customer_id,
+                    external_customer_id=external_customer_id,
+                )
+            except (UnknownMeterError, PolarOutpostError):
+                pass
+        request = self._client.build_request(
+            method="GET",
+            url="/v1/customer-meters/",
+            query_params={
+                "meter_id": meter_id,
+                "customer_id": customer_id,
+                "external_customer_id": external_customer_id,
+                "limit": 1,
+            },
+        )
+        response = await self._client.send_request(request)
+        result: CustomerMeterList = parse_response_json(response, CustomerMeterList)
+        return result.items[0] if result.items else None
+
+    def _require_event_queue(self) -> EventQueue:
+        if self._event_queue is None:
+            raise RuntimeError(
+                "Configure an event_queue on PolarAsync to track or flush events"
+            )
+        if self._active_queue is None:
+            raise RuntimeError("Use async with PolarAsync(...) to open the event queue")
+        return self._active_queue
+
+    def _open_queue(
+        self, queue: EventQueue
+    ) -> contextlib.AbstractAsyncContextManager[EventQueue]:
+        on_ack = (
+            self._on_ack
+            if self._caller_on_ack is not None or self.outpost is not None
+            else None
+        )
+        on_rejected = (
+            self._on_rejected
+            if self._caller_on_rejected is not None or self.outpost is not None
+            else None
+        )
+        if self.outpost is not None:
+            from polar.metering.queue.redis import RedisEventQueue
+
+            if (
+                type(queue) is RedisEventQueue
+                and queue.redis_url is not None
+                and queue.redis_url == self.outpost.redis_url
+            ):
+                return queue._open(
+                    self.outpost._require_redis(),
+                    ingest=self._ingest,
+                    on_ack=on_ack,
+                    on_rejected=on_rejected,
+                )
+        return queue.open(ingest=self._ingest, on_ack=on_ack, on_rejected=on_rejected)
+
+    async def _ingest(self, events: list[EventInput]) -> None:
+        await ingest_events(self._client._client, events)
+
+    async def _on_ack(self, events: list[EventInput]) -> None:
+        if self.outpost is not None:
+            await self.outpost.on_ack(events)
+        if self._caller_on_ack is not None:
+            try:
+                await self._caller_on_ack(events)
+            except Exception as error:  # noqa: BLE001
+                log.warning(
+                    "Event acknowledgement hook failed (%s)", type(error).__name__
+                )
+
+    async def _on_rejected(self, events: list[EventInput], reason: DropReason) -> None:
+        if self.outpost is not None:
+            await self.outpost.on_rejected(events, reason)
+        if self._caller_on_rejected is not None:
+            try:
+                await self._caller_on_rejected(events, reason)
+            except Exception as error:  # noqa: BLE001
+                log.warning("Event rejection hook failed (%s)", type(error).__name__)
 
 
 class SyncServiceBase:

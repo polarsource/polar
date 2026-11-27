@@ -43,9 +43,8 @@ from polar._redis import (
     release_lock,
     take_lock,
 )
-from polar.base import PolarError
+from polar.base import PolarAsyncBase, PolarError
 from polar.logging import get_logger
-from polar.metering import PolarClient
 from polar.metering.errors import (
     DropReason,
     UnknownMeterError,
@@ -410,7 +409,7 @@ class Outpost:
     @classmethod
     def create(
         cls,
-        polar: PolarClient,
+        polar: PolarAsyncBase,
         redis: str | Redis,
         *,
         telemetry: bool = True,

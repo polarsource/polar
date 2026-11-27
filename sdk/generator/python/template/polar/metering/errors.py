@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 import dataclasses
 import math
 import typing
 
 import httpx2
 
-from polar import PolarError
-from polar.metering.events import EventInput
+from polar._errors import PolarError
+if typing.TYPE_CHECKING:
+    from polar.metering.events import EventInput
 
 
 class MeteringError(PolarError):

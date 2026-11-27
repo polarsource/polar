@@ -32,14 +32,18 @@ def test_emits_metering_and_outpost_submodules(
         == "./dist/metering/index.cjs"
     )
     for module in (
+        "actor",
         "client",
         "errors",
         "event",
         "meter",
         "index",
-        "client.test",
     ):
         assert (tmp_path / "src" / "metering" / f"{module}.ts").is_file()
     for module in ("memory", "memory.test"):
         assert (tmp_path / "src" / "metering" / "queue" / f"{module}.ts").is_file()
+    assert not (tmp_path / "src" / "metering" / "client.test.ts").exists()
+    client_tests = (tmp_path / "src" / "base.test.ts").read_text()
+    assert 'import { createPolar } from "./2026-04/client"' in client_tests
+    assert (tmp_path / "src" / "portability.test.ts").is_file()
     assert '"src/metering/index.ts"' in (tmp_path / "tsdown.config.ts").read_text()

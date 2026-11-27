@@ -61,13 +61,13 @@ def test_emit_input_model_with_fields_and_additional_properties(
         assert (tmp_path / "polar" / "metering" / f"{module}.py").is_file()
     assert (tmp_path / "polar" / "metering" / "queue" / "memory.py").is_file()
     assert not (tmp_path / "polar" / "metering" / "alias.py").exists()
-    for module in ("conftest", "test_metering"):
-        assert (tmp_path / "tests" / "metering" / f"{module}.py").is_file()
+    assert (tmp_path / "tests" / "conftest.py").is_file()
+    assert not (tmp_path / "tests" / "metering" / "test_metering.py").exists()
     for module in ("test_memory", "test_redis"):
         assert (tmp_path / "tests" / "metering" / "queue" / f"{module}.py").is_file()
-    metering_tests = (tmp_path / "tests" / "metering" / "test_metering.py").read_text()
-    assert "from polar.v2026_04 import PolarAsync" in metering_tests
-    assert "from polar.v2026_10 import PolarAsync" not in metering_tests
+    client_tests = (tmp_path / "tests" / "test_base.py").read_text()
+    assert "from polar.v2026_04 import Polar, PolarAsync" in client_tests
+    assert "from polar.v2026_10 import" not in client_tests
     assert (tmp_path / "polar" / "outpost" / "reducer.py").is_file()
     assert (tmp_path / "polar" / "outpost" / "client.py").is_file()
     scripts = load_redis_scripts()

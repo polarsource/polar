@@ -38,9 +38,7 @@ from redis.exceptions import TimeoutError as RedisTimeoutError
 from polar import __version__
 from polar._redis import REDIS_CONNECTIONS
 from polar._redis import RedisReconnectBackoff
-from polar.base import AsyncClientBase
-from polar.metering import EventInput, Metering
-from polar.metering import _ingest_events
+from polar.metering.events import EventInput
 from polar.metering.errors import UnknownMeterError
 from polar.metering.queue.redis import RedisEventQueue
 from polar.outpost import NotReadyError
@@ -2273,20 +2271,21 @@ async def test_keeps_stream_entry_when_outpost_cannot_settle_delivery(
 ) -> None:
     url, redis = redis_connection
     await _seal(redis, BUCKET)
-    outpost = Outpost(url, client=polar_client)
     queue = RedisEventQueue(url, stream=QUEUE)
-    client = AsyncMock(spec=AsyncClientBase)
-    client._client = polar_client
-    async with Metering(queue, client=client, outpost=outpost) as metering:
+    polar = PolarAsync("test-token", base_url=str(polar_client.base_url), event_queue=queue, outpost={"redis": url})
+    polar._client._client.send = polar_client.send
+    async with polar:
+        outpost = polar.outpost
+        assert outpost is not None
         event = _usage("event-0", 10)
-        await metering.track(**event)
+        await polar.track(**event)
         with monkeypatch.context() as patch:
             patch.setattr(
                 outpost, "_confirm_script", AsyncMock(side_effect=ResponseError("unavailable"))
             )
             await queue._drain()
             assert await _queued(redis) == [event]
-        await metering.flush()
+        await polar.flush()
         assert await redis.xlen(QUEUE) == 0
 
 
@@ -2315,8 +2314,6 @@ async def test_metering_redis_client_ownership(
 
     monkeypatch.setattr(BlockingConnectionPool, "from_url", from_url)
     url = "redis://localhost:6379"
-    polar = PolarAsync("test-token")
-    polar._client._client = polar_client
     on_ack = AsyncMock()
     async with FakeAsyncRedis(server=server, decode_responses=True) as caller_redis:
         caller_close = AsyncMock(wraps=caller_redis.aclose)
@@ -2324,19 +2321,25 @@ async def test_metering_redis_client_ownership(
         queue_source = caller_redis if mode == "borrowed" else url
         queue = RedisEventQueue(redis=queue_source, stream=QUEUE)
         outpost_url = "redis://other:6379" if mode == "different_urls" else url
-        async with polar.metering(
-            queue=queue,
+        polar = PolarAsync(
+            "test-token",
+            base_url=str(polar_client.base_url),
+            event_queue=queue,
             outpost={"redis": caller_redis if mode == "borrowed" else outpost_url},
-            on_ack=on_ack,
-        ) as metering:
-            assert metering.outpost is not None
-            assert (queue._require_redis() is metering.outpost._require_redis()) == (
+            on_event_ack=on_ack,
+        )
+        monkeypatch.setattr(polar._client._client, "send", polar_client.send)
+        async with polar:
+            outpost = polar.outpost
+            assert outpost is not None
+            assert outpost._client is polar._client._client
+            assert (queue._require_redis() is outpost._require_redis()) == (
                 mode != "different_urls"
             )
             if mode == "borrowed":
                 assert queue._require_redis() is caller_redis
             event = _usage("shared-redis", 10)
-            await metering.track(**event)
+            await polar.track(**event)
             assert ingest["requests"] == []
 
         assert ingest["requests"] == [[event]]
@@ -2361,16 +2364,17 @@ async def test_metering_settles_the_events_polar_received(
 ) -> None:
     url, redis = redis_connection
     await _seal(redis, BUCKET)
-    outpost = Outpost(url, client=polar_client)
     queue = RedisEventQueue(url, stream=QUEUE)
-    client = AsyncMock(spec=AsyncClientBase)
-    client._client = polar_client
-    async with Metering(queue, client=client, outpost=outpost) as metering:
+    polar = PolarAsync("test-token", base_url=str(polar_client.base_url), event_queue=queue, outpost={"redis": url})
+    polar._client._client.send = polar_client.send
+    async with polar:
+        outpost = polar.outpost
+        assert outpost is not None
         await outpost.actor(external_customer_id="alice")
         events = [_usage("event-0", 10), _usage("event-1", 10)]
         for event in events:
-            await metering.track(**event)
-        await metering.flush()
+            await polar.track(**event)
+        await polar.flush()
         assert ingest["requests"] == [events]
         key = "outpost:v1:org-1:state:external:alice:tokens"
         assert await redis.hget(key, f"pending:{BUCKET}:count") is None
@@ -2405,16 +2409,15 @@ async def test_drops_only_the_events_polar_names_and_delivers_the_rest(
 ) -> None:
     url, redis = redis_connection
     await _seal(redis, BUCKET)
-    outpost = Outpost(url, client=polar_client)
     queue = RedisEventQueue(url, stream=QUEUE)
-    client = AsyncMock(spec=AsyncClientBase)
-    client._client = polar_client
-    async with Metering(queue, client=client, outpost=outpost) as metering:
+    polar = PolarAsync("test-token", base_url=str(polar_client.base_url), event_queue=queue, outpost={"redis": url})
+    polar._client._client.send = polar_client.send
+    async with polar:
         events = [_usage("event-0", 10), _usage("refused", 10), _usage("event-1", 10)]
         for event in events:
-            await metering.track(**event)
+            await polar.track(**event)
         ingest["refused"] = {"refused"}
-        await metering.flush()
+        await polar.flush()
         assert _delivered(ingest) == [
             ["event-0", "refused", "event-1"],
             ["event-0", "event-1"],
@@ -2431,20 +2434,19 @@ async def test_metering_settles_a_batch_polar_refuses(
 ) -> None:
     url, redis = redis_connection
     await _seal(redis, BUCKET)
-    outpost = Outpost(url, client=polar_client)
     queue = RedisEventQueue(url, stream=QUEUE)
-    client = AsyncMock(spec=AsyncClientBase)
-    client._client = polar_client
-    async with Metering(queue, client=client, outpost=outpost) as metering:
+    polar = PolarAsync("test-token", base_url=str(polar_client.base_url), event_queue=queue, outpost={"redis": url})
+    polar._client._client.send = polar_client.send
+    async with polar:
         events = [_usage("event-0", 10), _usage("event-1", 10)]
         for event in events:
-            await metering.track(**event)
+            await polar.track(**event)
         ingest["statuses"] = [422]
-        await metering.flush()
+        await polar.flush()
         assert await redis.xlen(QUEUE) == 0
         key = "outpost:v1:org-1:state:external:alice:tokens"
         assert await redis.hget(key, f"pending:{BUCKET}:count") is None
-        await metering.flush()
+        await polar.flush()
         assert len(ingest["requests"]) == 1
 
 

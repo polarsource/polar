@@ -1,5 +1,6 @@
 from polar._redis import connect_redis
-from polar.metering import EventInput
+from polar.base import OutpostOptions
+from polar.metering.events import EventInput
 from polar.outpost.client import CustomerMeter, Outpost
 from polar.outpost.errors import (
     NotReadyError,
@@ -29,6 +30,7 @@ __all__ = [
     "FilterClause",
     "NotReadyError",
     "Outpost",
+    "OutpostOptions",
     "PolarOutpostError",
     "Reducer",
     "UnavailableRedisError",

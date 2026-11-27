@@ -1,93 +1,55 @@
-import type { Redis } from "ioredis";
-
-import type {
-  ContextualEventInput,
-  EventCustomerInput,
-  EventExternalCustomerInput,
-  EventInput,
-} from "./event";
 import type { CustomerMeter, MeterInput } from "./meter";
-import type { EventQueue, EventQueueHooks, EventQueueStartOptions, Ingest } from "./queue/index";
+import type { EventQueue, EventQueueHooks, EventQueueStartOptions } from "./queue/index";
 import type { RedisEventQueue } from "./queue/redis";
 
-import { PolarClientError, PolarNetworkError, PolarServerError, type ClientBase } from "../base";
-import { PolarOutpostError } from "../outpost/errors";
+import { PolarError, type ClientBase } from "../base";
+import { isRedisConnectionError } from "../outpost/errors";
+import { validateActor, type Actor, type ActorInput } from "./actor";
 import {
-  IngestRejectedError,
-  IngestRetryableError,
   MeteringTimeoutError,
-  UnknownMeterError,
   deliveryTimeout,
   waitForDelivery,
   type DeliveryOptions,
   type DropReason,
-  retryAfterMs,
 } from "./errors";
+import { createIngest, type EventInput } from "./event";
 import { MemoryEventQueue } from "./queue/memory";
-export {
-  MeteringError,
-  IngestRejectedError,
-  IngestRetryableError,
-  MeteringDeliveryError,
-  MeteringTimeoutError,
-  UnknownMeterError,
-} from "./errors";
 
-/** Exactly one customer identity, with an optional member of the same identifier kind. */
-export type ActorInput =
-  | (Pick<EventCustomerInput, "customer_id" | "member_id"> & {
-      external_customer_id?: never;
-      external_member_id?: never;
-    })
-  | (Pick<EventExternalCustomerInput, "external_customer_id" | "external_member_id"> & {
-      customer_id?: never;
-      member_id?: never;
-    });
-
-/**
- * Customer-bound helper returned by Metering.actor().
- *
- * Member identifiers apply to events; meter reads remain customer-wide.
- * The helper shares its parent's lifecycle and owns no resources.
- */
-export interface ActorMetering {
-  /**
-   * Track an event with this actor's identifiers attached.
-   *
-   * @param event Event name and optional metadata, timestamp, or external ID.
-   */
-  track(event: ContextualEventInput): Promise<void>;
-  /**
-   * Read this customer's meter.
-   *
-   * @param meterId Polar meter ID.
-   * @returns Consumption, credits, and balance, or null if no meter is found.
-   */
-  meter(meterId: string): Promise<CustomerMeter | null>;
-}
-
-interface MeteringReducer {
+interface OutpostBackend {
   start(): Promise<unknown>;
   close(): Promise<void>;
   track(event: EventInput): Promise<void>;
-  actor(input: ActorInput): Promise<void>;
+  actor(input: MeterInput): Promise<void>;
   meter(input: MeterInput & { meter_id: string }): Promise<CustomerMeter | null>;
   flush(): Promise<void>;
   onAck(events: EventInput[]): Promise<void>;
   onRejected(events: EventInput[], reason: DropReason): Promise<void>;
-  redisForUrl?(url: string | undefined): object | undefined;
+  redisForUrl(url: string | undefined): object | undefined;
 }
 
-export type MeteringOutpost = (client: ClientBase) => MeteringReducer;
+// What Outpost or its queue throws while Redis or Polar is out of reach, startup included: a read
+// goes to Polar's API instead, and a warmup does nothing.
+const isUnavailable = (error: unknown): boolean =>
+  error instanceof PolarError || isRedisConnectionError(error);
 
-export interface MeteringOptions extends EventQueueHooks {
-  queue?: EventQueue;
-  outpost?: MeteringOutpost;
+export type OutpostFactory = (client: ClientBase) => OutpostBackend;
+
+export interface PolarEventOptions {
+  /** Queue used to deliver events. Defaults to a memory queue. Pass null to disable delivery. */
+  eventQueue?: EventQueue | null;
+  /** Configure local meter state with `outpost()` from `@polar-sh/sdk/outpost`. */
+  outpost?: OutpostFactory;
+  onEventAck?: EventQueueHooks["onAck"];
+  onEventRejected?: EventQueueHooks["onRejected"];
 }
 
-export class Metering {
+export class PolarEventClient {
   private readonly running: Pick<EventQueue, "close">[] = [];
-  private starting?: Promise<void>;
+  private startingOutpost?: Promise<OutpostBackend>;
+  private startingQueue?: Promise<void>;
+  private queueNeedsRetry = false;
+  private outpost?: OutpostBackend;
+  private readonly queue: EventQueue | null;
   private closing?: Promise<void>;
   private shutdownDeadline?: number;
   private shutdownTimedOut = false;
@@ -95,10 +57,10 @@ export class Metering {
   private onDrained?: () => void;
   constructor(
     private readonly client: ClientBase,
-    readonly queue: EventQueue,
-    readonly outpost?: MeteringReducer,
-    private readonly hooks: EventQueueHooks = {},
-  ) {}
+    private readonly options: PolarEventOptions,
+  ) {
+    this.queue = options.eventQueue === undefined ? new MemoryEventQueue() : options.eventQueue;
+  }
 
   /**
    * Enqueue an event and apply it to Outpost when enabled.
@@ -115,10 +77,11 @@ export class Metering {
       timestamp: event.timestamp ?? new Date().toISOString(),
       external_id: event.external_id || crypto.randomUUID(),
     };
-    const starting = this.begin();
+    const queue = this.requireQueue();
+    this.begin();
     try {
-      await starting;
-      await this.queue.enqueue(queued);
+      await this.startQueue(queue);
+      await queue.enqueue(queued);
       try {
         await this.outpost?.track(queued);
       } catch (error) {
@@ -135,13 +98,11 @@ export class Metering {
   /**
    * Create customer-bound helper.
    *
-   * When enabled, Outpost warms up customer state.
-   *
    * @param input Customer identity and optional matching member identity.
    * @returns A helper that attaches this identity to events and reads customer meters.
    * @throws TypeError if customer or member identifiers are inconsistent.
    */
-  async actor(input: ActorInput): Promise<ActorMetering> {
+  actor(input: ActorInput): Actor {
     validateActor(input);
     const identity: ActorInput =
       input.customer_id != null
@@ -150,21 +111,15 @@ export class Metering {
             external_customer_id: input.external_customer_id,
             external_member_id: input.external_member_id,
           };
-    const starting = this.begin();
-    try {
-      await starting;
-      try {
-        await this.outpost?.actor(identity);
-      } catch (error) {
-        if (!(error instanceof PolarOutpostError)) throw error;
-      }
-      return {
-        track: (event) => this.track({ ...event, ...identity }),
-        meter: (meterId) => this.meter(meterId, identity),
-      };
-    } finally {
-      if (--this.activeOperations === 0) this.onDrained?.();
-    }
+    const customer: MeterInput =
+      identity.customer_id != null
+        ? { customer_id: identity.customer_id }
+        : { external_customer_id: identity.external_customer_id };
+    return {
+      warmup: () => this.warmup(customer),
+      track: (event) => this.track({ ...event, ...identity }),
+      meter: (meterId) => this.meter(meterId, customer),
+    };
   }
 
   /**
@@ -180,16 +135,13 @@ export class Metering {
    */
   async meter(meterId: string, input: MeterInput): Promise<CustomerMeter | null> {
     validateActor(input);
-    const starting = this.begin();
+    this.begin();
     try {
-      await starting;
-      if (this.outpost) {
-        try {
-          return await this.outpost.meter({ ...input, meter_id: meterId });
-        } catch (error) {
-          if (!(error instanceof UnknownMeterError || error instanceof PolarOutpostError))
-            throw error;
-        }
+      try {
+        const outpost = await this.startOutpostForRead();
+        if (outpost) return await outpost.meter({ ...input, meter_id: meterId });
+      } catch (error) {
+        if (!isUnavailable(error)) throw error;
       }
       const request = this.client.buildRequest(
         "GET",
@@ -214,11 +166,12 @@ export class Metering {
   async flush(options?: DeliveryOptions): Promise<void> {
     const timeout = deliveryTimeout(options);
     const deadline = Date.now() + timeout;
-    const starting = this.begin();
+    const queue = this.requireQueue();
+    this.begin();
     try {
-      await waitForDelivery(starting, timeout);
+      await waitForDelivery(this.startQueue(queue), timeout);
       const remaining = Math.max(0, deadline - Date.now());
-      await waitForDelivery(this.queue.flush({ timeoutMs: remaining }), remaining);
+      await waitForDelivery(queue.flush({ timeoutMs: remaining }), remaining);
       if (this.outpost)
         await waitForDelivery(this.outpost.flush(), Math.max(0, deadline - Date.now()));
     } finally {
@@ -236,56 +189,128 @@ export class Metering {
     await this.closing;
   }
 
-  private begin(): Promise<void> {
-    if (this.closing) throw new Error("Metering is closed");
-    this.activeOperations++;
-    this.starting ??= this.startResources();
-    return this.starting;
+  private async warmup(customer: MeterInput): Promise<void> {
+    this.begin();
+    try {
+      try {
+        const outpost = await this.startOutpostForRead();
+        await outpost?.actor(customer);
+      } catch (error) {
+        if (!isUnavailable(error)) throw error;
+      }
+    } finally {
+      if (--this.activeOperations === 0) this.onDrained?.();
+    }
   }
 
-  private async startResources(): Promise<void> {
-    const checkDeadline = () => {
-      if (
-        this.shutdownTimedOut ||
-        (this.shutdownDeadline !== undefined && Date.now() >= this.shutdownDeadline)
-      )
-        throw new MeteringTimeoutError(0);
+  private requireQueue(): EventQueue {
+    if (!this.queue)
+      throw new Error("Configure an eventQueue on the Polar client to track or flush events");
+    return this.queue;
+  }
+
+  private begin(): void {
+    if (this.closing) throw new Error("Polar client is closed");
+    this.activeOperations++;
+  }
+
+  private async startOutpostForRead(): Promise<OutpostBackend | undefined> {
+    if (this.queueNeedsRetry && this.queue) await this.startQueue(this.queue);
+    return this.startOutpost();
+  }
+
+  private startOutpost(): Promise<OutpostBackend> | undefined {
+    if (!this.options.outpost) return;
+    this.startingOutpost ??= this.openOutpost(this.options.outpost).catch((error: unknown) => {
+      this.startingOutpost = undefined;
+      throw error;
+    });
+    return this.startingOutpost;
+  }
+
+  private async openOutpost(createOutpost: OutpostFactory): Promise<OutpostBackend> {
+    this.checkShutdownDeadline();
+    const outpost = createOutpost(this.client);
+    await outpost.start();
+    await this.registerResource(outpost);
+    this.outpost = outpost;
+    return outpost;
+  }
+
+  private startQueue(queue: EventQueue): Promise<void> {
+    this.startingQueue ??= this.openQueue(queue).catch((error: unknown) => {
+      this.startingQueue = undefined;
+      throw error;
+    });
+    return this.startingQueue;
+  }
+
+  private async openQueue(
+    queue: EventQueue & Partial<Pick<RedisEventQueue, "redisUrl" | "startWithRedis">>,
+  ): Promise<void> {
+    const outpost = await this.startOutpost();
+    this.checkShutdownDeadline();
+    const options: EventQueueStartOptions = {
+      ingest: createIngest(this.client),
+      onAck: outpost || this.options.onEventAck ? this.onAck.bind(this) : undefined,
+      onRejected: outpost || this.options.onEventRejected ? this.onRejected.bind(this) : undefined,
     };
     try {
-      if (this.outpost) {
-        await this.outpost.start();
-        this.running.push(this.outpost);
-        checkDeadline();
-      }
-      const options: EventQueueStartOptions = {
-        ingest: createIngest(this.client),
-        onAck: this.outpost || this.hooks.onAck ? this.onAck.bind(this) : undefined,
-        onRejected: this.outpost || this.hooks.onRejected ? this.onRejected.bind(this) : undefined,
-      };
-      const queue = this.queue as EventQueue & Partial<RedisEventQueue>;
-      const redis = this.outpost?.redisForUrl?.(queue.redisUrl) as Redis | undefined;
-      if (redis && typeof queue.startWithRedis === "function")
-        await queue.startWithRedis(options, redis);
+      const redis = outpost?.redisForUrl(queue.redisUrl) as
+        | Parameters<RedisEventQueue["startWithRedis"]>[1]
+        | undefined;
+      if (redis && queue.startWithRedis) await queue.startWithRedis(options, redis);
       else await queue.start(options);
-      this.running.push(this.queue);
-      checkDeadline();
     } catch (error) {
+      this.queueNeedsRetry = true;
+      if (!outpost) throw error;
+      this.outpost = undefined;
+      const timeout =
+        this.shutdownDeadline === undefined
+          ? deliveryTimeout()
+          : Math.max(0, this.shutdownDeadline - Date.now());
       try {
-        await this.closeResources(0);
+        await this.closeResources(timeout);
       } catch (cleanupError) {
-        throw new AggregateError([error, cleanupError], "Metering startup and cleanup failed");
+        throw new AggregateError([error, cleanupError], "Polar client startup and cleanup failed");
+      } finally {
+        this.startingOutpost = undefined;
       }
       throw error;
     }
+    await this.registerResource(queue);
+    this.queueNeedsRetry = false;
+  }
+
+  private checkShutdownDeadline(): void {
+    if (
+      this.shutdownTimedOut ||
+      (this.shutdownDeadline !== undefined && Date.now() >= this.shutdownDeadline)
+    )
+      throw new MeteringTimeoutError(0);
+  }
+
+  private async registerResource(resource: Pick<EventQueue, "close">): Promise<void> {
+    try {
+      this.checkShutdownDeadline();
+    } catch (error) {
+      try {
+        await waitForDelivery(resource.close({ timeoutMs: 0 }), 0);
+      } catch (cleanupError) {
+        throw new AggregateError([error, cleanupError], "Polar client startup and cleanup failed");
+      }
+      throw error;
+    }
+    this.running.push(resource);
   }
 
   private async onAck(events: EventInput[]): Promise<void> {
     await this.outpost?.onAck(events);
     try {
-      await this.hooks.onAck?.(events);
+      await this.options.onEventAck?.(events);
     } catch (error) {
       console.warn(
-        "Metering acknowledgement hook failed",
+        "Event acknowledgement hook failed",
         error instanceof Error ? error.constructor.name : typeof error,
       );
     }
@@ -294,10 +319,10 @@ export class Metering {
   private async onRejected(events: EventInput[], reason: DropReason): Promise<void> {
     await this.outpost?.onRejected(events, reason);
     try {
-      await this.hooks.onRejected?.(events, reason);
+      await this.options.onEventRejected?.(events, reason);
     } catch (error) {
       console.warn(
-        "Metering rejection hook failed",
+        "Event rejection hook failed",
         error instanceof Error ? error.constructor.name : typeof error,
       );
     }
@@ -307,7 +332,7 @@ export class Metering {
     const errors: unknown[] = [];
     try {
       await waitForDelivery(
-        this.starting?.catch(() => {}) ?? Promise.resolve(),
+        Promise.allSettled([this.startingOutpost, this.startingQueue]),
         Math.max(0, deadline - Date.now()),
       );
       if (this.activeOperations > 0) {
@@ -328,7 +353,7 @@ export class Metering {
       errors.push(error);
     }
     if (errors.length === 1) throw errors[0];
-    if (errors.length) throw new AggregateError(errors, "Metering close failed");
+    if (errors.length) throw new AggregateError(errors, "Polar client close failed");
   }
 
   private async closeResources(timeout: number): Promise<void> {
@@ -343,94 +368,6 @@ export class Metering {
       }
     }
     if (errors.length === 1) throw errors[0];
-    if (errors.length) throw new AggregateError(errors, "Metering close failed");
+    if (errors.length) throw new AggregateError(errors, "Polar client close failed");
   }
 }
-
-const validateActor = (input: {
-  customer_id?: string;
-  member_id?: string | null;
-  external_customer_id?: string;
-  external_member_id?: string | null;
-}): void => {
-  if ((input.customer_id == null) === (input.external_customer_id == null)) {
-    throw new TypeError("Provide exactly one customer_id or external_customer_id");
-  }
-  if (input.member_id != null && input.customer_id == null) {
-    throw new TypeError("member_id requires customer_id");
-  }
-  if (input.external_member_id != null && input.external_customer_id == null) {
-    throw new TypeError("external_member_id requires external_customer_id");
-  }
-};
-
-export const createMetering = (client: ClientBase, options: MeteringOptions = {}): Metering =>
-  new Metering(client, options.queue ?? new MemoryEventQueue(), options.outpost?.(client), options);
-
-// The indexes of the events Polar's validation refuses, when each of its errors names one.
-const refusedIndexes = (error: PolarClientError, batchSize: number): Set<number> | undefined => {
-  if (error.statusCode !== 422) return undefined;
-  let detail: unknown;
-  try {
-    // The client keeps the body of an error it has no class for as text.
-    detail = (JSON.parse(String(error.error)) as { detail?: unknown } | null)?.detail;
-  } catch {
-    return undefined;
-  }
-  if (!Array.isArray(detail)) return undefined;
-  const indexes = new Set<number>();
-  for (const error of detail as ({ loc?: unknown } | null)[]) {
-    const loc = error?.loc;
-    if (
-      !Array.isArray(loc) ||
-      loc[0] !== "body" ||
-      loc[1] !== "events" ||
-      !Number.isInteger(loc[2])
-    )
-      return undefined;
-    const index = loc[2] as number;
-    if (index < 0 || index >= batchSize) return undefined;
-    indexes.add(index);
-  }
-  return indexes.size ? indexes : undefined;
-};
-
-export const createIngest =
-  (client: ClientBase): Ingest =>
-  async (events, options) => {
-    try {
-      const response = await client.sendRequest(
-        client.buildRequest("POST", "/v1/events/ingest", undefined, undefined, { events }),
-        options,
-      );
-      try {
-        if (!response.ok) {
-          if (response.status < 400)
-            throw new IngestRetryableError({
-              cause: new Error(`Polar answered ${response.status}`),
-            });
-          await client.parseResponse(response, "none");
-        }
-      } finally {
-        if (!response.bodyUsed) await response.body?.cancel().catch(() => {});
-      }
-    } catch (error) {
-      if (error instanceof PolarClientError && ![401, 403, 408, 429].includes(error.statusCode)) {
-        throw new IngestRejectedError({
-          rejectedIndexes: refusedIndexes(error, events.length),
-          cause: error,
-        });
-      }
-      if (
-        error instanceof PolarClientError ||
-        error instanceof PolarNetworkError ||
-        error instanceof PolarServerError
-      ) {
-        throw new IngestRetryableError({
-          retryAfterMs: retryAfterMs(error) ?? undefined,
-          cause: error,
-        });
-      }
-      throw error;
-    }
-  };

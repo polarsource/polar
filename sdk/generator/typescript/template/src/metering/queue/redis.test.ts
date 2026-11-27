@@ -3,7 +3,7 @@ import { expect, it, vi } from "vitest";
 
 import { ClientBase } from "../../base";
 import { startRedisServer } from "../../outpost/testing";
-import { createIngest } from "../client";
+import { createIngest } from "../event";
 import type { EventInput } from "../event";
 import type { EventQueue } from "./index";
 import { RedisEventQueue } from "./redis";

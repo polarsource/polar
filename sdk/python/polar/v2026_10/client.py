@@ -1,9 +1,14 @@
-import types
 import typing
 
-from polar.base import AsyncClientBase, RequestTimeout, SyncClientBase, resolve_base_url
-from polar.metering import EventQueue, Metering, MeteringOutpostOptions
-from polar.metering.queue import OnAck, OnRejected
+from polar.base import (
+    OutpostOptions,
+    PolarAsyncBase,
+    PolarSyncBase,
+    RequestTimeout,
+    _DefaultEventQueue,
+    resolve_base_url,
+)
+from polar.metering.queue import EventQueue, OnAck, OnRejected
 from polar.v2026_10.services.benefit_grants import BenefitGrantsAsync, BenefitGrantsSync
 from polar.v2026_10.services.benefits import BenefitsAsync, BenefitsSync
 from polar.v2026_10.services.checkout_links import CheckoutLinksAsync, CheckoutLinksSync
@@ -47,7 +52,7 @@ SERVERS: typing.Final[dict[Environment, str]] = {
 }
 
 
-class Polar:
+class Polar(PolarSyncBase):
     version: str = "2026-10"
 
     def __init__(
@@ -60,9 +65,7 @@ class Polar:
         organization_id: str | None = None,
     ) -> None:
         resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
-        self._client = SyncClientBase(
-            resolved_base_url, self.version, access_token, timeout, organization_id
-        )
+        super().__init__(resolved_base_url, access_token, timeout, organization_id)
         self.events = EventsSync(self._client)
         self.customer_portal = CustomerPortalSync(self._client)
         self.customers = CustomersSync(self._client)
@@ -90,20 +93,8 @@ class Polar:
         self.custom_fields = CustomFieldsSync(self._client)
         self.event_types = EventTypesSync(self._client)
 
-    def __enter__(self) -> typing.Self:
-        self._client.__enter__()
-        return self
 
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None = None,
-        exc_val: BaseException | None = None,
-        exc_tb: types.TracebackType | None = None,
-    ) -> None:
-        self._client.__exit__(exc_type, exc_val, exc_tb)
-
-
-class PolarAsync:
+class PolarAsync(PolarAsyncBase):
     version: str = "2026-10"
 
     def __init__(
@@ -114,10 +105,23 @@ class PolarAsync:
         base_url: str | None = None,
         timeout: RequestTimeout | None = 5.0,
         organization_id: str | None = None,
+        event_queue: EventQueue
+        | None
+        | typing.Literal[_DefaultEventQueue.MEMORY] = _DefaultEventQueue.MEMORY,
+        on_event_ack: OnAck | None = None,
+        on_event_rejected: OnRejected | None = None,
+        outpost: OutpostOptions | None = None,
     ) -> None:
         resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
-        self._client = AsyncClientBase(
-            resolved_base_url, self.version, access_token, timeout, organization_id
+        super().__init__(
+            resolved_base_url,
+            access_token,
+            timeout,
+            organization_id,
+            event_queue=event_queue,
+            on_event_ack=on_event_ack,
+            on_event_rejected=on_event_rejected,
+            outpost=outpost,
         )
         self.events = EventsAsync(self._client)
         self.customer_portal = CustomerPortalAsync(self._client)
@@ -145,43 +149,6 @@ class PolarAsync:
         self.customer_seats = CustomerSeatsAsync(self._client)
         self.custom_fields = CustomFieldsAsync(self._client)
         self.event_types = EventTypesAsync(self._client)
-
-    async def __aenter__(self) -> typing.Self:
-        await self._client.__aenter__()
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: type[BaseException] | None = None,
-        exc_val: BaseException | None = None,
-        exc_tb: types.TracebackType | None = None,
-    ) -> None:
-        await self._client.__aexit__(exc_type, exc_val, exc_tb)
-
-    def metering(
-        self,
-        *,
-        queue: EventQueue | None = None,
-        outpost: MeteringOutpostOptions | bool | None = None,
-        on_ack: OnAck | None = None,
-        on_rejected: OnRejected | None = None,
-    ) -> Metering:
-        """Create a metering helper for event delivery and customer meter reads.
-
-        Args:
-            queue: EventQueue used to queue and deliver events to Polar.
-                Defaults to an in-memory MemoryEventQueue.
-            outpost: Set to True to enable local reduction using REDIS_URL, or
-                pass options to configure Outpost. Disabled by default.
-            on_ack: Async callback for batches Polar accepts.
-            on_rejected: Async callback for permanently rejected events and their reason.
-
-        Returns:
-            A Metering instance to use as an async context manager.
-        """
-        return Metering.create(
-            self, queue=queue, outpost=outpost, on_ack=on_ack, on_rejected=on_rejected
-        )
 
 
 __all__ = ["Environment", "Polar", "PolarAsync"]

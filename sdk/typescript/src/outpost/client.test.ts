@@ -11,8 +11,9 @@ import type { EventQueueHooks } from "../metering/queue/index";
 
 import { createPolar } from "../2026-10/client";
 import { ClientBase, PolarError } from "../base";
-import { createIngest, Metering } from "../metering/client";
+import { PolarEventClient } from "../metering/client";
 import { UnknownMeterError } from "../metering/errors";
+import { createIngest } from "../metering/event";
 import { RedisEventQueue } from "../metering/queue/redis";
 import { Outpost, outpost, type OutpostOptions, isSampled } from "./client";
 import { PolarOutpostError, UnavailableRedisError } from "./errors";
@@ -469,7 +470,7 @@ it.each([
   ["matching URLs", 1],
   ["different URLs", 2],
   ["a caller-owned client", 0],
-] as const)("starts Metering with %s", async (mode, connections) => {
+] as const)("shares Redis connections with %s", async (mode, connections) => {
   const clients = async () => ((await redis.client("LIST")) as string).trim().split("\n").length;
   const before = await clients();
   const listeners = redis.listenerCount("close");
@@ -477,7 +478,10 @@ it.each([
   const queueSource =
     mode === "different URLs" ? redisServer.socket.replace(/\/([^/]+)$/, "/./$1") : source;
   const queue = new RedisEventQueue(queueSource, { stream: "outpost:v1:org-1:queue" });
-  const helper = new Metering(core, queue, new Outpost(source, { client: core }));
+  const helper = new PolarEventClient(core, {
+    eventQueue: queue,
+    outpost: outpost({ redis: source }),
+  });
   try {
     await helper.track(usage("shared-redis", 3));
     await helper.flush();
@@ -1401,9 +1405,11 @@ it("uses the API when a rejected event invalidates a legacy bucket extremum", as
     [`bucket:${bucket}:min`]: 3,
     [`bucket:${bucket}:max`]: 3,
   });
-  const local = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
   const transport = new RedisEventQueue(redisServer.socket, { stream: "outpost:v1:org-1:queue" });
-  const helper = new Metering(core, transport, local);
+  const helper = new PolarEventClient(core, {
+    eventQueue: transport,
+    outpost: outpost({ redis: redisServer.socket, snapshotTimeout: 100 }),
+  });
   const actualFetch = globalThis.fetch;
   const apiResult = {
     meter_id: meter.meter_id,
@@ -1486,16 +1492,18 @@ it("delivers the stream to Polar in batches of a thousand, whichever instance fl
 
 it("settles the events Polar received and reports them", async () => {
   await seed(0);
-  const outpost = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
   const transport = new RedisEventQueue(redisServer.socket, { stream: "outpost:v1:org-1:queue" });
-  const helper = new Metering(core, transport, outpost);
+  const helper = new PolarEventClient(core, {
+    eventQueue: transport,
+    outpost: outpost({ redis: redisServer.socket, snapshotTimeout: 100 }),
+  });
   const events = [usage("event-0", 10), usage("event-1", 10)];
   try {
     for (const event of events) await helper.track(event);
     await helper.flush();
     expect(ingestRequests).toEqual([events]);
     expect(await redis.hget(key, `pending:${bucket}:count`)).toBeNull();
-    expect((await outpost.meter(meter))?.consumed_units).toBe(20);
+    expect((await helper.meter(meter.meter_id, customer))?.consumed_units).toBe(20);
   } finally {
     await helper.close();
   }
@@ -1599,9 +1607,11 @@ it("delivers an event another SDK queued in a form it cannot parse", async () =>
 
 it("drops only the events Polar names when it refuses a batch, and delivers the rest", async () => {
   await seed(0);
-  const outpost = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
   const transport = new RedisEventQueue(redisServer.socket, { stream: "outpost:v1:org-1:queue" });
-  const helper = new Metering(core, transport, outpost);
+  const helper = new PolarEventClient(core, {
+    eventQueue: transport,
+    outpost: outpost({ redis: redisServer.socket, snapshotTimeout: 100 }),
+  });
   const events = [usage("event-0", 10), usage("refused", 10), usage("event-1", 10)];
   try {
     for (const event of events) await helper.track(event);
@@ -1620,9 +1630,11 @@ it("drops only the events Polar names when it refuses a batch, and delivers the 
 
 it("drops a batch Polar refuses, settles its events and reports them", async () => {
   await seed(0);
-  const outpost = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
   const transport = new RedisEventQueue(redisServer.socket, { stream: "outpost:v1:org-1:queue" });
-  const helper = new Metering(core, transport, outpost);
+  const helper = new PolarEventClient(core, {
+    eventQueue: transport,
+    outpost: outpost({ redis: redisServer.socket, snapshotTimeout: 100 }),
+  });
   const events = [usage("event-0", 10), usage("event-1", 10)];
   try {
     for (const event of events) await helper.track(event);
@@ -2551,23 +2563,24 @@ it("delivers each event once, through the default queue with Outpost enabled", a
     fetch.mock.calls.filter(([input]) => String(input).includes("/v1/events/ingest"));
   await seed();
   const [baseUrl] = core.buildRequest("GET", "");
-  const polar = createPolar({ baseUrl, accessToken: "test-token", organizationId: "org" });
+  const polar = createPolar({
+    baseUrl,
+    accessToken: "test-token",
+    organizationId: "org",
+    outpost: outpost({ redis: redisServer.socket }),
+  });
   const reader = await start();
-  {
-    const metering = polar.metering({ outpost: outpost({ redis: redisServer.socket }) });
-    try {
-      await metering.track({
-        ...customer,
-        name: "api",
-        external_id: eventId(),
-        timestamp,
-        metadata: { tokens: 2 },
-      });
-      expect((await reader.meter(meter))?.consumed_units).toBe(12);
-      expect(ingested()).toHaveLength(0);
-    } finally {
-      await metering.close();
-    }
+  try {
+    await polar.actor(customer).track({
+      name: "api",
+      external_id: eventId(),
+      timestamp,
+      metadata: { tokens: 2 },
+    });
+    expect((await reader.meter(meter))?.consumed_units).toBe(12);
+    expect(ingested()).toHaveLength(0);
+  } finally {
+    await polar.close();
   }
   expect(ingested()).toHaveLength(1);
 });

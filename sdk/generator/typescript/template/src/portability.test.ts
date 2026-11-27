@@ -1,3 +1,5 @@
+import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -21,4 +23,40 @@ describe("runtime portability", () => {
       .map((file) => relative(SRC, file));
     expect(offenders).toEqual([]);
   });
+});
+
+it("ships metering for both ESM and CommonJS", async () => {
+  const esm = await import("../dist/metering/index.mjs");
+  const cjs = createRequire(import.meta.url)("../dist/metering/index.cjs");
+  expect(esm.MemoryEventQueue).toBeTypeOf("function");
+  expect(cjs.MemoryEventQueue).toBeTypeOf("function");
+});
+
+it("uses the memory queue without loading optional Outpost dependencies", () => {
+  const child = spawnSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      `
+    import { registerHooks } from "node:module";
+    registerHooks({ resolve(specifier, context, next) {
+      if (specifier === "ioredis" || specifier === "ws" || specifier.startsWith("@opentelemetry/")) {
+        throw new Error("Optional dependency loaded: " + specifier);
+      }
+      return next(specifier, context);
+    }});
+    const { createPolar } = await import("@polar-sh/sdk/{{ (ir.versions[-2] | default(ir.versions[0])).version }}");
+    const polar = createPolar({ accessToken: "token" });
+    globalThis.fetch = async () => new Response('{"inserted":1,"duplicates":0}');
+    const actor = polar.actor({ external_customer_id: "alice" });
+    await actor.warmup();
+    await actor.track({ name: "usage" });
+    await polar.close();
+  `,
+    ],
+    { encoding: "utf8" },
+  );
+  expect(child.stderr).toBe("");
+  expect(child.status).toBe(0);
 });

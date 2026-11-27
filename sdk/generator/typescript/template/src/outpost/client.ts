@@ -18,7 +18,8 @@ import { once } from "node:events";
 import { setTimeout as sleep } from "node:timers/promises";
 
 import { DEFAULT_TIMEOUT, backOff, connectRedis, createRedis, extendLock, releaseLock, takeLock } from "../redis";
-import { type DropReason, MeteringError, UnknownMeterError, retryAfterMs } from "../metering/errors";
+import type { OutpostFactory } from "../metering/client";
+import { type DropReason, UnknownMeterError, retryAfterMs } from "../metering/errors";
 import type { EventInput } from "../metering/event";
 import type { CustomerMeter } from "../metering/meter";
 
@@ -1413,20 +1414,12 @@ export class Outpost {
   }
 }
 
-export type OutpostFactoryOptions = Omit<OutpostOptions, "client" | "confirmTimeout"> & {
-  /** Redis URL or a caller-owned Redis client. Defaults to REDIS_URL. */
-  redis?: string | Redis;
+export type OutpostConfig = Omit<OutpostOptions, "client" | "confirmTimeout"> & {
+  /** Redis URL or a caller-owned Redis client. */
+  redis: string | Redis;
 };
 
-/**
- * Configure Outpost for polar.metering({ outpost: outpost({ redis }) }).
- *
- * @throws MeteringError if neither redis nor REDIS_URL is set.
- */
-export const outpost = ({
-  redis = process.env.REDIS_URL,
-  ...options
-}: OutpostFactoryOptions = {}) => {
-  if (!redis) throw new MeteringError("Outpost requires redis or REDIS_URL");
-  return (client: ClientBase) => new Outpost(redis, { ...options, client });
-};
+export const outpost =
+  ({ redis, ...options }: OutpostConfig): OutpostFactory =>
+  (client) =>
+    new Outpost(redis, { ...options, client });

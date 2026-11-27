@@ -4,7 +4,7 @@ import {
   type models,
   type Polar,
 } from '@polar-sh/sdk/2027-01'
-import type { EventInput, Metering } from '@polar-sh/sdk/metering'
+import type { EventInput } from '@polar-sh/sdk/metering'
 import * as Option from 'effect/Option'
 import * as Schema from 'effect/Schema'
 import type {
@@ -156,9 +156,11 @@ const toEventMetadata = (
   return _llm ? { ...eventMetadata, _llm } : eventMetadata
 }
 
+type EventTracker = { track(event: EventInput): Promise<void> }
+
 export class PolarIngestion<TContext extends IngestionContext> {
   public polarClient?: Polar
-  public metering?: Metering
+  public eventTracker?: EventTracker
   private transformers: Transformer<TContext>[] = []
   public costResolver?: (ctx: TContext) => models.CostMetadataInput
   public span?: Span
@@ -194,8 +196,8 @@ export class PolarIngestion<TContext extends IngestionContext> {
         }),
       }
 
-      if (this.metering) {
-        await this.metering.track(event)
+      if (this.eventTracker) {
+        await this.eventTracker.track(event)
 
         return
       }
@@ -218,7 +220,7 @@ type IngestionStrategyAttacher = <
   strategy: IngestionStrategy<TContext, TStrategyClient>,
 ) => IngestionStrategy<TContext, TStrategyClient>
 
-export function Ingestion(metering: Metering): {
+export function Ingestion(client: EventTracker): {
   strategy: IngestionStrategyAttacher
   ingest: (events: EventInput[]) => Promise<void>
 }
@@ -228,11 +230,11 @@ export function Ingestion(config?: IngestionTokenConfig): {
     events: (IngestionEvent | IngestionCamelCaseEvent)[],
   ) => Promise<models.EventsIngestResponse>
 }
-export function Ingestion(config?: IngestionTokenConfig | Metering) {
+export function Ingestion(config?: IngestionTokenConfig | EventTracker) {
   if (config && 'track' in config) {
     return {
       strategy: ((strategy) => {
-        strategy.metering = config
+        strategy.eventTracker = config
 
         return strategy
       }) satisfies IngestionStrategyAttacher,

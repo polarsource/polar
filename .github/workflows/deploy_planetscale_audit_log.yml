@@ -4,7 +4,7 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "lambda/planetscale-audit-log/handler.py"
+      - "lambda/planetscale-audit-log/**"
       - ".github/workflows/deploy_planetscale_audit_log.yml"
   workflow_dispatch:
 

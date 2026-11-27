@@ -1,5 +1,5 @@
 import { BunRuntime, BunServices } from '@effect/platform-bun'
-import { Cause, Console, Effect, Layer, Runtime, Stdio } from 'effect'
+import { Cause, Console, Effect, Layer, Logger, Runtime, Stdio } from 'effect'
 import { CliConfig, CliOutput, Command } from 'effect/cli'
 import { FetchHttpClient } from 'effect/http'
 import { builtIns, program } from '@/program'
@@ -73,6 +73,7 @@ const services = Layer.mergeAll(
   BunServices.layer,
   FetchHttpClient.layer,
   Layer.succeed(Console.Console, stdoutConsole),
+  Layer.succeed(Logger.LogToStderr, true),
   Layer.succeed(JsonEnvironment, process.env),
   CliConfig.layer({ builtIns }),
   CliOutput.layer(formatter),

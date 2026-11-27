@@ -1,0 +1,18 @@
+server/polar/reducer/bucket_repository.py
+  h_cc2173b7b86bcc 44,603,608,616-628,634-635,721-724
+server/polar/reducer/service.py
+  h_cc2173b7b86bcc 816-817
+server/tests/reducer/test_service.py
+  h_cc2173b7b86bcc 2426-2464
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6f844713140352df6dd471bce62c06d60803e1f2",
+  "prompts": {},
+  "humans": {
+    "h_cc2173b7b86bcc": {
+      "author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

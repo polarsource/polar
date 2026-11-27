@@ -9,7 +9,7 @@ import {
 import { plural } from '@/utils/billing-config/problems'
 import { output } from '@/utils/command'
 import { configFile as file } from '@/utils/flags'
-import { generateUsage } from '@/utils/billing-config/usage'
+import { fileStatusUsage } from '@/utils/billing-config/usage'
 import * as ui from '@/utils/ui'
 
 const CHOICES = GENERATED_LANGUAGES.map(
@@ -146,6 +146,6 @@ export const generate = Command.make('generate', {
         hint: `Run ${result.command} and commit the result.`,
       })
     },
-    telemetry: generateUsage,
+    telemetry: ({ config, status }) => fileStatusUsage(config, status),
   }),
 )

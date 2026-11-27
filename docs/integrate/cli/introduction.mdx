@@ -99,11 +99,10 @@ every command under it at once.
 The CLI sends one anonymous event per command to help us improve it: the
 command name, the names of the flags used (never their values), whether it
 succeeded, the duration, the CLI version, your operating system, and whether it
-ran in CI or from an AI coding agent. `polar config` commands also report the
-config file format, how many entries the file has and would change, and the
-codes of any issues found. Events are keyed by a random install id. Access
-tokens, organization names and IDs, URLs, webhook payloads and the contents of
-your config are never sent.
+ran in CI or from an AI coding agent. Some commands add a short summary of the
+run, such as how it ended and the codes of any issues found. Events are keyed by
+a random install id. Access tokens, organization names and IDs, URLs and webhook
+payloads are never sent.
 
 To opt out, set either variable in your environment:
 

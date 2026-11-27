@@ -92,13 +92,12 @@ used (never their values), whether it succeeded, failed or was interrupted, the
 error type and status code, the name of the flag, argument or subcommand behind
 a usage mistake, the environment (sandbox or production), the duration, the CLI version,
 OS, architecture, Bun version, whether it ran in CI, and which AI coding agent
-(if any) invoked it. `polar config` commands add a summary of the run: the file
-format, how many meters, benefits and products the file has, how many entries
-would be created, updated or removed, the codes of the issues found, whether a
-draft exists and conflicts with the file, and how the run ended (for example
-saved, conflict or rejected). Events are keyed by a random install id stored in
+(if any) invoked it. A command can add a short summary of its run: `polar config`
+commands report the file format, the codes of the issues found, how many
+entries conflict with the draft, and how the run ended (for example saved,
+conflict or rejected). Events are keyed by a random install id stored in
 `~/.polar/telemetry.json`. Access tokens, organization names and IDs, URLs,
-payloads and the names, prices or other values in a config are never sent. The PostHog project key is a public write-only token, the same
+payloads and the contents of a config are never sent. The PostHog project key is a public write-only token, the same
 one the website uses.
 
 Telemetry is wired around the root command in `src/cli.ts`, so new commands are

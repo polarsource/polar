@@ -137,20 +137,21 @@ const redactions: ReadonlyArray<RegExp> = [
   /\b[A-Za-z0-9_-]{32,}\b/g,
 ]
 
-export const redact = (text: string) =>
-  redactions
-    .reduce(
-      (result, pattern) => result.replace(pattern, '<redacted>'),
-      stripVTControlCharacters(text).slice(0, 1000),
-    )
-    .slice(0, 200)
-
 const NAME_MINIMUM = 3
 
-const withoutNames = (message: string, names: ReadonlySet<string>) =>
-  [...names]
+export const redact = (text: string, names: Iterable<string> = []) => {
+  const scrubbed = redactions.reduce(
+    (result, pattern) => result.replace(pattern, '<redacted>'),
+    stripVTControlCharacters(text).slice(0, 1000),
+  )
+  return [...names]
     .filter((name) => name.length >= NAME_MINIMUM)
-    .reduce((text, name) => text.replaceAll(name, '<organization>'), message)
+    .reduce(
+      (result, name) => result.replaceAll(name, '<organization>'),
+      scrubbed,
+    )
+    .slice(0, 200)
+}
 
 const field = (value: unknown, key: string): unknown =>
   typeof value === 'object' && value !== null && key in value
@@ -195,7 +196,7 @@ export const describeFailure = (error: unknown): Failure => {
   return {
     error: name,
     ...(typeof message === 'string' && message
-      ? { errorMessage: redact(message) }
+      ? { errorMessage: message }
       : {}),
     ...(typeof code === 'number' ? { errorCode: code } : {}),
   }
@@ -300,7 +301,7 @@ export const layer = Layer.effect(
               error_message:
                 result.errorMessage === undefined
                   ? null
-                  : withoutNames(result.errorMessage, hidden),
+                  : redact(result.errorMessage, hidden),
               error_code: result.errorCode ?? null,
               environment: [...used].sort().join(',') || null,
               duration_ms: Math.round(result.durationMs),

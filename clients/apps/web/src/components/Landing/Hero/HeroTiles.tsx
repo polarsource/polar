@@ -10,7 +10,7 @@ const Tile = ({ children }: PropsWithChildren) => (
 )
 
 export const HeroTiles = () => (
-  <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap="m">
+  <Grid templateColumns="repeat(2, 1fr)" gap="m">
     <Tile>
       <StaticImage
         src="/assets/landing/hero/subscriptions.jpg"

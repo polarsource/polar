@@ -136,8 +136,8 @@ export default {
         },
         updateFailed: 'Не удалось обновить количество',
         range: '{min} – {max} {unitLabelPlural}',
-        minimum: 'Минимум {min} {unitLabelPlural}',
-        maximum: 'Максимум {max} {unitLabelPlural}',
+        minimum: 'Минимум {unitLabelPlural}: {min}',
+        maximum: 'Максимум {unitLabelPlural}: {max}',
       },
       discount: {
         until: 'До {date}',

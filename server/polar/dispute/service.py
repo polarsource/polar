@@ -126,10 +126,12 @@ class DisputeService:
         session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
+        *,
+        permission: OrganizationPermission = OrganizationPermission.sales_read,
     ) -> Dispute | None:
         repository = DisputeRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, permission=OrganizationPermission.sales_read
+            session, auth_subject, permission=permission
         )
         statement = (
             repository.get_statement_by_org_ids(org_ids)

@@ -5,6 +5,7 @@ import pytest
 from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.auth.permission import ROLE_PERMISSIONS, OrganizationPermission
 from polar.kit.utils import utc_now
 from polar.models import Customer, Dispute, Organization, Product, UserOrganization
 from tests.fixtures.database import SaveFixture
@@ -201,6 +202,28 @@ class TestAcceptDispute:
         response = await client.post(f"/v1/disputes/{uuid.uuid4()}/accept")
 
         assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_requires_sales_manage(
+        self,
+        client: AsyncClient,
+        dispute: Dispute,
+        mocker: MockerFixture,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch.dict(
+            ROLE_PERMISSIONS,
+            {
+                user_organization.role: ROLE_PERMISSIONS[user_organization.role]
+                - {OrganizationPermission.sales_manage}
+            },
+        )
+        close_mock = mocker.patch("polar.dispute.service.stripe_service.close_dispute")
+        url = f"/v1/disputes/{dispute.id}"
+
+        assert (await client.get(url)).status_code == 200
+        assert (await client.post(f"{url}/accept")).status_code == 404
+        close_mock.assert_not_awaited()
 
     @pytest.mark.auth
     async def test_accept(

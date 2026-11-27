@@ -39,6 +39,7 @@ class Scope(StrEnum):
     benefits_read = "benefits:read"
     benefits_write = "benefits:write"
 
+    catalogs_read = "catalogs:read"
     catalogs_write = "catalogs:write"
 
     events_read = "events:read"
@@ -125,6 +126,7 @@ READ_ONLY_SCOPES: set[Scope] = {
     Scope.payouts_read,
     Scope.products_read,
     Scope.benefits_read,
+    Scope.catalogs_read,
     Scope.events_read,
     Scope.meters_read,
     Scope.files_read,
@@ -152,6 +154,7 @@ READ_ONLY_SCOPES: set[Scope] = {
 # webhooks. It can publish its catalog so people can try Polar end to end; an
 # unclaimed organization can't take payments.
 UNCLAIMED_AGENT_SCOPES: set[Scope] = {
+    Scope.catalogs_read,
     Scope.catalogs_write,
     Scope.organizations_read,
     Scope.organizations_write,
@@ -215,6 +218,7 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.products_write: "Create or modify products",
     Scope.benefits_read: "Read benefits",
     Scope.benefits_write: "Create or modify benefits",
+    Scope.catalogs_read: "Read catalogs",
     Scope.catalogs_write: "Publish catalog changes",
     Scope.events_read: "Read events",
     Scope.events_write: "Create events",

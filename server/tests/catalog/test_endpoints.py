@@ -702,3 +702,42 @@ class TestListRemoved:
                 *map(str, (v1.id, v1.id, products["lifetime"].id, v2.id)),
             ),
         ]
+
+
+@pytest.mark.anyio
+@pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+class TestReadScopes:
+    @pytest.fixture
+    def read_urls(
+        self, organization: Organization, catalogs: tuple[Catalog, Catalog, Catalog]
+    ) -> list[str]:
+        _, live, _ = catalogs
+        return [
+            "/v1/catalogs/",
+            f"/v1/catalogs/{live.id}",
+            f"/v1/catalogs/removed?organization_id={organization.id}",
+        ]
+
+    @pytest.mark.auth(*_with_scopes(Scope.catalogs_read))
+    async def test_catalogs_read(
+        self, client: AsyncClient, read_urls: list[str]
+    ) -> None:
+        for url in read_urls:
+            response = await client.get(url)
+            assert response.status_code == 200, url
+
+    @pytest.mark.auth(*_with_scopes(Scope.catalogs_write))
+    async def test_catalogs_write(
+        self, client: AsyncClient, read_urls: list[str]
+    ) -> None:
+        for url in read_urls:
+            response = await client.get(url)
+            assert response.status_code == 200, url
+
+    @pytest.mark.auth(*_with_scopes(Scope.products_read, Scope.products_write))
+    async def test_products_scopes(
+        self, client: AsyncClient, read_urls: list[str]
+    ) -> None:
+        for url in read_urls:
+            response = await client.get(url)
+            assert response.status_code == 403, url

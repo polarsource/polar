@@ -6710,7 +6710,7 @@ export interface paths {
      * List Catalogs
      * @description List the catalogs of organizations using config as code, newest first.
      *
-     *     **Scopes**: `products:read` `products:write`
+     *     **Scopes**: `catalogs:read` `catalogs:write`
      */
     get: operations['catalogs:list']
     put?: never
@@ -6734,7 +6734,7 @@ export interface paths {
      *     one doesn't, newest removal first. They're deprecated while customers still
      *     use them, and removed once nobody does.
      *
-     *     **Scopes**: `products:read` `products:write`
+     *     **Scopes**: `catalogs:read` `catalogs:write`
      */
     get: operations['catalogs:list_removed']
     put?: never
@@ -6756,7 +6756,7 @@ export interface paths {
      * Get Catalog
      * @description Get a catalog version and the products in it.
      *
-     *     **Scopes**: `products:read` `products:write`
+     *     **Scopes**: `catalogs:read` `catalogs:write`
      */
     get: operations['catalogs:get']
     put?: never
@@ -9336,6 +9336,7 @@ export interface components {
        *       "products:write": "Create or modify products",
        *       "benefits:read": "Read benefits",
        *       "benefits:write": "Create or modify benefits",
+       *       "catalogs:read": "Read catalogs",
        *       "catalogs:write": "Publish catalog changes",
        *       "events:read": "Read events",
        *       "events:write": "Create events",
@@ -9427,6 +9428,7 @@ export interface components {
        *       "products:write": "Create or modify products",
        *       "benefits:read": "Read benefits",
        *       "benefits:write": "Create or modify benefits",
+       *       "catalogs:read": "Read catalogs",
        *       "catalogs:write": "Publish catalog changes",
        *       "events:read": "Read events",
        *       "events:write": "Create events",
@@ -9517,6 +9519,7 @@ export interface components {
       | 'products:write'
       | 'benefits:read'
       | 'benefits:write'
+      | 'catalogs:read'
       | 'catalogs:write'
       | 'events:read'
       | 'events:write'
@@ -30538,7 +30541,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read disputes:write customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write catalogs:read events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read disputes:write customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -30602,7 +30605,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read disputes:write customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write catalogs:read events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read disputes:write customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -30648,7 +30651,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read disputes:write customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write catalogs:read events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read disputes:write customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -38816,6 +38819,7 @@ export interface components {
       | 'products:write'
       | 'benefits:read'
       | 'benefits:write'
+      | 'catalogs:read'
       | 'catalogs:write'
       | 'events:read'
       | 'events:write'
@@ -75697,6 +75701,7 @@ export const availableScopeValues: ReadonlyArray<
   'products:write',
   'benefits:read',
   'benefits:write',
+  'catalogs:read',
   'catalogs:write',
   'events:read',
   'events:write',
@@ -78919,6 +78924,7 @@ export const scopeValues: ReadonlyArray<
   'products:write',
   'benefits:read',
   'benefits:write',
+  'catalogs:read',
   'catalogs:write',
   'events:read',
   'events:write',

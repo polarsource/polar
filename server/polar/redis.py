@@ -36,6 +36,20 @@ class FailoverPipeline(_Pipeline):
             conn, error, failure_count, start_time, command_name
         )
 
+    async def _disconnect_reset_raise_on_watching(
+        self,
+        conn: Any,
+        error: Exception,
+        failure_count: int | None = None,
+        start_time: float | None = None,
+        command_name: str | None = None,
+    ) -> None:
+        if isinstance(error, ReadOnlyError):
+            await self.connection_pool.disconnect(inuse_connections=False)
+        await super()._disconnect_reset_raise_on_watching(
+            conn, error, failure_count, start_time, command_name
+        )
+
 
 class FailoverRedis(Redis):
     async def _close_connection(
@@ -72,6 +86,20 @@ class SyncFailoverPipeline(_SyncPipeline):
         if isinstance(error, ReadOnlyError):
             self.connection_pool.disconnect(inuse_connections=False)
         super()._disconnect_raise_on_watching(
+            conn, error, failure_count, start_time, command_name
+        )
+
+    def _disconnect_reset_raise_on_watching(
+        self,
+        conn: Any,
+        error: Exception,
+        failure_count: int | None = None,
+        start_time: float | None = None,
+        command_name: str | None = None,
+    ) -> None:
+        if isinstance(error, ReadOnlyError):
+            self.connection_pool.disconnect(inuse_connections=False)
+        super()._disconnect_reset_raise_on_watching(
             conn, error, failure_count, start_time, command_name
         )
 

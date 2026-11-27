@@ -18,7 +18,7 @@ const RELEASE_LOCK_SCRIPT = `
 const EXTEND_LOCK_SCRIPT = `
 {{ redis_scripts.common.extend_lock }}`;
 
-const reconnectDelay = (attempt: number): number =>
+export const reconnectDelay = (attempt: number): number =>
   Math.min(MAX_REDIS_RECONNECT_DELAY, REDIS_RECONNECT_DELAY * 2 ** (attempt - 1)) *
   (0.5 + Math.random() / 2);
 
@@ -76,9 +76,11 @@ export const takeLock = async (redis: Redis, key: string, ttl: number): Promise<
   return (await redis.set(key, token, "PX", ttl, "NX")) ? token : null;
 };
 
-export const releaseLock = async (redis: Redis, key: string, token: string): Promise<void> => {
-  await redis.eval(RELEASE_LOCK_SCRIPT, 1, key, token).catch(() => {});
-};
+export const releaseLock = async (redis: Redis, key: string, token: string): Promise<boolean> =>
+  redis.eval(RELEASE_LOCK_SCRIPT, 1, key, token).then(
+    () => true,
+    () => false,
+  );
 
 export const extendLock = async (redis: Redis, key: string, token: string, ttl: number): Promise<boolean> =>
   Boolean(await redis.eval(EXTEND_LOCK_SCRIPT, 1, key, token, ttl));

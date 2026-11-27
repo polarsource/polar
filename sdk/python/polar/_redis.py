@@ -85,9 +85,12 @@ async def extend_lock(redis: Redis, key: str, token: str, ttl: float) -> bool:
     return bool(await redis.eval(EXTEND_LOCK_SCRIPT, 1, key, token, int(ttl * 1000)))
 
 
-async def release_lock(redis: Redis, key: str, token: str) -> None:
-    with contextlib.suppress(RedisError):
+async def release_lock(redis: Redis, key: str, token: str) -> bool:
+    try:
         await redis.eval(RELEASE_LOCK_SCRIPT, 1, key, token)
+    except RedisError:
+        return False
+    return True
 
 
 @contextlib.asynccontextmanager

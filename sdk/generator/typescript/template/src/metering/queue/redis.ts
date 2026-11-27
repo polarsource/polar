@@ -1,11 +1,13 @@
 import type { Redis } from "ioredis";
 
 import { randomUUID } from "node:crypto";
+import { setTimeout as sleep } from "node:timers/promises";
 
 import {
   backOff,
   connectRedis,
   createRedis,
+  reconnectDelay,
   reconnected,
   releaseLock,
   takeLock,
@@ -329,8 +331,18 @@ export class RedisEventQueue implements EventQueue {
         } else if (from === "0") from = ">";
       }
     } finally {
-      // Past its TTL, the slot may be another flusher's.
-      await releaseLock(redis, lockKey, token);
+      // Past its TTL, the slot may be another flusher's. One Redis dropped mid-delivery goes back
+      // once Redis does, not when its lock expires.
+      if (!(await releaseLock(redis, lockKey, token))) void this.releaseWhenBack(lockKey, token);
+    }
+  }
+
+  private async releaseWhenBack(lockKey: string, token: string): Promise<void> {
+    const until = Date.now() + FLUSHER_LOCK_TTL;
+    for (let attempt = 1; Date.now() < until; attempt++) {
+      await sleep(reconnectDelay(attempt), undefined, { ref: false });
+      const redis = this.redis;
+      if (!redis || (await releaseLock(redis, lockKey, token))) return;
     }
   }
 

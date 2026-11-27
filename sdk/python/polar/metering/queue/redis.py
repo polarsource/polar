@@ -2,6 +2,7 @@ import collections.abc
 import contextlib
 import dataclasses
 import datetime
+import itertools
 import json
 import math
 import time
@@ -16,6 +17,7 @@ from redis.exceptions import ResponseError as RedisResponseError
 from redis.typing import StreamIdT
 
 from polar._redis import (
+    RedisReconnectBackoff,
     back_off,
     connect_redis,
     release_lock,
@@ -422,7 +424,22 @@ class RedisEventQueue:
                 elif start == "0":
                     start = ">"
         finally:
-            await release_lock(redis, lock_key, token)
+            # One Redis dropped mid-delivery goes back once Redis does, not when its lock
+            # expires.
+            if (
+                not await release_lock(redis, lock_key, token)
+                and self._tasks is not None
+            ):
+                self._tasks.start_soon(self._release_when_back, lock_key, token)
+
+    async def _release_when_back(self, key: str, token: str) -> None:
+        backoff = RedisReconnectBackoff()
+        with anyio.move_on_after(FLUSHER_LOCK_TTL):
+            for failures in itertools.count():
+                await anyio.sleep(backoff.compute(failures))
+                redis = self._redis
+                if redis is None or await release_lock(redis, key, token):
+                    return
 
     async def _back_off_queue(self, wait: float | None) -> None:
         """As long as Polar asks, or longer after each failure in a row."""

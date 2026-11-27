@@ -149,8 +149,10 @@ READ_ONLY_SCOPES: set[Scope] = {
 
 # What an unclaimed agent's tokens carry: the resources it may set up before the
 # claim (ADR-0014). Declarative config is covered by its sections' scopes, minus
-# webhooks.
+# webhooks. It can publish its catalog so people can try Polar end to end; an
+# unclaimed organization can't take payments.
 UNCLAIMED_AGENT_SCOPES: set[Scope] = {
+    Scope.catalog_publish,
     Scope.organizations_read,
     Scope.organizations_write,
     Scope.products_read,

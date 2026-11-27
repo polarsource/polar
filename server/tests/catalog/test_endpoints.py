@@ -411,8 +411,8 @@ class TestPublish:
     ) -> None:
         response = await client.post(f"/v1/catalogs/{products_only_draft.id}/publish")
 
-        assert response.status_code == 403
-        assert response.json()["error"] == "insufficient_scope"
+        assert response.status_code == 200
+        assert response.json()["status"] == CatalogStatus.live
 
     @pytest.mark.auth(*_with_scopes(Scope.products_write, Scope.catalog_publish))
     async def test_products_only(

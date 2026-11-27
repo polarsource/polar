@@ -386,6 +386,13 @@ class DeclarativeConfigService:
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_manage
         )
+        if publish:
+            await assert_organization_permission(
+                session,
+                auth_subject,
+                organization.id,
+                OrganizationPermission.catalog_publish,
+            )
         if "settings" in config.model_fields_set:
             await assert_organization_permission(
                 session,

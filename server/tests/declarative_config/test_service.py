@@ -2403,7 +2403,52 @@ class TestApply:
                         "settings": {"payments": {"currency": "usd"}},
                     }
                 ),
+                publish=False,
             )
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    @pytest.mark.parametrize(
+        ("role", "allowed"),
+        [
+            (OrganizationRole.owner, True),
+            (OrganizationRole.admin, True),
+            (OrganizationRole.member, False),
+        ],
+    )
+    async def test_publish_requires_catalog_publish(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+        role: OrganizationRole,
+        allowed: bool,
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+        user_organization.role = role
+        await save_fixture(user_organization)
+        config = Config.model_validate(
+            {"organization_id": str(organization.id), "meters": [TOOL_CALLS_METER]}
+        )
+
+        if allowed:
+            result = await declarative_config_service.apply(
+                session, redis, auth_subject, config
+            )
+            assert result.catalog is not None
+        else:
+            with pytest.raises(NotPermitted):
+                await declarative_config_service.apply(
+                    session, redis, auth_subject, config
+                )
+            result = await declarative_config_service.apply(
+                session, redis, auth_subject, config, publish=False
+            )
+            assert result.catalog is not None
 
 
 @pytest.mark.anyio

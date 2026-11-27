@@ -15,7 +15,7 @@ export const PublishDraftButton = ({
 }) => {
   const { isShown, show, hide } = useModal()
   const publish = usePublishCatalog()
-  const canManageProducts = useHasPermission(organizationId, 'products:manage')
+  const canPublish = useHasPermission(organizationId, 'catalog:publish')
 
   const onConfirm = async () => {
     const { data, error } = await publish.mutateAsync(catalogId)
@@ -32,7 +32,7 @@ export const PublishDraftButton = ({
     })
   }
 
-  if (!canManageProducts) return null
+  if (!canPublish) return null
 
   return (
     <>

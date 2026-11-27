@@ -12,6 +12,7 @@ const MESSAGES: Partial<Record<OrganizationPermission, string>> = {
   'members:manage': "You don't have permission to manage members.",
   'products:read': "You don't have permission to view products.",
   'products:manage': "You don't have permission to manage products.",
+  'catalog:publish': "You don't have permission to publish the catalog.",
   'custom_fields:read': "You don't have permission to view custom fields.",
   'custom_fields:manage': "You don't have permission to manage custom fields.",
   'customers:read': "You don't have permission to view customers.",

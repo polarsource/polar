@@ -6767,7 +6767,7 @@ export interface paths {
      *
      *     Requires `products:write`, `benefits:write` when the draft changes
      *     benefits, `meters:write` when it changes meters, and `organizations:write`
-     *     when it changes settings.
+     *     when it changes settings. Users need the owner or admin role.
      *
      *     **Scopes**: `products:write`
      */
@@ -34120,6 +34120,7 @@ export interface components {
       | 'members:manage'
       | 'products:read'
       | 'products:manage'
+      | 'catalog:publish'
       | 'custom_fields:read'
       | 'custom_fields:manage'
       | 'customers:read'
@@ -67546,6 +67547,15 @@ export interface operations {
           'application/json': components['schemas']['Catalog']
         }
       }
+      /** @description Not allowed to publish this organization's catalog. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
       /** @description No catalog with this ID. */
       404: {
         headers: {
@@ -77838,6 +77848,7 @@ export const organizationPermissionValues: ReadonlyArray<
   'members:manage',
   'products:read',
   'products:manage',
+  'catalog:publish',
   'custom_fields:read',
   'custom_fields:manage',
   'customers:read',

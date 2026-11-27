@@ -15,7 +15,8 @@ import { Outpost, outpost, type OutpostOptions, isSampled } from "./client";
 import { MissingExternalIdError, PolarOutpostError, UnavailableRedisError } from "./errors";
 import { decodeState } from "./state";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
-import { APPLY_SNAPSHOT_SCRIPT, CONFIRM_SCRIPT } from "./scripts";
+import { CONFIRM_SCRIPT } from "../redis";
+import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
 import { SAMPLE_RATE_ATTRIBUTE, TELEMETRY_ENV } from "./telemetry";
 import { startRedisServer, type RedisServer } from "./testing";
 
@@ -1394,10 +1395,10 @@ it("settles the events Polar received and reports them", async () => {
 
 const BACKOFF = "outpost:v1:org-1:outbox:backoff";
 
-it("keeps a batch Polar fails to take, and the fleet waits before sending it again", async () => {
+it.each([503, 408])("retries a batch after HTTP %i using the shared backoff", async (status) => {
   const [outpost, other] = [await warm(), await start()];
   await outpost.track(usage("event-0", 10));
-  ingestStatuses = [503];
+  ingestStatuses = [status];
   const failed = Date.now();
   await outpost.flush();
   expect(await queued()).toEqual([usage("event-0", 10)]);
@@ -1583,7 +1584,7 @@ it("hands its slot over a few seconds into a drain a flush waits on, while the f
     let flushed = false;
     void first.flush().then(() => (flushed = true));
     await vi.waitFor(() => expect(ingestRequests.length).toBeGreaterThan(2));
-    vi.advanceTimersByTime({{ outpost_constants.flush_tenure }});
+    vi.advanceTimersByTime({{ redis_constants.outbox_flush_tenure }});
     await vi.waitFor(() => expect(flushed).toBe(true), { timeout: 2_000 });
   } finally {
     writing = false;
@@ -1610,7 +1611,7 @@ it("hands its slot over a few seconds into the drain of a close, with nothing of
     let closed = false;
     void first.close().then(() => (closed = true));
     await vi.waitFor(() => expect(ingestRequests.length).toBeGreaterThan(2));
-    vi.advanceTimersByTime({{ outpost_constants.flush_tenure }});
+    vi.advanceTimersByTime({{ redis_constants.outbox_flush_tenure }});
     await vi.waitFor(() => expect(closed).toBe(true), { timeout: 2_000 });
   } finally {
     writing = false;

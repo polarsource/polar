@@ -54,7 +54,7 @@ export interface EventMatch {
   reducer: string;
   value: number | null;
 }
-export const BUCKET_SIZE = {{ outpost_constants.bucket_size }};
+export const BUCKET_SIZE = {{ redis_constants.outpost_bucket_size }};
 
 export const getBucketStart = (timestamp: number): number => {
   if (!Number.isSafeInteger(timestamp)) throw new TypeError("Invalid bucket timestamp");

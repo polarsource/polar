@@ -214,6 +214,44 @@ describe('init', () => {
     })
   })
 
+  test('leaves settings at their default out of the config', async () => {
+    const settings = (tax: string, pausing: boolean) => ({
+      payments: { currency: 'usd', tax },
+      customer_portal: { allow_pausing: pausing },
+    })
+    api.routes[`GET ${exportUrl}`] = () =>
+      Response.json({
+        enabled: false,
+        config: { settings: settings('inclusive', false), ...EMPTY },
+        default_settings: settings('location', false),
+        skipped: [],
+        catalog: null,
+      })
+
+    await run()
+
+    expect(JSON.parse(await read('polar.config.json'))).toEqual({
+      settings: { payments: { tax: 'inclusive' } },
+      ...EMPTY,
+    })
+  })
+
+  test('leaves settings out when all are at their default', async () => {
+    const settings = { payments: { currency: 'usd', tax: 'location' } }
+    api.routes[`GET ${exportUrl}`] = () =>
+      Response.json({
+        enabled: false,
+        config: { settings, ...EMPTY },
+        default_settings: settings,
+        skipped: [],
+        catalog: null,
+      })
+
+    await run()
+
+    expect(JSON.parse(await read('polar.config.json'))).toEqual(EMPTY)
+  })
+
   test('picks the package manager from the lockfile, then from package.json', async () => {
     await project('{"packageManager":"yarn@4.0.0"}')
     expect((await run({ file: 'a.ts' })).install).toEqual([

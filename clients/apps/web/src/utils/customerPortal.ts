@@ -61,3 +61,19 @@ const _getOrganizationOrNotFound = async (
 
 // Tell React to memoize it for the duration of the request
 export const getOrganizationOrNotFound = cache(_getOrganizationOrNotFound)
+
+/**
+ * Where to send the customer after they sign in: `returnTo` if it's a page of
+ * this organization's portal, the portal home otherwise.
+ */
+export const getPortalSignInRedirect = (
+  organizationSlug: string,
+  returnTo: string | null | undefined,
+): string => {
+  const portalPath = `/${organizationSlug}/portal/`
+  if (!returnTo?.startsWith(portalPath)) {
+    return portalPath
+  }
+  const { pathname } = new URL(returnTo, 'https://polar.sh')
+  return pathname.startsWith(portalPath) ? returnTo : portalPath
+}

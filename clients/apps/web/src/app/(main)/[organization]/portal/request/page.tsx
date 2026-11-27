@@ -50,6 +50,7 @@ export default async function Page(props: {
     customer_session_token?: string
     email?: string
     logged_out?: string
+    return_to?: string
   }>
 }) {
   const searchParams = await props.searchParams
@@ -65,6 +66,7 @@ export default async function Page(props: {
       organization={organization}
       email={searchParams.email}
       loggedOut={searchParams.logged_out === 'true'}
+      returnTo={searchParams.return_to}
     />
   )
 }

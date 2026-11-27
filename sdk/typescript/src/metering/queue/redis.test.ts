@@ -37,6 +37,44 @@ it("skips periodic drains until the queue has work", async () => {
   }
 });
 
+it.each([
+  { newerTimeout: 30_000, returned: ["older", "newer"] },
+  // A newer flush that gives up first does not release the one still waiting.
+  { newerTimeout: 200, returned: ["newer timed out", "older"] },
+])(
+  "releases an older flush when a newer one outlasts it ($newerTimeout ms)",
+  async ({ newerTimeout, returned }) => {
+    const server = await startRedisServer();
+    let deliver!: () => void;
+    const delivered = new Promise<void>((resolve) => (deliver = resolve));
+    const ingest = vi.fn(() => delivered);
+    const queue = new RedisEventQueue(server.socket, { stream: "test:queue" });
+    const done: string[] = [];
+    const flush = (name: string, timeout: number) =>
+      queue.flush({ timeoutMs: timeout }).then(
+        () => done.push(name),
+        () => done.push(`${name} timed out`),
+      );
+    try {
+      await queue.start({ ingest });
+      await queue.enqueue({ name: "call", external_customer_id: "alice" });
+      const older = flush("older", 30_000);
+      await vi.waitFor(() => expect(ingest).toHaveBeenCalled());
+      // A serverless instance serves many requests at once: one keeps it alive until the drain
+      // ends, the others answer.
+      const newer = flush("newer", newerTimeout);
+      await vi.waitFor(() => expect(done).toEqual(returned.slice(0, 1)), { timeout: 1000 });
+      deliver();
+      await Promise.all([older, newer]);
+      expect(done).toEqual(returned);
+    } finally {
+      deliver();
+      await queue.close();
+      await server.stop();
+    }
+  },
+);
+
 it("keeps an entry until its rejection hook succeeds", async () => {
   const server = await startRedisServer();
   const redis = new Redis(server.socket);

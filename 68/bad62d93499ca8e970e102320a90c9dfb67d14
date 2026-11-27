@@ -1,0 +1,71 @@
+sdk/generator/python/template/polar/outpost/client.py
+  s_868513325afaca::t_5c4d967aef0550 253-255,285-286,476-480,1186,1188-1190,1196-1204
+  s_868513325afaca::t_bde40717a8087e 1205
+sdk/generator/tests/test_outpost_scripts.py
+  s_868513325afaca::t_e572539b5d5a3b 16-17,21
+sdk/generator/typescript/template/src/outpost/seal-confirmed.bench.ts
+  s_868513325afaca::t_40c7b0a6abf28e 15,66
+sdk/generator/typescript/template/src/outpost/client.test.ts
+  s_868513325afaca::t_39bfdb94af96be 1296-1299,1302-1304
+  s_868513325afaca::t_40c7b0a6abf28e 18,1289
+sdk/generator/python/template/tests/benchmarks/test_seal_confirmed.py
+  s_868513325afaca::t_40c7b0a6abf28e 58
+sdk/generator/redis/outpost/confirm.lua
+  s_868513325afaca::t_5c4d967aef0550 1-83
+sdk/generator/python/template/tests/benchmarks/test_confirm.py
+  s_868513325afaca::t_40c7b0a6abf28e 53
+sdk/generator/typescript/template/src/outpost/scripts.ts
+  s_868513325afaca::t_5c4d967aef0550 18-20
+sdk/generator/typescript/template/src/outpost/confirm.bench.ts
+  s_868513325afaca::t_40c7b0a6abf28e 13,56
+sdk/generator/python/template/polar/metering/outbox/redis.py
+  s_868513325afaca::t_5c4d967aef0550 52-53,141,242,500-513
+sdk/generator/python/template/tests/outpost/test_client.py
+  s_868513325afaca::t_e572539b5d5a3b 2279-2291,2293-2299
+  s_868513325afaca::t_39bfdb94af96be 2292
+  s_868513325afaca::t_40c7b0a6abf28e 2155
+sdk/generator/redis/outbox/acknowledge.lua
+  s_868513325afaca::t_5c4d967aef0550 1-5
+sdk/generator/typescript/template/src/metering/outbox/redis.ts
+  s_868513325afaca::t_5c4d967aef0550 28,39-41,43-50,60,183,186,391-400
+sdk/generator/typescript/template/src/outpost/client.ts
+  s_868513325afaca::t_5c4d967aef0550 20-21,65,180,426-432,970-989
+sdk/python/polar/metering/outbox/redis.py
+  s_868513325afaca::t_724478188e67ba 64-68,158,261,524-537
+sdk/python/polar/outpost/client.py
+  s_868513325afaca::t_e6aeba1b405f5e 376-461,583-584,774-778,1492,1494-1496,1502-1511
+sdk/python/tests/benchmarks/test_confirm.py
+  s_868513325afaca::t_0ebf3b3fd07264 53
+sdk/python/tests/benchmarks/test_seal_confirmed.py
+  s_868513325afaca::t_ff686aa145ef56 58
+sdk/python/tests/outpost/test_client.py
+  s_868513325afaca::t_f0e1b5dac653a2 2174,2305-2327
+sdk/typescript/src/metering/outbox/redis.ts
+  s_868513325afaca::t_976716544c23fa 29,53-60,62-69,79,209,212,444-453
+sdk/typescript/src/outpost/client.test.ts
+  s_868513325afaca::t_f1e03b8fbc4f4b 17,1322,1329-1332,1335-1337
+sdk/typescript/src/outpost/client.ts
+  s_868513325afaca::t_0ac8abf6e2d271 31,69,189,432-436,982-1001
+sdk/typescript/src/outpost/confirm.bench.ts
+  s_868513325afaca::t_542094c8fa8a39 13,54
+sdk/typescript/src/outpost/scripts.ts
+  s_868513325afaca::t_1af4b3dd99ecd9 233-318
+sdk/typescript/src/outpost/seal-confirmed.bench.ts
+  s_868513325afaca::t_b163722e68caef 15,64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "68bad62d93499ca8e970e102320a90c9dfb67d14",
+  "prompts": {},
+  "sessions": {
+    "s_868513325afaca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2138b-136c-7cf0-b8fd-2500c8a89c9c",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

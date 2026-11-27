@@ -110,6 +110,51 @@ describe('Ingestion({ accessToken })', () => {
     fetch.mockRestore()
   })
 
+  it('should send 0.4 camelCase ingest() events in snake_case', async () => {
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(Response.json({ inserted: 2, duplicates: 0 }))
+
+    await Ingestion({
+      accessToken: 'polar_oat_test',
+      serverURL: 'http://polar.test',
+    }).ingest([
+      {
+        name: 'api_call',
+        customerId: 'cus_1',
+        memberId: 'mem_1',
+        externalId: 'evt_1',
+        parentId: 'evt_0',
+        organizationId: 'org_1',
+        metadata: { route: '/v1/x' },
+      },
+      { name: 'api_call', externalCustomerId: 'ext_1', externalMemberId: 'm' },
+      { name: 'api_call', customer_id: 'cus_2' },
+    ])
+
+    const [, init] = fetch.mock.calls[0]
+    expect(JSON.parse(String(init?.body))).toEqual({
+      events: [
+        {
+          name: 'api_call',
+          customer_id: 'cus_1',
+          member_id: 'mem_1',
+          external_id: 'evt_1',
+          parent_id: 'evt_0',
+          organization_id: 'org_1',
+          metadata: { route: '/v1/x' },
+        },
+        {
+          name: 'api_call',
+          external_customer_id: 'ext_1',
+          external_member_id: 'm',
+        },
+        { name: 'api_call', customer_id: 'cus_2' },
+      ],
+    })
+    fetch.mockRestore()
+  })
+
   it('should fall back to POLAR_ACCESS_TOKEN like the 0.4 SDK', async () => {
     vi.stubEnv('POLAR_ACCESS_TOKEN', 'polar_oat_env')
     const fetch = vi

@@ -42,6 +42,19 @@ export type IngestionEvent =
   | models.EventCreateCustomer
   | models.EventCreateExternalCustomer
 
+// The camelCase event of the old SDK that 0.4 users pass to ingest()
+export type IngestionCamelCaseEvent = {
+  name: string
+  timestamp?: Date | string
+  organizationId?: string | null
+  externalId?: string | null
+  parentId?: string | null
+  metadata?: models.EventCreateCustomer['metadata']
+} & (
+  | { customerId: string; memberId?: string | null }
+  | { externalCustomerId: string; externalMemberId?: string | null }
+)
+
 // The options of the old SDK that 0.4 users pass, mapped onto the new one
 export type IngestionTokenConfig = {
   accessToken?: string
@@ -89,6 +102,34 @@ const encodeCustomer = Schema.encodeSync(
     Schema.Struct({ external_customer_id: Schema.String }),
   ]),
 )
+
+const customerKeys = new Set([
+  'customerId',
+  'externalCustomerId',
+  'customer_id',
+  'external_customer_id',
+])
+
+const snakeCaseKeys: Record<string, string> = {
+  organizationId: 'organization_id',
+  externalId: 'external_id',
+  parentId: 'parent_id',
+  memberId: 'member_id',
+  externalMemberId: 'external_member_id',
+}
+
+// SDK 1.x sends events as given, and the API ignores camelCase keys
+const encodeEvent = (
+  event: IngestionEvent | IngestionCamelCaseEvent,
+): IngestionEvent =>
+  ({
+    ...Object.fromEntries(
+      Object.entries(event)
+        .filter(([key]) => !customerKeys.has(key))
+        .map(([key, value]) => [snakeCaseKeys[key] ?? key, value]),
+    ),
+    ...encodeCustomer(event),
+  }) as IngestionEvent
 
 const toEventMetadata = (
   metadata: Record<string, IngestionMetadataValue | models.CostMetadataInput>,
@@ -167,7 +208,9 @@ export function Ingestion(metering: Metering): {
 }
 export function Ingestion(config?: IngestionTokenConfig): {
   strategy: IngestionStrategyAttacher
-  ingest: (events: IngestionEvent[]) => Promise<models.EventsIngestResponse>
+  ingest: (
+    events: (IngestionEvent | IngestionCamelCaseEvent)[],
+  ) => Promise<models.EventsIngestResponse>
 }
 export function Ingestion(config?: IngestionTokenConfig | Metering) {
   if (config && 'track' in config) {
@@ -189,7 +232,9 @@ export function Ingestion(config?: IngestionTokenConfig | Metering) {
 
       return strategy
     }) satisfies IngestionStrategyAttacher,
-    ingest: (events: IngestionEvent[]) =>
-      createTokenClient(config).events.ingest({ events }),
+    ingest: (events: (IngestionEvent | IngestionCamelCaseEvent)[]) =>
+      createTokenClient(config).events.ingest({
+        events: events.map(encodeEvent),
+      }),
   }
 }

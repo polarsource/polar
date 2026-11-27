@@ -68,13 +68,14 @@ The LLM Strategy ingests the tokens used by every model call, so you can charge 
 
 Pass a model, an adapter or a client to `LLMStrategy`. `client()` gives you back the same thing, ready to use.
 
-| Library                                                 | Pass                                        | Example                                                                                                              |
-| ------------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| [AI SDK](https://ai-sdk.dev) 5, 6 and 7                 | A model, like `openai('gpt-4o')`            | [`ai-sdk.ts`](./llm/ai-sdk.ts), [`ai-sdk-stream.ts`](./llm/ai-sdk-stream.ts)                                         |
-| [TanStack AI](https://tanstack.com/ai) 1.x              | A text adapter, like `openaiText('gpt-4o')` | [`tanstack-ai.ts`](./llm/tanstack-ai.ts)                                                                             |
-| [OpenAI SDK](https://github.com/openai/openai-node) 7.x | A client, `new OpenAI()`                    | [`openai-responses.ts`](./llm/openai-responses.ts), [`openai-chat-completions.ts`](./llm/openai-chat-completions.ts) |
+| Library                                                                                 | Pass                                        | Example                                                                                                              |
+| --------------------------------------------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| [AI SDK](https://ai-sdk.dev) 5, 6 and 7                                                 | A model, like `openai('gpt-4o')`            | [`ai-sdk.ts`](./llm/ai-sdk.ts), [`ai-sdk-stream.ts`](./llm/ai-sdk-stream.ts)                                         |
+| [TanStack AI](https://tanstack.com/ai) 1.x                                              | A text adapter, like `openaiText('gpt-4o')` | [`tanstack-ai.ts`](./llm/tanstack-ai.ts)                                                                             |
+| [OpenAI SDK](https://github.com/openai/openai-node) 7.x                                 | A client, `new OpenAI()`                    | [`openai-responses.ts`](./llm/openai-responses.ts), [`openai-chat-completions.ts`](./llm/openai-chat-completions.ts) |
+| [Anthropic SDK](https://github.com/anthropics/anthropic-sdk-typescript) 0.130 and later | A client, `new Anthropic()`                 | [`anthropic.ts`](./llm/anthropic.ts)                                                                                 |
 
-Every model call is ingested as its own event, including each step of a tool loop and structured output. With the AI SDK and TanStack AI, you pick the model when you set up the strategy. With the OpenAI SDK, you pick it on each call.
+Every model call is ingested as its own event, including each step of a tool loop and structured output. With the AI SDK and TanStack AI, you pick the model when you set up the strategy. With the OpenAI and Anthropic SDKs, you pick it on each call.
 
 ### Add a cost
 

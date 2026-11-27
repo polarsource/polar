@@ -13,6 +13,7 @@ from polar.models.webhook_endpoint import WebhookEndpoint, WebhookFormat
 from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import webhook_endpoint_secret
 
 
 @pytest.mark.anyio
@@ -85,7 +86,7 @@ class TestListWebhookEndpoints:
                 url="https://example.com/mcp",
                 format=WebhookFormat.mcp,
                 organization=organization,
-                secret="foobar",
+                **await webhook_endpoint_secret("foobar"),
                 expires_at=utc_now() - timedelta(minutes=1),
             )
         )
@@ -314,7 +315,7 @@ class TestUpdateWebhookEndpoint:
     async def test_2026_10_ignores_deprecated_secret(
         self, client: AsyncClient, webhook_endpoint_organization: WebhookEndpoint
     ) -> None:
-        old_secret = webhook_endpoint_organization.secret
+        old_secret = await webhook_endpoint_organization.get_secret()
         response = await client.patch(
             f"/v1/webhooks/endpoints/{webhook_endpoint_organization.id}",
             json={
@@ -364,7 +365,7 @@ class TestResetWebhookEndpointSecret:
     async def test_valid(
         self, client: AsyncClient, webhook_endpoint_organization: WebhookEndpoint
     ) -> None:
-        old_secret = webhook_endpoint_organization.secret
+        old_secret = await webhook_endpoint_organization.get_secret()
         response = await client.patch(
             f"/v1/webhooks/endpoints/{webhook_endpoint_organization.id}/secret"
         )

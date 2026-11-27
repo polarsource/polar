@@ -122,7 +122,6 @@ async def create_sso_connection(
         "issuer": ISSUER,
         "client_id": CLIENT_ID,
         "auth_method": OIDCAuthMethod.client_secret,
-        "client_secret": "secret",
         "authorization_parameters": authorization_parameters or {},
     }
     organization.feature_settings = {
@@ -135,7 +134,12 @@ async def create_sso_connection(
             organization=organization, domain=DOMAIN, verified_at=utc_now()
         )
     )
+    id = OrganizationSSOConnection.generate_id()
     connection = OrganizationSSOConnection(
+        id=id,
+        client_secret_encrypted=await OrganizationSSOConnection.encrypt_client_secret(
+            id, "secret"
+        ),
         organization=organization,
         type=OrganizationSSOConnectionType.oidc,
         configuration=configuration,

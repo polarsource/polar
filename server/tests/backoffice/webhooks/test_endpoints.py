@@ -11,6 +11,7 @@ from polar.models.backoffice_user_session import BackofficeUserSession
 from polar.models.webhook_endpoint import WebhookFormat
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import webhook_endpoint_secret
 
 
 @pytest.fixture
@@ -54,7 +55,7 @@ class TestToggleEnabled:
             url="https://example.com/hook",
             format=WebhookFormat.raw,
             organization_id=organization.id,
-            secret="foobar",
+            **await webhook_endpoint_secret("foobar"),
             enabled=False,
         )
         await save_fixture(endpoint)
@@ -79,7 +80,7 @@ class TestToggleEnabled:
             url="https://example.com/hook",
             format=WebhookFormat.raw,
             organization_id=organization.id,
-            secret="foobar",
+            **await webhook_endpoint_secret("foobar"),
             enabled=True,
         )
         await save_fixture(endpoint)
@@ -104,7 +105,7 @@ class TestToggleEnabled:
             url="https://127.0.0.1/hook",
             format=WebhookFormat.raw,
             organization_id=organization.id,
-            secret="foobar",
+            **await webhook_endpoint_secret("foobar"),
             enabled=False,
         )
         await save_fixture(endpoint)
@@ -133,7 +134,7 @@ class TestToggleEnabled:
             url="https://10.0.0.1/hook",
             format=WebhookFormat.raw,
             organization_id=organization.id,
-            secret="foobar",
+            **await webhook_endpoint_secret("foobar"),
             enabled=False,
         )
         await save_fixture(endpoint)
@@ -161,7 +162,7 @@ class TestToggleEnabled:
             url="https://[::1]/hook",
             format=WebhookFormat.raw,
             organization_id=organization.id,
-            secret="foobar",
+            **await webhook_endpoint_secret("foobar"),
             enabled=False,
         )
         await save_fixture(endpoint)
@@ -189,7 +190,7 @@ class TestToggleEnabled:
             url="https://exa\u2014mple.com/hook",
             format=WebhookFormat.raw,
             organization_id=organization.id,
-            secret="foobar",
+            **await webhook_endpoint_secret("foobar"),
             enabled=False,
         )
         await save_fixture(endpoint)
@@ -217,7 +218,7 @@ class TestToggleEnabled:
             url="https://127.0.0.1/hook",
             format=WebhookFormat.raw,
             organization_id=organization.id,
-            secret="foobar",
+            **await webhook_endpoint_secret("foobar"),
             enabled=True,
         )
         await save_fixture(endpoint)

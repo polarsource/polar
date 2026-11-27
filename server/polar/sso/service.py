@@ -83,12 +83,14 @@ class OrganizationSSOConnectionService:
         repository = OrganizationSSOConnectionRepository.from_session(session)
         id = OrganizationSSOConnection.generate_id()
         configuration = create.configuration.model_dump()
+        client_secret = configuration.pop("client_secret", None)
         connection = OrganizationSSOConnection(
-            **create.model_dump(),
+            **create.model_dump(exclude={"configuration"}),
             id=id,
             organization=organization,
+            configuration=configuration,
             client_secret_encrypted=await OrganizationSSOConnection.encrypt_client_secret(
-                id, configuration.get("client_secret")
+                id, client_secret
             ),
         )
         return await repository.create(connection, flush=True)
@@ -113,11 +115,12 @@ class OrganizationSSOConnectionService:
 
         if update.configuration is not MISSING:
             configuration = update.configuration.model_dump()
+            client_secret = configuration.pop("client_secret", None)
             update_dict["configuration"] = configuration
             update_dict[
                 "client_secret_encrypted"
             ] = await OrganizationSSOConnection.encrypt_client_secret(
-                connection.id, configuration.get("client_secret")
+                connection.id, client_secret
             )
 
         return await repository.update(connection, update_dict=update_dict)

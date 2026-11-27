@@ -7,6 +7,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy.orm import attributes
 
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.crypto import get_token_hash
 from polar.models import Customer, CustomerSeat, Organization, Subscription
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
@@ -544,7 +545,7 @@ class TestResendInvitation:
             subscription=subscription,
             customer=customer,
             status="pending",
-            invitation_token="test-token-123",
+            invitation_token_hash=get_token_hash("test-token-123"),
         )
         await save_fixture(seat)
 

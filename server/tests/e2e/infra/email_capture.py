@@ -15,6 +15,7 @@ from unittest.mock import AsyncMock, MagicMock
 class CapturedEmail:
     to: str
     subject: str
+    html_content: str
 
 
 @dataclass
@@ -50,7 +51,9 @@ def create_email_sender_mock(capture: EmailCapture) -> MagicMock:
         attachments: Any = None,
         tags: dict[str, str] | None = None,
     ) -> str:
-        capture.emails.append(CapturedEmail(to=to_email_addr, subject=subject))
+        capture.emails.append(
+            CapturedEmail(to=to_email_addr, subject=subject, html_content=html_content)
+        )
         return f"mock-email-{uuid.uuid4()}"
 
     mock = MagicMock()

@@ -34,7 +34,7 @@ from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookCheckoutUpdatedPayload
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_checkout
+from tests.fixtures.random_objects import create_checkout, webhook_endpoint_secret
 
 
 @pytest.fixture
@@ -104,7 +104,7 @@ class TestCreateEndpoint:
         endpoint = await webhook_service.create_endpoint(
             session, auth_subject, create_schema
         )
-        assert endpoint.secret == "polar_wh_secret_1234567890abcdef"
+        assert (await endpoint.get_secret()) == "polar_wh_secret_1234567890abcdef"
         assert endpoint.secret_generated_at is None
 
 
@@ -150,7 +150,9 @@ class TestUpdateEndpoint:
                 secret="polar_wh_secret_1234567890abcdef"
             ),
         )
-        assert updated_endpoint.secret == "polar_wh_secret_1234567890abcdef"
+        assert (
+            await updated_endpoint.get_secret()
+        ) == "polar_wh_secret_1234567890abcdef"
         assert updated_endpoint.secret_generated_at is None
 
     @pytest.mark.auth(
@@ -167,7 +169,7 @@ class TestUpdateEndpoint:
             url="https://exa\u2014mple.com/hook",
             format=WebhookFormat.raw,
             organization_id=organization.id,
-            secret="foobar",
+            **await webhook_endpoint_secret("foobar"),
             enabled=False,
         )
         await save_fixture(endpoint)
@@ -192,7 +194,7 @@ class TestResetEndpointSecret:
         session: AsyncSession,
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
-        old_secret = webhook_endpoint_organization.secret
+        old_secret = await webhook_endpoint_organization.get_secret()
         updated_endpoint = await webhook_service.reset_endpoint_secret(
             session, auth_subject, endpoint=webhook_endpoint_organization
         )

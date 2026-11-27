@@ -6,12 +6,15 @@ to a recipient via email. The recipient claims the seat with an
 invitation token, which triggers benefit grants.
 """
 
+import re
+
 import pytest
 from httpx2 import AsyncClient
+from pytest_mock import MockerFixture
 
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Organization, Product, User, UserOrganization
-from tests.e2e.infra import DrainFn, StripeSimulator
+from tests.e2e.infra import DrainFn, EmailCapture, StripeSimulator
 from tests.e2e.post_purchase.conftest import E2E_SEAT_AUTH
 from tests.e2e.purchase.conftest import complete_purchase
 from tests.fixtures.database import SaveFixture
@@ -56,9 +59,15 @@ class TestSeatClaim:
         session: AsyncSession,
         stripe_sim: StripeSimulator,
         drain: DrainFn,
+        email_capture: EmailCapture,
+        mocker: MockerFixture,
         seat_org: Organization,
         seat_product: Product,
     ) -> None:
+        mocker.patch(
+            "polar.email.tasks.render_from_json",
+            side_effect=lambda template, props_json: props_json,
+        )
         # Given a completed 3-seat purchase
         result = await complete_purchase(
             client,
@@ -85,14 +94,11 @@ class TestSeatClaim:
         seat_id = seat_data["id"]
         await drain()
 
-        # Retrieve invitation token from DB (not exposed in API for security)
-        from polar.customer_seat.repository import CustomerSeatRepository
-
-        seat_repo = CustomerSeatRepository.from_session(session)
-        seat_model = await seat_repo.get_by_id(seat_id)
-        assert seat_model is not None
-        invitation_token = seat_model.invitation_token
-        assert invitation_token is not None
+        # Retrieve the invitation token from the email props (only its hash is stored)
+        [invitation_email] = email_capture.find(to=SEAT_RECIPIENT_EMAIL)
+        match = re.search(r"portal/claim\?token=(\w+)", invitation_email.html_content)
+        assert match is not None
+        invitation_token = match.group(1)
 
         # And the teammate claims it
         response = await client.post(

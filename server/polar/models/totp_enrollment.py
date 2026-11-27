@@ -2,7 +2,7 @@ from uuid import UUID
 
 from reauth.factors.totp import TOTPAlgorithm
 from reauth.factors.totp import TOTPEnrollment as TOTPEnrollmentDataclass
-from sqlalchemy import CHAR, ForeignKey, Integer, SmallInteger, String, Uuid
+from sqlalchemy import ForeignKey, Integer, SmallInteger, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.db.models import RecordModel
@@ -15,7 +15,6 @@ class TOTPEnrollment(RecordModel):
     __tablename__ = "totp_enrollments"
 
     enabled: Mapped[bool] = mapped_column(nullable=False)
-    secret: Mapped[str | None] = mapped_column(CHAR(32), nullable=True, default=None)
     secret_encrypted: Mapped[EncryptedString | None] = mapped_column(
         EncryptedStringType(TOTP_ENROLLMENT_SECRET_CONTEXT), nullable=True
     )
@@ -35,9 +34,7 @@ class TOTPEnrollment(RecordModel):
         )
 
     async def get_secret(self) -> str:
-        if self.secret_encrypted is None:
-            assert self.secret is not None
-            return self.secret
+        assert self.secret_encrypted is not None
         return await self.secret_encrypted.decrypt(id=str(self.id))
 
     async def to_dataclass(self) -> TOTPEnrollmentDataclass:

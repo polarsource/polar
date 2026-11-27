@@ -46,8 +46,7 @@ _SIGNING_SECRETS_MAX_SIZE = 4096
 
 
 async def get_cached_signing_secret(endpoint: WebhookEndpoint) -> str:
-    if endpoint.secret_encrypted is None:
-        return await endpoint.get_secret()
+    assert endpoint.secret_encrypted is not None
     key = endpoint.secret_encrypted.encrypted_value
     secret = _signing_secrets.get(key)
     if secret is not None:

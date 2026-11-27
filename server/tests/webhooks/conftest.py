@@ -13,6 +13,7 @@ from polar.models import (
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.version import CURRENT_API_VERSION
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import webhook_endpoint_secret
 
 
 @pytest.fixture
@@ -23,7 +24,7 @@ async def webhook_endpoint_user(
         url="https://example.com/foo",
         format=WebhookFormat.raw,
         user_id=user.id,
-        secret="foobar",
+        **await webhook_endpoint_secret("foobar"),
     )
     await save_fixture(endpoint)
     return endpoint
@@ -54,7 +55,7 @@ async def webhook_endpoint_organization(
         url="https://example.com/foo",
         format=WebhookFormat.raw,
         organization_id=organization.id,
-        secret="foobar",
+        **await webhook_endpoint_secret("foobar"),
     )
     await save_fixture(endpoint)
     return endpoint
@@ -102,7 +103,7 @@ async def webhook_endpoint_mcp(
         url="https://example.com/mcp",
         format=WebhookFormat.mcp,
         organization_id=organization.id,
-        secret="foobar",
+        **await webhook_endpoint_secret("foobar"),
         events=[WebhookEventType.subscription_created],
         expires_at=utc_now() + timedelta(hours=1),
     )

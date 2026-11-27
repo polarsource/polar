@@ -37,6 +37,17 @@ WebhookEndpointNotFound = {
 }
 
 
+async def _endpoint_schema(endpoint: WebhookEndpoint) -> WebhookEndpointSchema:
+    data = {
+        name: getattr(endpoint, name)
+        for name in WebhookEndpointSchema.model_fields
+        if name != "secret"
+    }
+    return WebhookEndpointSchema.model_validate(
+        {**data, "secret": await endpoint.get_secret()}
+    )
+
+
 @router.get("/endpoints", response_model=ListResource[WebhookEndpointSchema])
 async def list_webhook_endpoints(
     filters: Annotated[WebhookEndpointListParams, Query()],
@@ -53,7 +64,7 @@ async def list_webhook_endpoints(
         pagination=pagination,
     )
     return ListResource.from_paginated_results(
-        [WebhookEndpointSchema.model_validate(result) for result in results],
+        [await _endpoint_schema(result) for result in results],
         count,
         pagination,
     )
@@ -71,13 +82,13 @@ async def get_webhook_endpoint(
     id: WebhookEndpointID,
     auth_subject: WebhooksRead,
     session: AsyncSession = Depends(get_db_session),
-) -> WebhookEndpoint:
+) -> WebhookEndpointSchema:
     """Get a webhook endpoint by ID."""
     endpoint = await webhook_service.get_endpoint(session, auth_subject, id)
     if not endpoint:
         raise ResourceNotFound()
 
-    return endpoint
+    return await _endpoint_schema(endpoint)
 
 
 @router.post(
@@ -94,11 +105,13 @@ async def create_webhook_endpoint(
     ],
     auth_subject: WebhooksWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> WebhookEndpoint:
+) -> WebhookEndpointSchema:
     """
     Create a webhook endpoint.
     """
-    return await webhook_service.create_endpoint(session, auth_subject, endpoint_create)
+    return await _endpoint_schema(
+        await webhook_service.create_endpoint(session, auth_subject, endpoint_create)
+    )
 
 
 @router.post(
@@ -114,11 +127,13 @@ async def create_webhook_endpoint_v2026_10(
     endpoint_create: WebhookEndpointCreate,
     auth_subject: WebhooksWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> WebhookEndpoint:
+) -> WebhookEndpointSchema:
     """
     Create a webhook endpoint.
     """
-    return await webhook_service.create_endpoint(session, auth_subject, endpoint_create)
+    return await _endpoint_schema(
+        await webhook_service.create_endpoint(session, auth_subject, endpoint_create)
+    )
 
 
 @router.patch(
@@ -138,7 +153,7 @@ async def update_webhook_endpoint(
     ],
     auth_subject: WebhooksWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> WebhookEndpoint:
+) -> WebhookEndpointSchema:
     """
     Update a webhook endpoint.
     """
@@ -146,8 +161,10 @@ async def update_webhook_endpoint(
     if not endpoint:
         raise ResourceNotFound()
 
-    return await webhook_service.update_endpoint(
-        session, auth_subject, endpoint=endpoint, update_schema=update
+    return await _endpoint_schema(
+        await webhook_service.update_endpoint(
+            session, auth_subject, endpoint=endpoint, update_schema=update
+        )
     )
 
 
@@ -167,7 +184,7 @@ async def update_webhook_endpoint_v2026_10(
     update: WebhookEndpointUpdate,
     auth_subject: WebhooksWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> WebhookEndpoint:
+) -> WebhookEndpointSchema:
     """
     Update a webhook endpoint.
     """
@@ -175,8 +192,10 @@ async def update_webhook_endpoint_v2026_10(
     if not endpoint:
         raise ResourceNotFound()
 
-    return await webhook_service.update_endpoint(
-        session, auth_subject, endpoint=endpoint, update_schema=update
+    return await _endpoint_schema(
+        await webhook_service.update_endpoint(
+            session, auth_subject, endpoint=endpoint, update_schema=update
+        )
     )
 
 
@@ -193,7 +212,7 @@ async def reset_webhook_endpoint_secret(
     id: WebhookEndpointID,
     auth_subject: WebhooksWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> WebhookEndpoint:
+) -> WebhookEndpointSchema:
     """
     Regenerate a webhook endpoint secret.
     """
@@ -201,8 +220,10 @@ async def reset_webhook_endpoint_secret(
     if not endpoint:
         raise ResourceNotFound()
 
-    return await webhook_service.reset_endpoint_secret(
-        session, auth_subject, endpoint=endpoint
+    return await _endpoint_schema(
+        await webhook_service.reset_endpoint_secret(
+            session, auth_subject, endpoint=endpoint
+        )
     )
 
 

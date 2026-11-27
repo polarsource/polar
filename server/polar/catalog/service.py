@@ -155,7 +155,15 @@ SUBSCRIPTION_SETTINGS = (
     "benefit_revocation_grace_period",
     "prevent_trial_abuse",
 )
-CATALOG_SETTINGS = (*PAYMENT_SETTINGS, *SUBSCRIPTION_SETTINGS)
+PORTAL_SETTINGS = {
+    "customer_portal_usage_show": ("usage", "show"),
+    "customer_portal_subscription_update_plan": ("subscription", "update_plan"),
+    "customer_portal_subscription_update_seats": ("subscription", "update_seats"),
+    "customer_portal_subscription_update_units": ("subscription", "update_units"),
+    "customer_portal_subscription_pause": ("subscription", "pause"),
+    "customer_portal_customer_allow_email_change": ("customer", "allow_email_change"),
+}
+CATALOG_SETTINGS = (*PAYMENT_SETTINGS, *SUBSCRIPTION_SETTINGS, *PORTAL_SETTINGS)
 
 
 def _settings(organization: Organization) -> dict[str, Any]:
@@ -593,20 +601,19 @@ class CatalogService:
     ) -> None:
         """Set these settings, by `Organization` attribute name, on the
         organization."""
-        update_dict = {
-            name: value
-            for name, value in settings.items()
-            if name not in SUBSCRIPTION_SETTINGS
-        }
-        if len(update_dict) < len(settings):
-            update_dict["subscription_settings"] = {
-                **organization.subscription_settings,
-                **{
-                    name: value
-                    for name, value in settings.items()
-                    if name in SUBSCRIPTION_SETTINGS
-                },
-            }
+        update_dict: dict[str, Any] = {}
+        subscription: dict[str, Any] = dict(organization.subscription_settings)
+        portal: dict[str, Any] = dict(organization.customer_portal_settings)
+        for name, value in settings.items():
+            if name in SUBSCRIPTION_SETTINGS:
+                subscription[name] = value
+                update_dict["subscription_settings"] = subscription
+            elif name in PORTAL_SETTINGS:
+                group, key = PORTAL_SETTINGS[name]
+                portal[group] = {**portal.get(group, {}), key: value}
+                update_dict["customer_portal_settings"] = portal
+            else:
+                update_dict[name] = value
         await OrganizationRepository.from_session(session).update(
             organization, update_dict=update_dict
         )

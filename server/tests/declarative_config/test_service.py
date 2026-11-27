@@ -2277,6 +2277,12 @@ class TestApply:
             "proration_behavior": SubscriptionProrationBehavior.prorate,
             "benefit_revocation_grace_period": 0,
             "prevent_trial_abuse": False,
+            "customer_portal_usage_show": True,
+            "customer_portal_subscription_update_plan": True,
+            "customer_portal_subscription_update_seats": True,
+            "customer_portal_subscription_update_units": False,
+            "customer_portal_subscription_pause": False,
+            "customer_portal_customer_allow_email_change": False,
         }
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -5511,6 +5517,14 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
             "benefit_revocation_grace_period": 2,
             "prevent_trial_abuse": True,
         },
+        "customer_portal": {
+            "allow_plan_changes": False,
+            "allow_unit_changes": True,
+            "allow_seat_management": False,
+            "allow_pausing": True,
+            "allow_email_changes": True,
+            "show_metered_usage": False,
+        },
     },
     "meters": [{**TOOL_CALLS_METER, "metadata": {"team": "billing"}}],
     "custom_fields": [
@@ -6661,6 +6675,50 @@ class TestCatalogDrafts:
             "benefit_revocation_grace_period": 7,
             "trial_ended_reactivation_period": 14,
             "prevent_trial_abuse": False,
+        }
+
+    async def test_portal_settings_go_live_on_publish(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "settings": {
+                        "customer_portal": {
+                            "show_metered_usage": False,
+                            "allow_pausing": True,
+                        }
+                    }
+                }
+            ),
+            publish=False,
+        )
+
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+        assert draft.settings == {
+            "customer_portal_usage_show": False,
+            "customer_portal_subscription_pause": True,
+        }
+        assert organization.customer_portal_subscription_pause is False
+
+        await catalog_service.publish_draft(session, auth_subject, organization, draft)
+
+        assert organization.customer_portal_settings == {
+            "usage": {"show": False},
+            "subscription": {
+                "update_seats": True,
+                "update_plan": True,
+                "pause": True,
+            },
+            "customer": {"allow_email_change": False},
         }
 
     async def test_reverting_settings_drops_the_draft(

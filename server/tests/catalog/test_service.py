@@ -237,6 +237,12 @@ class TestPublishDraft:
             "proration_behavior": "prorate",
             "benefit_revocation_grace_period": 0,
             "prevent_trial_abuse": False,
+            "customer_portal_usage_show": True,
+            "customer_portal_subscription_update_plan": True,
+            "customer_portal_subscription_update_seats": True,
+            "customer_portal_subscription_update_units": False,
+            "customer_portal_subscription_pause": False,
+            "customer_portal_customer_allow_email_change": False,
         }
         send_mock.assert_called_once_with(
             session, organization, WebhookEventType.organization_updated, organization

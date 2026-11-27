@@ -16,7 +16,6 @@ from polar.catalog.repository import (
     CatalogMeterRepository,
     CatalogProductRepository,
 )
-from polar.catalog.service import SUBSCRIPTION_SETTINGS
 from polar.catalog.service import catalog as catalog_service
 from polar.custom_field.repository import CustomFieldRepository
 from polar.meter.repository import MeterRepository
@@ -55,7 +54,12 @@ from .schemas import (
     ConfigSkippedReason,
     ConfigSkippedResource,
 )
-from .validation import benefit_properties, is_expressible_product, price_config
+from .validation import (
+    SETTINGS_FIELDS,
+    benefit_properties,
+    is_expressible_product,
+    price_config,
+)
 
 EXPORTED_SECTIONS = ("settings", "meters", "benefits", "products")
 
@@ -241,15 +245,11 @@ def _settings(
     organization: Organization, catalog: Catalog | None
 ) -> ConfigSettingsRead:
     current = catalog_service.get_settings(organization, catalog)
-    settings = ConfigSettings.model_validate(
-        {
-            "payments": {
-                "currency": current["default_presentment_currency"],
-                "tax": current["default_tax_behavior"],
-            },
-            "subscriptions": {name: current[name] for name in SUBSCRIPTION_SETTINGS},
-        }
-    )
+    nested: dict[str, dict[str, Any]] = {}
+    for field, attribute in SETTINGS_FIELDS.items():
+        group, key = field.split(".")
+        nested.setdefault(group, {})[key] = current[attribute]
+    settings = ConfigSettings.model_validate(nested)
     return ConfigSettingsRead.model_validate(_dump(settings))
 
 

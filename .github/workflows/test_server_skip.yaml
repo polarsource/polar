@@ -42,6 +42,7 @@ jobs:
         with:
           script: |
             const checks = [
+              "Server: Linters 📝",
               "Server: Alembic Check ⚗️",
               "Server: Tests 🐍 (1/4)",
               "Server: Tests 🐍 (2/4)",

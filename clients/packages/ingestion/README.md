@@ -237,7 +237,7 @@ export async function POST(req: Request) {
 
 #### Anthropic SDK
 
-Pass an `@anthropic-ai/sdk` client. `client()` returns a copy of it, and every Messages call made with that copy is ingested, streamed or not, including `messages.stream()`, `messages.parse()`, the tool runner and `beta.messages`. Anthropic reports cache reads and writes apart from the input tokens, so both are added to `inputTokens`, and cache reads are also reported as `cachedInputTokens`. A streamed message is ingested when it finishes, so a stream you abort isn't. Token counting and message batches aren't ingested. The Bedrock and Vertex clients are untested.
+Pass an `@anthropic-ai/sdk` client. `client()` returns a copy of it, and every Messages call made with that copy is ingested, streamed or not, including `messages.stream()`, `messages.parse()`, the tool runner and `beta.messages`. Anthropic reports cache reads and writes apart from the input tokens, so both are added to `inputTokens`, and cache reads are also reported as `cachedInputTokens`. Cache writes aren't reported on their own. Anthropic bills them above the input rate (1.25x for a 5-minute cache, 2x for a 1-hour cache), so the cost example below, which prices them as plain input tokens, comes out a little low when you use prompt caching. A streamed message is ingested when it finishes, so a stream you abort isn't. Token counting and message batches aren't ingested. The Bedrock and Vertex clients are untested.
 
 ```
 pnpm add @polar-sh/ingestion @anthropic-ai/sdk

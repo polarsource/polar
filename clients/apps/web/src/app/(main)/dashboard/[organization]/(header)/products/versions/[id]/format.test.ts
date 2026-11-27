@@ -76,12 +76,24 @@ it('reads a meter filter and aggregation as one line each', () => {
   })
 })
 
-it('names settings like the payment settings page', () => {
+it('names subscription settings like their config keys', () => {
   expect(
-    settingsFields({ payments: { currency: 'eur', tax: 'location' } }),
+    settingsFields({
+      payments: { currency: 'eur', tax: 'location' },
+      subscriptions: {
+        allow_multiple_subscriptions: true,
+        prevent_trial_abuse: false,
+        proration_behavior: 'next_period',
+        benefit_revocation_grace_period: 7,
+      },
+    }),
   ).toEqual({
     default_payment_currency: 'EUR',
     default_tax_behavior: 'Location based',
+    allow_multiple_subscriptions: 'Yes',
+    prevent_trial_abuse: 'No',
+    proration_behavior: 'Schedule for next cycle',
+    benefit_revocation_grace_period: 'After 7 Days',
   })
 })
 

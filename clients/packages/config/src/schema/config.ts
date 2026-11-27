@@ -63,6 +63,63 @@ export const SettingsConfig = Schema.Struct({
 
 export type SettingsConfig = typeof SettingsConfig.Type
 
+type CamelCase<S extends string> = S extends `${infer Head}_${infer Tail}`
+  ? `${Head}${Capitalize<CamelCase<Tail>>}`
+  : S
+
+type CamelKeys<T> = {
+  readonly [K in keyof T as CamelCase<K & string>]: NonNullable<
+    T[K]
+  > extends object
+    ? CamelKeys<NonNullable<T[K]>>
+    : T[K]
+}
+
+export type GracePeriod =
+  | 'immediately'
+  | '2 days'
+  | '7 days'
+  | '14 days'
+  | '21 days'
+
+type SubscriptionsInput = Omit<
+  NonNullable<CamelKeys<SettingsConfig>['subscriptions']>,
+  'benefitRevocationGracePeriod'
+> & {
+  /** How long to wait before revoking benefits during payment retries, like `'7 days'` or `'immediately'`. */
+  readonly benefitRevocationGracePeriod?: GracePeriod
+}
+
+export type SettingsInput = Omit<CamelKeys<SettingsConfig>, 'subscriptions'> & {
+  readonly subscriptions?: SubscriptionsInput
+}
+
+const snakeKeys = (value: object): object =>
+  Object.fromEntries(
+    Object.entries(value).map(([name, item]) => [
+      name.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`),
+      typeof item === 'object' && item !== null ? snakeKeys(item) : item,
+    ]),
+  )
+
+const days = (period: GracePeriod): number =>
+  period === 'immediately' ? 0 : Number(period.split(' ')[0])
+
+const settingsJSON = (settings: SettingsInput): object => {
+  const period = settings.subscriptions?.benefitRevocationGracePeriod
+  return snakeKeys(
+    period === undefined
+      ? settings
+      : {
+          ...settings,
+          subscriptions: {
+            ...settings.subscriptions,
+            benefitRevocationGracePeriod: days(period),
+          },
+        },
+  )
+}
+
 export const PolarConfig = Schema.Struct({
   settings: Schema.optionalKey(SettingsConfig),
   meters: Schema.Array(MeterConfig),
@@ -427,8 +484,8 @@ export const defineConfig = <
   Events extends EventDefinitions | undefined = undefined,
 >(
   input: {
-    /** Organization defaults, like the payment currency and tax behavior. */
-    readonly settings?: SettingsConfig
+    /** Organization settings: payment defaults and how subscriptions behave. */
+    readonly settings?: SettingsInput
     /** The events your app sends, keyed by name. Meters count them. */
     readonly events?: (helpers: EventHelpers) => Events
     /** What usage to measure, keyed by ID. */
@@ -513,7 +570,9 @@ export const defineConfig = <
     errors: 'all',
     onExcessProperty: 'error',
   })({
-    ...(input.settings !== undefined && { settings: input.settings }),
+    ...(input.settings !== undefined && {
+      settings: settingsJSON(input.settings),
+    }),
     meters: entries.map(
       ([
         external_id,

@@ -1,0 +1,84 @@
+sdk/generator/python/template/README.md
+  s_868513325afaca::t_cbecbb438024a9 324-335,339-342,344,346,348-358,363-364
+  s_868513325afaca::t_264631f1899c5f 347
+  s_868513325afaca::t_cb1ab0c3d26739 336-338,343,345,359-362
+sdk/generator/python/emitter.py
+  s_868513325afaca::t_7570dc83903cab 158
+  s_868513325afaca::t_798f08e734557d 138-140
+  s_868513325afaca::t_8a187ba997db53 157
+sdk/generator/python/template/tests/integrations/asgi/test_middleware.py
+  s_868513325afaca::t_2c776d4a6cb77a 3,5-7,9,11-19,22-36,38-39,41-46,59,66-79
+  s_868513325afaca::t_58175d8ed7581e 1-2,8
+  s_868513325afaca::t_7a160e0b489b7c 4,20,47,52-56,58,60-61,80-83,93-95,97-99
+  s_868513325afaca::t_2804fdd5eff992 10,21,37,40,48-51,57,62-65,84-92,96
+sdk/generator/python/template/tests/integrations/fastapi/test_dependency.py
+  s_868513325afaca::t_7570dc83903cab 1-28,30-42
+  s_868513325afaca::t_14be6833fc0a4d 29
+sdk/generator/python/template/polar/integrations/asgi/__init__.py
+  s_868513325afaca::t_8a27d39e3248b2 9,45-46,54
+  s_868513325afaca::t_8a187ba997db53 1-8,10-13,19-22,24-27,29-37,40-41,59-61
+  s_868513325afaca::t_7908d06a666c3d 14,28
+  s_868513325afaca::t_2c6891f4af8d0f 15-18,52,55
+  s_868513325afaca::t_b2fde1398e33ac 23,38-39,42-44,47-51,53,56-58
+sdk/generator/python/template/pyproject.toml
+  s_868513325afaca::t_7570dc83903cab 26
+  s_868513325afaca::t_b2fde1398e33ac 25
+sdk/generator/python/template/polar/version/client.py
+  s_868513325afaca::t_3823ba39fe9247 3,20,33
+  s_868513325afaca::t_7908d06a666c3d 39,52
+sdk/generator/python/template/polar/integrations/fastapi/__init__.py
+  s_868513325afaca::t_7570dc83903cab 3-33,49
+  s_868513325afaca::t_72217cccbcdbc3 48
+  s_868513325afaca::t_072b983e5461e1 1-2
+  s_868513325afaca::t_1ec8506b5f750e 34-36,45-47
+  s_68902c6917c34c::t_60361331c082e6 37-44
+sdk/generator/python/template/polar/base.py
+  s_868513325afaca::t_3823ba39fe9247 280-308
+  s_868513325afaca::t_7908d06a666c3d 309-337
+sdk/python/README.md
+  s_868513325afaca::t_92ded93d3099af 322-362
+sdk/python/polar/base.py
+  s_868513325afaca::t_55ce224198228d 282-339
+sdk/python/polar/integrations/asgi/__init__.py
+  s_868513325afaca::t_5e340f147d0db4 1-64
+sdk/python/polar/integrations/fastapi/__init__.py
+  s_868513325afaca::t_d8de603a538a39 1-49
+sdk/python/polar/v2026_04/client.py
+  s_868513325afaca::t_f44d250935244f 3,49,62,91,104
+sdk/python/polar/v2026_10/client.py
+  s_868513325afaca::t_f42993289e4b14 3,49,62,91,104
+sdk/python/polar/v2027_01/client.py
+  s_868513325afaca::t_12e62359363b4a 3,49,62,91,104
+sdk/python/pyproject.toml
+  s_868513325afaca::t_1ccdd619a4adba 25-26
+sdk/python/tests/integrations/asgi/test_middleware.py
+  s_868513325afaca::t_ed1e64739149e7 1-99
+sdk/python/tests/integrations/fastapi/test_dependency.py
+  s_868513325afaca::t_23ad379a9d3b88 1-45
+sdk/python/uv.lock
+  s_868513325afaca::t_0f6a2a8b3b5e06 2,25-42,56-64,110-127,500-506,530-531,533,540,569-719,852-864,907-918
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d2d12c10e05a29c11788f98af3b72e5e7d93a464",
+  "prompts": {},
+  "sessions": {
+    "s_68902c6917c34c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2139d-4f05-7921-a233-697d47c0569e",
+        "model": "unknown"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    },
+    "s_868513325afaca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2138b-136c-7cf0-b8fd-2500c8a89c9c",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

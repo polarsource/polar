@@ -1,0 +1,41 @@
+sdk/generator/python/template/tests/metering/queue/test_redis.py
+  s_868513325afaca::t_9c10f2b402e511 183-204
+sdk/python/polar/metering/queue/redis.py
+  s_868513325afaca::t_d80a3cad3a5441 281-282
+sdk/python/tests/metering/queue/test_redis.py
+  s_868513325afaca::t_72b5199a1aaeb0 183-204
+sdk/typescript/src/metering/queue/redis.test.ts
+  s_868513325afaca::t_3edc18770b3389 12-39
+sdk/typescript/src/metering/queue/redis.ts
+  s_868513325afaca::t_875b893be7b71c 178-180
+sdk/generator/python/template/polar/metering/queue/redis.py
+  s_68902c6917c34c::t_08078cd693116e 263-264
+sdk/generator/typescript/template/src/metering/queue/redis.test.ts
+  s_68902c6917c34c::t_c8549c2a235992 11-38
+sdk/generator/typescript/template/src/metering/queue/redis.ts
+  s_68902c6917c34c::t_161713f00cae5b 162-164
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "214fdd2015dac677e5efd9043adbbb134fda5dbf",
+  "prompts": {},
+  "sessions": {
+    "s_68902c6917c34c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2139d-4f05-7921-a233-697d47c0569e",
+        "model": "unknown"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    },
+    "s_868513325afaca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2138b-136c-7cf0-b8fd-2500c8a89c9c",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

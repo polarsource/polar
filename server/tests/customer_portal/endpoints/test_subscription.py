@@ -14,7 +14,6 @@ from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_meter import SubscriptionMeter
 from polar.postgres import AsyncSession
-from polar.version import V2026_10, V2027_01
 from tests.fixtures.auth import (
     CUSTOMER_AUTH_SUBJECT,
     MEMBER_AUTH_SUBJECT,
@@ -30,7 +29,6 @@ from tests.fixtures.random_objects import (
     create_order,
     create_payment_method,
     create_product,
-    create_subscription,
     create_subscription_with_seats,
     set_product_benefits,
 )
@@ -177,88 +175,6 @@ class TestGetCancelPreview:
         json = response.json()
         assert json["stops_collection"] is True
         assert json["outstanding_amount"] == 1000
-
-
-@pytest.mark.anyio
-class TestCustomerSubscriptionReactivate:
-    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
-    @pytest.mark.api_version(V2026_10)
-    async def test_not_available_before_2027_01(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        subscription = await create_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-            status=SubscriptionStatus.trial_ended,
-        )
-
-        response = await client.patch(
-            f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json={"reactivate": True},
-        )
-
-        assert response.status_code == 422
-
-    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
-    @pytest.mark.api_version(V2027_01)
-    async def test_missing_billing_details(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        subscription = await create_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-            status=SubscriptionStatus.trial_ended,
-            ends_at=utc_now() + timedelta(days=7),
-        )
-
-        response = await client.patch(
-            f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json={"reactivate": True},
-        )
-
-        assert response.status_code == 409
-        assert response.json()["error"] == "MissingBillingDetails"
-
-    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
-    @pytest.mark.api_version(V2027_01)
-    async def test_renewals_disabled(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-        organization: Organization,
-    ) -> None:
-        organization.capabilities = {
-            **organization.capabilities,
-            "subscription_renewals": False,
-        }
-        await save_fixture(organization)
-        subscription = await create_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-            status=SubscriptionStatus.trial_ended,
-            ends_at=utc_now() + timedelta(days=7),
-        )
-
-        response = await client.patch(
-            f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json={"reactivate": True},
-        )
-
-        assert response.status_code == 403
-        assert response.json()["error"] == "PaymentNotReady"
 
 
 @pytest.mark.anyio

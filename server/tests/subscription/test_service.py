@@ -111,7 +111,6 @@ from polar.subscription.service import (
     BelowMinimumSeats,
     CannotPauseSubscription,
     CannotReinstateSubscription,
-    MissingBillingDetails,
     MissingCheckoutCustomer,
     NoScheduledPause,
     NotARecurringProduct,
@@ -4666,23 +4665,6 @@ class TestResume:
 
 @pytest.mark.anyio
 class TestReactivateEndedTrial:
-    async def _create_trial_ended_subscription(
-        self, save_fixture: SaveFixture, product: Product, customer: Customer
-    ) -> Subscription:
-        customer.billing_address = Address(country=CountryAlpha2("FR"))
-        customer.default_payment_method = await create_payment_method(
-            save_fixture, customer
-        )
-        await save_fixture(customer)
-        subscription = await create_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-            status=SubscriptionStatus.trial_ended,
-            ends_at=utc_now() + timedelta(days=7),
-        )
-        return subscription
-
     async def test_not_trial_ended(
         self,
         session: AsyncSession,
@@ -4693,93 +4675,22 @@ class TestReactivateEndedTrial:
         subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer
         )
+        order = await create_order(
+            save_fixture, customer=customer, product=product, subscription=subscription
+        )
 
         with pytest.raises(NotTrialEndedSubscription):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
                 await subscription_service.reactivate_ended_trial(
-                    session, ctx, subscription
+                    session, ctx, subscription, order=order
                 )
-
-    @pytest.mark.parametrize("missing", ["payment_method", "billing_address"])
-    async def test_missing_billing_details(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-        missing: str,
-    ) -> None:
-        subscription = await self._create_trial_ended_subscription(
-            save_fixture, product, customer
-        )
-        if missing == "payment_method":
-            customer.default_payment_method = None
-        else:
-            customer.billing_address = Address(country=CountryAlpha2("US"))
-        await save_fixture(customer)
-
-        with pytest.raises(MissingBillingDetails):
-            async with SubscriptionUpdateContext(
-                session, subscription, subscription_service
-            ) as ctx:
-                await subscription_service.reactivate_ended_trial(
-                    session, ctx, subscription
-                )
-
-    async def test_valid(
-        self,
-        frozen_time: datetime,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        enqueue_benefits_grants_mock: MagicMock,
-        webhook_service_send_mock: MagicMock,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        create_order_mock = mocker.patch.object(
-            subscription_service,
-            "_create_subscription_update_order",
-            new_callable=AsyncMock,
-        )
-        subscription = await self._create_trial_ended_subscription(
-            save_fixture, product, customer
-        )
-
-        async with SubscriptionUpdateContext(
-            session, subscription, subscription_service
-        ) as ctx:
-            updated = await subscription_service.reactivate_ended_trial(
-                session, ctx, subscription
-            )
-
-        assert updated.status == SubscriptionStatus.active
-        assert updated.ends_at is None
-        assert updated.current_period_start == frozen_time
-        assert updated.current_period_end > frozen_time
-        enqueue_benefits_grants_mock.assert_called_once_with(session, updated)
-        create_order_mock.assert_awaited_once_with(
-            session,
-            updated,
-            OrderBillingReasonInternal.subscription_cycle_after_trial,
-            cutoff=frozen_time,
-        )
-        assert_webhook_sent_once(
-            webhook_service_send_mock,
-            WebhookEventType.subscription_active,
-            product.organization,
-            updated,
-        )
-        events = await get_all_by_name(session, SystemEvent.subscription_reactivated)
-        assert len(events) == 1
 
     @pytest.mark.parametrize("keep_discount", [True, False], ids=["keep", "remove"])
     async def test_reuses_paid_order(
         self,
         frozen_time: datetime,
-        mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
         product: Product,
@@ -4826,12 +4737,6 @@ class TestReactivateEndedTrial:
                 )
             ],
         )
-        create_order_mock = mocker.patch.object(
-            subscription_service,
-            "_create_subscription_update_order",
-            new_callable=AsyncMock,
-        )
-
         async with SubscriptionUpdateContext(
             session, subscription, subscription_service
         ) as ctx:
@@ -4840,7 +4745,6 @@ class TestReactivateEndedTrial:
             )
         await session.flush()
 
-        create_order_mock.assert_not_awaited()
         assert updated.status == SubscriptionStatus.active
         assert updated.current_period_start == frozen_time
         assert updated.discount_id == (discount.id if keep_discount else None)
@@ -4851,37 +4755,6 @@ class TestReactivateEndedTrial:
         assert events[0].user_metadata["amount"] == (
             paid_order.subtotal_amount - paid_order.discount_amount
         )
-
-    async def test_payment_failure_keeps_trial_ended(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        mocker.patch.object(
-            subscription_service,
-            "_create_subscription_update_order",
-            side_effect=PaymentFailed(PaymentFailedReason.card_error),
-        )
-        subscription = await self._create_trial_ended_subscription(
-            save_fixture, product, customer
-        )
-
-        nested = await session.begin_nested()
-        with pytest.raises(PaymentFailed):
-            async with SubscriptionUpdateContext(
-                session, subscription, subscription_service
-            ) as ctx:
-                await subscription_service.reactivate_ended_trial(
-                    session, ctx, subscription
-                )
-        await nested.rollback()
-
-        await session.refresh(subscription)
-        assert subscription.status == SubscriptionStatus.trial_ended
-        assert subscription.ends_at is not None
 
 
 @pytest.mark.anyio

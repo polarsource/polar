@@ -242,30 +242,11 @@ class CustomerSubscriptionResume(Schema):
     )
 
 
-class CustomerSubscriptionReactivate(Schema):
-    model_config = ConfigDict(extra="forbid")
-
-    reactivate: Literal[True] = Field(
-        description="Reactivate a subscription whose trial ended."
-    )
-
-
 class CustomerSubscriptionUpdateClear(Schema):
     model_config = ConfigDict(extra="forbid")
 
     pending_update: None = Field(description="Clear the pending subscription update.")
 
-
-CustomerSubscriptionUpdateV2026_10 = Annotated[
-    CustomerSubscriptionUpdateProduct
-    | CustomerSubscriptionUpdateSeats
-    | CustomerSubscriptionUpdateUnits
-    | CustomerSubscriptionCancel
-    | CustomerSubscriptionPause
-    | CustomerSubscriptionResume
-    | CustomerSubscriptionUpdateClear,
-    SetSchemaReference("CustomerSubscriptionUpdate"),
-]
 
 CustomerSubscriptionUpdate = Annotated[
     CustomerSubscriptionUpdateProduct
@@ -274,7 +255,6 @@ CustomerSubscriptionUpdate = Annotated[
     | CustomerSubscriptionCancel
     | CustomerSubscriptionPause
     | CustomerSubscriptionResume
-    | CustomerSubscriptionReactivate
     | CustomerSubscriptionUpdateClear,
     SetSchemaReference("CustomerSubscriptionUpdate"),
 ]

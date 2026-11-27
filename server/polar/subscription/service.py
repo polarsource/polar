@@ -277,16 +277,6 @@ class NotTrialEndedSubscription(SubscriptionError):
         super().__init__(message, 409)
 
 
-class MissingBillingDetails(SubscriptionError):
-    def __init__(self, subscription: Subscription) -> None:
-        self.subscription = subscription
-        message = (
-            "Add a payment method and a complete billing address "
-            "before reactivating this subscription."
-        )
-        super().__init__(message, 409)
-
-
 class CannotReinstateSubscription(SubscriptionError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
@@ -3308,31 +3298,19 @@ class SubscriptionService:
         ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         *,
-        order: Order | None = None,
+        order: Order,
     ) -> Subscription:
-        """Start the first paid period, reusing the settled order when supplied."""
+        """Start the first paid period from the settled reactivation order."""
         if subscription.status != SubscriptionStatus.trial_ended:
             raise NotTrialEndedSubscription(subscription)
 
-        if order is None:
-            if not subscription.organization.can_renew_subscriptions:
-                raise PaymentNotReady(
-                    "Organization is not ready to renew subscriptions"
-                )
-
-            if not self._has_payment_method(
-                subscription
-            ) or not self._has_complete_billing_address(subscription):
-                raise MissingBillingDetails(subscription)
-
         now = utc_now()
-        if order is not None:
-            if subscription.discount_id != order.discount_id:
-                subscription.discount = order.discount
-                subscription.discount_applied_at = (
-                    now if order.discount is not None else None
-                )
-            subscription.update_net_amount_from(order)
+        if subscription.discount_id != order.discount_id:
+            subscription.discount = order.discount
+            subscription.discount_applied_at = (
+                now if order.discount is not None else None
+            )
+        subscription.update_net_amount_from(order)
 
         subscription.status = SubscriptionStatus.active
         subscription.ends_at = None
@@ -3342,14 +3320,6 @@ class SubscriptionService:
         await billing_interval_service.record_subscription(
             session, subscription, effective_at=now
         )
-
-        if order is None:
-            await self._create_subscription_update_order(
-                session,
-                subscription,
-                OrderBillingReasonInternal.subscription_cycle_after_trial,
-                cutoff=now,
-            )
 
         log.info("subscription.trial_ended.reactivated", id=subscription.id)
         return subscription

@@ -277,6 +277,64 @@ class AsyncClientBase(BuildRequestMixin):
             raise PolarNetworkError(str(e)) from e
 
 
+class PolarSyncBase:
+    """Base for versioned synchronous Polar clients."""
+
+    version: str
+
+    def __init__(
+        self,
+        base_url: str,
+        access_token: str,
+        timeout: RequestTimeout | None,
+        organization_id: str | None,
+    ) -> None:
+        self._client = SyncClientBase(
+            base_url, self.version, access_token, timeout, organization_id
+        )
+
+    def __enter__(self) -> typing.Self:
+        self._client.__enter__()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc_val: BaseException | None = None,
+        exc_tb: types.TracebackType | None = None,
+    ) -> None:
+        self._client.__exit__(exc_type, exc_val, exc_tb)
+
+
+class PolarAsyncBase:
+    """Base for versioned asynchronous Polar clients."""
+
+    version: str
+
+    def __init__(
+        self,
+        base_url: str,
+        access_token: str,
+        timeout: RequestTimeout | None,
+        organization_id: str | None,
+    ) -> None:
+        self._client = AsyncClientBase(
+            base_url, self.version, access_token, timeout, organization_id
+        )
+
+    async def __aenter__(self) -> typing.Self:
+        await self._client.__aenter__()
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc_val: BaseException | None = None,
+        exc_tb: types.TracebackType | None = None,
+    ) -> None:
+        await self._client.__aexit__(exc_type, exc_val, exc_tb)
+
+
 class SyncServiceBase:
     def __init__(self, client: SyncClientBase):
         self.client = client

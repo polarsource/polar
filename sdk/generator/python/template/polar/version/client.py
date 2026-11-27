@@ -1,7 +1,6 @@
-import types
 import typing
 
-from polar.base import AsyncClientBase, RequestTimeout, SyncClientBase, resolve_base_url
+from polar.base import PolarAsyncBase, PolarSyncBase, RequestTimeout, resolve_base_url
 from polar.metering import Metering, MeteringOutpostOptions, EventQueue
 from polar.metering.queue import OnAck, OnRejected
 
@@ -18,7 +17,7 @@ SERVERS: typing.Final[dict[Environment, str]] = {
 }
 
 
-class Polar:
+class Polar(PolarSyncBase):
     version: str = "{{ api.version }}"
 
     def __init__(
@@ -31,27 +30,13 @@ class Polar:
         organization_id: str | None = None,
     ) -> None:
         resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
-        self._client = SyncClientBase(
-            resolved_base_url, self.version, access_token, timeout, organization_id
-        )
+        super().__init__(resolved_base_url, access_token, timeout, organization_id)
 {% for service in api.services %}
         self.{{ service.name | service_name }} = {{ service.name }}Sync(self._client)
 {% endfor %}
 
-    def __enter__(self) -> typing.Self:
-        self._client.__enter__()
-        return self
 
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None = None,
-        exc_val: BaseException | None = None,
-        exc_tb: types.TracebackType | None = None,
-    ) -> None:
-        self._client.__exit__(exc_type, exc_val, exc_tb)
-
-
-class PolarAsync:
+class PolarAsync(PolarAsyncBase):
     version: str = "{{ api.version }}"
 
     def __init__(
@@ -64,24 +49,10 @@ class PolarAsync:
         organization_id: str | None = None,
     ) -> None:
         resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
-        self._client = AsyncClientBase(
-            resolved_base_url, self.version, access_token, timeout, organization_id
-        )
+        super().__init__(resolved_base_url, access_token, timeout, organization_id)
 {% for service in api.services %}
         self.{{ service.name | service_name }} = {{ service.name }}Async(self._client)
 {% endfor %}
-
-    async def __aenter__(self) -> typing.Self:
-        await self._client.__aenter__()
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: type[BaseException] | None = None,
-        exc_val: BaseException | None = None,
-        exc_tb: types.TracebackType | None = None,
-    ) -> None:
-        await self._client.__aexit__(exc_type, exc_val, exc_tb)
 
     def metering(
         self,

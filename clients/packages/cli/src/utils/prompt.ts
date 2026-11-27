@@ -1,4 +1,4 @@
-import { Console, Effect, Stdio } from 'effect'
+import { Console, Effect, Stdio, Terminal } from 'effect'
 import { Prompt } from 'effect/cli'
 import * as ui from '@/utils/ui'
 
@@ -16,6 +16,34 @@ export const select = <A>(
   Prompt.run(Prompt.Select({ ...options, theme })).pipe(
     Effect.tap((value) => answered(options.message, label(value))),
   )
+
+const submittedRows = (message: string, answer: string) =>
+  Math.ceil(
+    Bun.stringWidth(`✔ ${message} …  ${answer}`) /
+      (process.stdout.columns || 80),
+  )
+
+export const multiSelect = <A>(options: SelectOptions<A>) =>
+  Effect.gen(function* () {
+    const terminal = yield* Terminal.Terminal
+    yield* Effect.ignore(terminal.display('\n'))
+    const picked = yield* Prompt.run(
+      Prompt.MultiSelect({
+        ...options,
+        theme: { ...theme, checkboxOn: '◉', checkboxOff: '○' },
+      }),
+    )
+    const answer = options.choices
+      .filter((choice) => picked.includes(choice.value))
+      .map((choice) => choice.title)
+      .join(', ')
+    yield* Effect.ignore(
+      terminal.display(
+        ui.clearLines(submittedRows(options.message, answer) + 2),
+      ),
+    )
+    return picked
+  })
 
 export const confirm = (message: string, initial = true) =>
   Prompt.run(Prompt.Confirm({ message, initial, theme })).pipe(

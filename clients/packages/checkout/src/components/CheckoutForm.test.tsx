@@ -30,7 +30,9 @@ import CheckoutForm from './CheckoutForm'
 
 const { mockLoadStripe, ElementsCapture, captureOptions } = vi.hoisted(() => {
   const captureOptions = vi.fn()
-  const mockLoadStripe = vi.fn(() => Promise.resolve({}))
+  const mockLoadStripe = vi.fn<() => Promise<object | null>>(() =>
+    Promise.resolve({}),
+  )
   const ElementsCapture = ({
     children,
     options,
@@ -944,6 +946,65 @@ describe('CheckoutForm', () => {
       expect(
         screen.getByText(/payment form failed to load/),
       ).toBeInTheDocument()
+    })
+
+    it('shows an error when Stripe.js fails to load', async () => {
+      mockLoadStripe.mockImplementationOnce(() =>
+        Promise.reject(new Error('Failed to load Stripe.js')),
+      )
+      const submit = renderStripeForm()
+
+      expect(
+        await screen.findByText(/payment form failed to load/),
+      ).toBeInTheDocument()
+      expect(submit).toBeDisabled()
+    })
+
+    it('shows an error when loadStripe resolves to null', async () => {
+      mockLoadStripe.mockImplementationOnce(() => Promise.resolve(null))
+      const submit = renderStripeForm()
+
+      expect(
+        await screen.findByText(/payment form failed to load/),
+      ).toBeInTheDocument()
+      expect(submit).toBeDisabled()
+    })
+
+    it('hides the Stripe load error on a free checkout until payment is required', async () => {
+      mockLoadStripe.mockImplementationOnce(() =>
+        Promise.reject(new Error('Failed to load Stripe.js')),
+      )
+      const props = {
+        ...defaultProps,
+        themePreset: { stripe: {} } as ThemingPresetProps,
+        locale: 'en' as const,
+      }
+      const { rerender } = render(
+        <FormWrapper
+          checkout={stripeCheckout({
+            is_payment_form_required: false,
+            is_payment_required: false,
+            is_free_product_price: true,
+            amount: 0,
+            net_amount: 0,
+            total_amount: 0,
+          })}
+          {...props}
+        />,
+      )
+
+      await act(async () => {})
+      expect(screen.getByRole('button', { name: 'Get for free' })).toBeEnabled()
+      expect(
+        screen.queryByText(/payment form failed to load/),
+      ).not.toBeInTheDocument()
+
+      rerender(<FormWrapper checkout={stripeCheckout()} {...props} />)
+
+      expect(
+        await screen.findByText(/payment form failed to load/),
+      ).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Pay now' })).toBeDisabled()
     })
 
     it('does not render the PaymentElement when is_payment_form_required is false', () => {

@@ -262,7 +262,7 @@ async def subscription_resume(
 async def scan_renewal_reminders() -> None:
     """Scan for subscriptions needing renewal reminders and fan out."""
     now = utc_now()
-    reminder_window_end = now + timedelta(days=7)
+    reminder_window_end = now + timedelta(days=30)
 
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)

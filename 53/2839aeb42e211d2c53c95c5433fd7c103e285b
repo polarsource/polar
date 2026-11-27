@@ -1,0 +1,228 @@
+sdk/generator/typescript/template/src/metering/event.ts
+  s_7671299f8b7483::t_240432543e8dfa 1-4,47-114
+sdk/generator/typescript/template/src/version/index.ts
+  s_7671299f8b7483::t_240432543e8dfa 3
+sdk/generator/typescript/template/src/metering/client.test.ts
+  s_7671299f8b7483::t_321590539829d1 8,69,124
+  s_7671299f8b7483::t_3cb6a2050adf77 11-12,31-35,51-57,66-68,70-72,76,81,97,99,110-113,115,121-123,125,127-130,132,134,147,149-150,155,164,167,174,191-195,206-208,224-225,228,230,248-249,251,264-266,268
+  s_7671299f8b7483::t_341d3b18623f70 159,161-162,165
+sdk/python/README.md
+  s_7671299f8b7483::t_95496a3dc07cdf 149,151-153,161-163,166-168,172-175,178-181,184-187,194,199,208-209,221-222,227,251-252,264,269-272
+  s_7671299f8b7483::t_cda23ef8eeec0c 273
+sdk/python/polar/actor.py
+  s_7671299f8b7483::t_1032057d0d7538 1-71
+  s_7671299f8b7483::t_f02e45bd6d68b6 72-74
+  s_712a5944f661d1::t_592ee441d5933d 75-85
+sdk/generator/python/template/tests/benchmarks/test_read_buckets.py
+  s_7671299f8b7483::t_5eeb1952ea500a 9
+sdk/generator/python/template/pyproject.toml
+  s_7671299f8b7483::t_44d2fd5b73cdf1 18,26,44
+clients/packages/ingestion/src/ingestion.test.ts
+  s_7671299f8b7483::t_bce8c15e92943e 1,7,14-17,32-35,66-68,71
+sdk/python/pyproject.toml
+  s_7671299f8b7483::t_39bad9afc37859 18,26,44
+sdk/generator/python/template/polar/metering/errors.py
+  s_7671299f8b7483::t_5eeb1952ea500a 1-2,10-11
+  s_7671299f8b7483::t_df73099a087770 9
+sdk/generator/typescript/template/src/metering/client.ts
+  s_7671299f8b7483::t_510b7747377211 34-35,200
+  s_7671299f8b7483::t_240432543e8dfa 1,3,12-14,31-33,36-37,40,43,45,53-56,73-74,76-77,98,107-110,126,128-133,158-159,161,163,181-187,192-197,199,201-211,215-220,225-238,240,243,245,249,255,258,267,270,280,301,316
+  s_7671299f8b7483::t_0f2e4f3771e3d5 212-214
+  s_7671299f8b7483::t_10e651a901c488 18,26,29,42,44,191,198,222-224
+sdk/generator/python/template/tests/benchmarks/test_read.py
+  s_7671299f8b7483::t_5eeb1952ea500a 7
+sdk/python/tests/metering/test_metering.py
+  s_7671299f8b7483::t_c8e6087bfad395 40,42,45,57,64-66,69-74,110-114,142-143,152-154,172,174,187-193,212-214,217-229,264-266,268-271,278,295-296,303,308,310-312,315,322,335,338-340,343-346,348-366,369
+  s_7671299f8b7483::t_8536d47cf01742 367-368
+  s_7671299f8b7483::t_9dec97908ff9e9 370-372
+  s_712a5944f661d1::t_76f02286370632 12,17-18,373,375-377,379-380
+sdk/generator/python/emitter.py
+  s_7671299f8b7483::t_7b7676f17614a0 134
+  s_7671299f8b7483::t_df73099a087770 132
+sdk/generator/typescript/template/src/outpost/client.ts
+  s_7671299f8b7483::t_10e651a901c488 21
+  s_7671299f8b7483::t_240432543e8dfa 22,1417-1419
+  s_7671299f8b7483::t_510b7747377211 1422-1425
+sdk/generator/typescript/template/src/version/client.ts
+  s_7671299f8b7483::t_240432543e8dfa 2,17,38,49-53
+sdk/python/polar/metering/events.py
+  s_7671299f8b7483::t_dac9de97d8f7f3 59-72
+  s_7671299f8b7483::t_4038311236f7c4 57-58
+  s_7671299f8b7483::t_1f8a0799fb8edd 73-75
+  s_712a5944f661d1::t_8166fce3f90c65 3,6-11,76-104
+sdk/python/tests/outpost/test_client.py
+  s_7671299f8b7483::t_f81f5ac50b58bd 2303-2312,2314,2323,2359-2362,2364-2371,2377,2403-2412,2416-2417,2453-2460,2463,2465,2483-2490
+  s_712a5944f661d1::t_b28e29462e8f94 41,2493,2495,2499
+sdk/generator/typescript/template/src/metering/actor.ts
+  s_7671299f8b7483::t_240432543e8dfa 1-52
+sdk/generator/python/template/polar/actor.py
+  s_7671299f8b7483::t_ecd712e5fc048b 3-6,13,24,26-30,32,45,50,57
+  s_7671299f8b7483::t_ae78fe7b1b7906 1-2,14-22,25,31,33-44,46-49,51-56,58-72
+  s_7671299f8b7483::t_7b7676f17614a0 7-12,23
+  s_7671299f8b7483::t_df73099a087770 73-88
+sdk/generator/typescript/template/src/outpost/index.ts
+  s_7671299f8b7483::t_10e651a901c488 3
+sdk/generator/python/template/polar/version/client.py
+  s_7671299f8b7483::t_84ed1f4cd587b3 49
+  s_7671299f8b7483::t_df199700c65a52 3-4
+  s_7671299f8b7483::t_f92c1b120b618a 52
+  s_7671299f8b7483::t_7b7676f17614a0 50-51,55-59
+sdk/generator/python/template/tests/metering/test_metering.py
+  s_7671299f8b7483::t_b9629cadb8a60a 57,65-66
+  s_7671299f8b7483::t_44d2fd5b73cdf1 213-214,216-223
+  s_7671299f8b7483::t_c3186999f4b652 338-340,344-346,350-352,354-355
+  s_7671299f8b7483::t_998b61c12a78f6 334-337
+  s_7671299f8b7483::t_4c27d3e6f22250 255,287,292,294,314,317,341-343,347-348
+  s_7671299f8b7483::t_6d56b0730b64a1 40,42,45,64,70-74,152-154,172,174,187-191,215,254,256-258,265,279-280,297,304,320-323,325-333
+  s_7671299f8b7483::t_84ed1f4cd587b3 69,210
+  s_7671299f8b7483::t_75a4f63832f142 110-114,142-143
+  s_7671299f8b7483::t_5eeb1952ea500a 12,17-18
+sdk/python/uv.lock
+  s_7671299f8b7483::t_4ca0d998017c22 2,449,476
+sdk/generator/python/template/README.md
+  s_7671299f8b7483::t_5eeb1952ea500a 229
+  s_7671299f8b7483::t_8b1405aebfef64 151,163-165,168-170,175-177,196,201,210-211,223-224,253,273
+  s_7671299f8b7483::t_84ed1f4cd587b3 153-155
+  s_7671299f8b7483::t_f92c1b120b618a 174,180-183,186-189
+sdk/generator/python/template/tests/metering/queue/test_memory.py
+  s_7671299f8b7483::t_5eeb1952ea500a 9-10
+sdk/generator/python/template/tests/outpost/test_client.py
+  s_7671299f8b7483::t_6d56b0730b64a1 2276-2277,2281,2288,2331-2332,2336,2342,2369-2370,2376-2377,2414-2415,2418,2420,2439-2440,2443,2445,2449
+  s_7671299f8b7483::t_5eeb1952ea500a 41
+  s_7671299f8b7483::t_4c27d3e6f22250 2275,2278-2279,2324-2327,2329-2330,2333-2335,2368,2371-2372,2413,2438
+sdk/generator/python/template/polar/metering/events.py
+  s_7671299f8b7483::t_5eeb1952ea500a 3,6-11,57-96
+sdk/generator/python/template/polar/outpost/__init__.py
+  s_7671299f8b7483::t_df199700c65a52 2
+  s_7671299f8b7483::t_5eeb1952ea500a 3
+  s_7671299f8b7483::t_f92c1b120b618a 33
+sdk/generator/typescript/template/src/metering/queue/redis.test.ts
+  s_7671299f8b7483::t_3cb6a2050adf77 6
+sdk/generator/typescript/template/README.md
+  s_7671299f8b7483::t_341d3b18623f70 125
+  s_7671299f8b7483::t_4894ebeb707d24 100,102,111-113,117-119,124,132-133,146-147,161,172-173,197,207-208,213-214,216,219-220,224-225,230-232,244-246,251,266,274-276
+  s_7671299f8b7483::t_510b7747377211 103,206,215
+sdk/python/polar/v2026_04/client.py
+  s_7671299f8b7483::t_6486cc8299df0b 4-11,108-113,116-119
+  s_7671299f8b7483::t_d45986b1431fd4 3
+  s_7671299f8b7483::t_dac4a8e33e1c42 120-122
+  s_712a5944f661d1::t_22bc4480be0491 123-125
+clients/packages/ingestion/src/ingestion.ts
+  s_7671299f8b7483::t_bce8c15e92943e 7,102-103,106,142-143,166,174,178
+sdk/python/polar/outpost/client.py
+  s_7671299f8b7483::t_f8856ecef8ade7 46,767
+sdk/python/polar/v2027_01/client.py
+  s_7671299f8b7483::t_2495d08cce0823 4-11,108-113,116-119
+  s_7671299f8b7483::t_e44adb6b230e84 3
+  s_7671299f8b7483::t_90aedd2d6c3fde 120-122
+  s_712a5944f661d1::t_dfbd139f50745b 123-125
+sdk/generator/python/template/tests/metering/queue/test_redis.py
+  s_7671299f8b7483::t_46df9f7d415f7c 67,120,212,228-229,253-254,282,304,325,348,363,378,393,420,446,512-513,540,558-559,586,606
+  s_7671299f8b7483::t_5eeb1952ea500a 17
+sdk/generator/python/template/polar/base.py
+  s_7671299f8b7483::t_46df9f7d415f7c 578
+  s_7671299f8b7483::t_7c12b4683fc89e 427-428
+  s_7671299f8b7483::t_9e29191ce75ef9 351-352
+  s_7671299f8b7483::t_df73099a087770 23-24,26-31,33-34,439
+  s_7671299f8b7483::t_5eeb1952ea500a 32
+  s_7671299f8b7483::t_44d2fd5b73cdf1 13
+  s_7671299f8b7483::t_c3186999f4b652 394,426
+  s_7671299f8b7483::t_2ae427843f3f88 349,411-422
+  s_7671299f8b7483::t_b9629cadb8a60a 332,341
+  s_7671299f8b7483::t_fe33aac3f7cdfd 408-410,423-425
+  s_7671299f8b7483::t_7b7676f17614a0 3,5,9,25,36-37,40-41,362-364,370-371,373-381,390-393,395-407,429-438,440-577,579-596
+  s_7671299f8b7483::t_f92c1b120b618a 353,366-369
+  s_7671299f8b7483::t_df199700c65a52 38-39,329-331,333-334
+  s_7671299f8b7483::t_84ed1f4cd587b3 6,35,327-328,335-336,350,359-361
+  s_7671299f8b7483::t_9f535559e9bc95 365
+sdk/generator/python/template/tests/benchmarks/test_ingest.py
+  s_7671299f8b7483::t_5eeb1952ea500a 11
+sdk/python/polar/base.py
+  s_7671299f8b7483::t_e050011d695bc6 3,5-6,9,13,23-47,335-344,349,357-363,369-383,385-393,402-609
+  s_7671299f8b7483::t_28d1d227b47c5b 610-612
+  s_712a5944f661d1::t_c0cc32bd6dd498 613-621
+sdk/generator/typescript/template/src/outpost/client.test.ts
+  s_7671299f8b7483::t_321590539829d1 483,1364,1438,1550,1570,2490
+  s_7671299f8b7483::t_3cb6a2050adf77 11-12,474,1445,2486-2489,2491,2493-2503
+sdk/python/polar/v2026_10/client.py
+  s_7671299f8b7483::t_fd5fc71e1a863f 4-11,108-113,116-119
+  s_7671299f8b7483::t_05febfafbc6a96 3
+  s_7671299f8b7483::t_df168f67c88b26 120-122
+  s_712a5944f661d1::t_daf19ab3935f65 123-125
+sdk/generator/python/template/polar/outpost/client.py
+  s_7671299f8b7483::t_7b7676f17614a0 46,412
+sdk/generator/python/template/polar/_errors.py
+  s_7671299f8b7483::t_df73099a087770 1-4
+sdk/e2e/uv.lock
+  s_712a5944f661d1::t_443abbc9565f62 341,357
+sdk/python/polar/_errors.py
+  s_712a5944f661d1::t_c60a5e0d672874 1-4
+sdk/python/polar/metering/errors.py
+  s_712a5944f661d1::t_cf2ff80d4305f8 1-2,9-12
+sdk/python/polar/outpost/__init__.py
+  s_712a5944f661d1::t_061d730ba61fa2 2-3,33
+sdk/python/tests/benchmarks/test_ingest.py
+  s_712a5944f661d1::t_3ec313c1415374 11
+sdk/python/tests/benchmarks/test_read.py
+  s_712a5944f661d1::t_264c847eecbf11 7
+sdk/python/tests/benchmarks/test_read_buckets.py
+  s_712a5944f661d1::t_23e82e844a5b8a 9
+sdk/python/tests/metering/queue/test_memory.py
+  s_712a5944f661d1::t_bf4691c26c2802 8-13,15
+sdk/python/tests/metering/queue/test_redis.py
+  s_712a5944f661d1::t_83ef2509b8e9c9 18,66,119,212,230,233,259,262,292,316,339,364,381,398,415,444,470,538,541,570,590,593,624,646
+sdk/typescript/README.md
+  s_712a5944f661d1::t_fd959ccf187c2e 100,102-103,111-113,117-119,124-125,132-133,146-147,161,172-173,197,206-208,213-216,219-220,224-225,230-232,244-246,251,264-268,274-276
+sdk/typescript/src/2026-04/client.ts
+  s_712a5944f661d1::t_730869145b55d5 2,37-38,55,88-92
+sdk/typescript/src/2026-04/index.ts
+  s_712a5944f661d1::t_10d4f58d5aeb77 3
+sdk/typescript/src/2026-10/client.ts
+  s_712a5944f661d1::t_5bdebb33e9d9ec 2,37-38,55,88-92
+sdk/typescript/src/2026-10/index.ts
+  s_712a5944f661d1::t_f3c2b940274b87 3
+sdk/typescript/src/2027-01/client.ts
+  s_712a5944f661d1::t_db63cc2c7f83b6 2,37-38,55,88-92
+sdk/typescript/src/2027-01/index.ts
+  s_712a5944f661d1::t_2e8ceba497e96c 3
+sdk/typescript/src/metering/actor.ts
+  s_712a5944f661d1::t_ebe27513b823b4 1-52
+sdk/typescript/src/metering/client.test.ts
+  s_712a5944f661d1::t_231d18a04c49f1 5,10,12,31-35,49-55,64-70,74,79,98,100,110-113,115,119-123,125-128,130,132,146,148-149,154,158,160-161,163-164,166,173,190-194,205-207,223-224,227,229,247-248,250,263-265,267
+sdk/typescript/src/metering/client.ts
+  s_712a5944f661d1::t_d34fdc7f04e2a0 1,3,7,16,19,27,30,32-38,41,43-46,54-57,74-75,77-78,99,108-111,127,129-134,159-160,162,164,182-189,193-222,224-240,242,245,247,251,257,260,269,272,282,303,318
+sdk/typescript/src/metering/event.ts
+  s_712a5944f661d1::t_444240c48eccef 1-5,48-115
+sdk/typescript/src/metering/queue/redis.test.ts
+  s_712a5944f661d1::t_f9ecc1085f8656 9
+sdk/typescript/src/outpost/client.test.ts
+  s_712a5944f661d1::t_5d0e61920c4ad9 14,16,473,481-484,1409-1412,1496-1499,1506,1611-1614,1634-1637,2566-2571,2573-2583
+sdk/typescript/src/outpost/client.ts
+  s_712a5944f661d1::t_900955237d898d 20,25,1435-1437,1440-1443
+sdk/typescript/src/outpost/index.ts
+  s_712a5944f661d1::t_427778f9ff6ec0 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "532839aeb42e211d2c53c95c5433fd7c103e285b",
+  "prompts": {},
+  "sessions": {
+    "s_712a5944f661d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21d23-3e03-7250-b05f-da86069481d6",
+        "model": "unknown"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    },
+    "s_7671299f8b7483": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21d18-2190-7bb2-991b-09c4eaafbef3",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

@@ -154,7 +154,7 @@ class TestDraft:
         AuthSubjectFixture(subject="agent", scopes={Scope.meters_write}),
     )
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_without_catalog_publish(
+    async def test_without_catalogs_write(
         self, mocker: MockerFixture, client: AsyncClient
     ) -> None:
         mocker.patch("polar.meter.service.enqueue_job")

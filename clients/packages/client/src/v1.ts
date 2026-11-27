@@ -6787,7 +6787,7 @@ export interface paths {
      * @description Publish the draft catalog. Its new products and benefits replace the live
      *     ones for new sales. Existing customers stay on their versions until moved.
      *
-     *     Requires `catalog:publish` and `products:write`, `benefits:write` when the
+     *     Requires `catalogs:write` and `products:write`, `benefits:write` when the
      *     draft changes benefits, `meters:write` when it changes meters,
      *     `custom_fields:write` when it changes custom fields, and
      *     `organizations:write` when it changes settings. Users need the owner or
@@ -9336,7 +9336,7 @@ export interface components {
        *       "products:write": "Create or modify products",
        *       "benefits:read": "Read benefits",
        *       "benefits:write": "Create or modify benefits",
-       *       "catalog:publish": "Publish catalog changes",
+       *       "catalogs:write": "Publish catalog changes",
        *       "events:read": "Read events",
        *       "events:write": "Create events",
        *       "meters:read": "Read meters",
@@ -9427,7 +9427,7 @@ export interface components {
        *       "products:write": "Create or modify products",
        *       "benefits:read": "Read benefits",
        *       "benefits:write": "Create or modify benefits",
-       *       "catalog:publish": "Publish catalog changes",
+       *       "catalogs:write": "Publish catalog changes",
        *       "events:read": "Read events",
        *       "events:write": "Create events",
        *       "meters:read": "Read meters",
@@ -9517,7 +9517,7 @@ export interface components {
       | 'products:write'
       | 'benefits:read'
       | 'benefits:write'
-      | 'catalog:publish'
+      | 'catalogs:write'
       | 'events:read'
       | 'events:write'
       | 'meters:read'
@@ -38816,7 +38816,7 @@ export interface components {
       | 'products:write'
       | 'benefits:read'
       | 'benefits:write'
-      | 'catalog:publish'
+      | 'catalogs:write'
       | 'events:read'
       | 'events:write'
       | 'meters:read'
@@ -75697,7 +75697,7 @@ export const availableScopeValues: ReadonlyArray<
   'products:write',
   'benefits:read',
   'benefits:write',
-  'catalog:publish',
+  'catalogs:write',
   'events:read',
   'events:write',
   'meters:read',
@@ -78919,7 +78919,7 @@ export const scopeValues: ReadonlyArray<
   'products:write',
   'benefits:read',
   'benefits:write',
-  'catalog:publish',
+  'catalogs:write',
   'events:read',
   'events:write',
   'meters:read',

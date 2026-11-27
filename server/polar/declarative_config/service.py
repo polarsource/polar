@@ -384,8 +384,8 @@ class DeclarativeConfigService:
         publish: bool = True,
     ) -> ConfigApplyResult:
         _assert_section_scopes(auth_subject, config, write=True)
-        if publish and Scope.catalog_publish not in auth_subject.scopes:
-            raise InsufficientScopeError({str(Scope.catalog_publish)})
+        if publish and Scope.catalogs_write not in auth_subject.scopes:
+            raise InsufficientScopeError({str(Scope.catalogs_write)})
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_manage
         )

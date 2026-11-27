@@ -159,7 +159,7 @@ async def publish(
     """Publish the draft catalog. Its new products and benefits replace the live
     ones for new sales. Existing customers stay on their versions until moved.
 
-    Requires `catalog:publish` and `products:write`, `benefits:write` when the
+    Requires `catalogs:write` and `products:write`, `benefits:write` when the
     draft changes benefits, `meters:write` when it changes meters,
     `custom_fields:write` when it changes custom fields, and
     `organizations:write` when it changes settings. Users need the owner or

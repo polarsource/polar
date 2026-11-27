@@ -214,7 +214,7 @@ class TestPublishDraft:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.products_write})
     )
-    async def test_without_catalog_publish(
+    async def test_without_catalogs_write(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[Organization],
@@ -284,7 +284,7 @@ class TestPublishDraft:
     @pytest.mark.auth(
         AuthSubjectFixture(
             subject="organization",
-            scopes={Scope.products_write, Scope.catalog_publish},
+            scopes={Scope.products_write, Scope.catalogs_write},
         )
     )
     async def test_unchanged_settings(
@@ -329,7 +329,7 @@ class TestPublishDraft:
     @pytest.mark.auth(
         AuthSubjectFixture(
             subject="organization",
-            scopes={Scope.products_write, Scope.catalog_publish},
+            scopes={Scope.products_write, Scope.catalogs_write},
         )
     )
     async def test_settings_require_organizations_scope(

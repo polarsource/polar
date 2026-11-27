@@ -242,7 +242,7 @@ class TestOAuth2Register:
             assert value is not None
 
     @pytest.mark.auth
-    async def test_default_scope_excludes_catalog_publish(
+    async def test_default_scope_excludes_catalogs_write(
         self, client: AsyncClient
     ) -> None:
         response = await client.post(
@@ -256,7 +256,7 @@ class TestOAuth2Register:
         assert response.status_code == 201
         scopes = response.json()["scope"].split()
         assert Scope.products_write in scopes
-        assert Scope.catalog_publish not in scopes
+        assert Scope.catalogs_write not in scopes
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user"))
     async def test_valid_public_client(self, client: AsyncClient) -> None:

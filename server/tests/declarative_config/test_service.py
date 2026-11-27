@@ -786,7 +786,7 @@ class TestApply:
         AuthSubjectFixture(subject="organization", scopes={Scope.meters_write})
     )
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_publish_without_catalog_publish(
+    async def test_publish_without_catalogs_write(
         self,
         session: AsyncSession,
         redis: Redis,

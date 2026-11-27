@@ -128,6 +128,7 @@ from polar.organization.repository import (
     SUBSCRIPTION_CANCELLATION_STATUSES,
     OrganizationRepository,
 )
+from polar.organization.resolver import get_payload_organization
 from polar.product.guard import (
     is_custom_price,
     is_metered_price,
@@ -153,6 +154,7 @@ from .schemas import (
     SubscriptionChargePreviewProration,
     SubscriptionCreate,
     SubscriptionCreateCustomer,
+    SubscriptionCreateExternal,
     SubscriptionMeterChargePreview,
     SubscriptionPause,
     SubscriptionResume,
@@ -783,7 +785,7 @@ class SubscriptionService:
     async def create(
         self,
         session: AsyncSession,
-        subscription_create: SubscriptionCreate,
+        subscription_create: SubscriptionCreate | SubscriptionCreateExternal,
         auth_subject: AuthSubject[User | Organization],
         *,
         created_at: datetime | None = None,
@@ -792,31 +794,49 @@ class SubscriptionService:
         errors: list[ValidationError] = []
         is_trial = False
 
-        product = await product_service.get(
-            session, auth_subject, subscription_create.product_id
-        )
+        product_loc: str
+        product_input: uuid.UUID | str
+        product: Product | None
+        if isinstance(subscription_create, SubscriptionCreateExternal):
+            product_loc = "external_product_id"
+            product_input = subscription_create.external_product_id
+            organization = await get_payload_organization(
+                session, auth_subject, subscription_create
+            )
+            product_repository = ProductRepository.from_session(session)
+            product = await product_repository.get_by_external_id_and_organization(
+                product_input,
+                organization.id,
+                options=product_repository.get_eager_options(),
+            )
+        else:
+            product_loc = "product_id"
+            product_input = subscription_create.product_id
+            product = await product_service.get(session, auth_subject, product_input)
+
         if product is None:
             errors.append(
                 {
                     "type": "value_error",
-                    "loc": ("body", "product_id"),
+                    "loc": ("body", product_loc),
                     "msg": "Product does not exist.",
-                    "input": subscription_create.product_id,
+                    "input": product_input,
                 }
             )
         elif not product.is_recurring:
             errors.append(
                 {
                     "type": "value_error",
-                    "loc": ("body", "product_id"),
+                    "loc": ("body", product_loc),
                     "msg": "Product is not a recurring product.",
-                    "input": subscription_create.product_id,
+                    "input": product_input,
                 }
             )
         else:
             currency = (
-                subscription_create.currency
-                or product.organization.default_presentment_currency
+                product.organization.default_presentment_currency
+                if subscription_create.currency is MISSING
+                else subscription_create.currency
             )
             try:
                 currency_prices = PriceSet.from_product(product, currency)
@@ -824,9 +844,9 @@ class SubscriptionService:
                 errors.append(
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", product_loc),
                         "msg": f"Product has no price in {currency.upper()}.",
-                        "input": subscription_create.product_id,
+                        "input": product_input,
                     }
                 )
             else:
@@ -841,12 +861,12 @@ class SubscriptionService:
                     errors.append(
                         {
                             "type": "value_error",
-                            "loc": ("body", "product_id"),
+                            "loc": ("body", product_loc),
                             "msg": (
                                 "Product is not free. "
                                 "The customer should go through a checkout to create a paid subscription."
                             ),
-                            "input": subscription_create.product_id,
+                            "input": product_input,
                         }
                     )
 
@@ -914,8 +934,9 @@ class SubscriptionService:
         recurring_interval_count = product.recurring_interval_count
 
         currency = (
-            subscription_create.currency
-            or product.organization.default_presentment_currency
+            product.organization.default_presentment_currency
+            if subscription_create.currency is MISSING
+            else subscription_create.currency
         )
         currency_prices = PriceSet.from_product(product, currency)
 

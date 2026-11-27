@@ -8436,7 +8436,7 @@
           "public"
         ],
         "summary": "Create Subscription",
-        "description": "Create a subscription programmatically.\n\nSupports free products and paid products with a trial that does not require\nupfront payment setup. Paid subscriptions start with the product's configured\ntrial period. For other paid products, use the checkout flow.\n\nNo initial order will be created and no confirmation email will be sent.\n\n**Scopes**: `subscriptions:write`",
+        "description": "Create a subscription programmatically.\n\nSupports free products and paid products with a trial that does not require\nupfront payment setup. Paid subscriptions start with the product's configured\ntrial period. For other paid products, use the checkout flow.\n\nReference the customer by Polar ID or external ID. Reference the product by\nPolar ID, or by external ID together with an external customer ID.\n\nNo initial order will be created and no confirmation email will be sent.\n\n**Scopes**: `subscriptions:write`",
         "operationId": "subscriptions:create",
         "security": [
           {
@@ -8460,12 +8460,15 @@
           "content": {
             "application/json": {
               "schema": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "$ref": "#/components/schemas/SubscriptionCreateCustomer"
                   },
                   {
                     "$ref": "#/components/schemas/SubscriptionCreateExternalCustomer"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SubscriptionCreateExternal"
                   }
                 ],
                 "title": "Subscription Create"
@@ -76925,14 +76928,7 @@
             ]
           },
           "currency": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PresentmentCurrency"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "$ref": "#/components/schemas/PresentmentCurrency",
             "description": "The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used."
           },
           "customer_id": {
@@ -76952,6 +76948,85 @@
         ],
         "title": "SubscriptionCreateCustomer",
         "description": "Create a subscription for an existing customer."
+      },
+      "SubscriptionCreateExternal": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+          },
+          "external_customer_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "External Customer Id",
+            "description": "The ID of the customer in your system to create the subscription for. It must already exist in Polar.",
+            "examples": [
+              "usr_1337"
+            ]
+          },
+          "external_product_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "External Product Id",
+            "description": "The ID of the recurring product in your system to subscribe to. Resolves to the current version of the product. Must be a free product or have a trial with no upfront payment setup required. Otherwise, the customer should go through a checkout flow.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4",
+                "description": "The organization ID.",
+                "examples": [
+                  "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the customer and product. **Required unless your credential identifies one organization.** Omit this field when using an organization token."
+          },
+          "currency": {
+            "$ref": "#/components/schemas/PresentmentCurrency",
+            "description": "The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "external_customer_id",
+          "external_product_id"
+        ],
+        "title": "SubscriptionCreateExternal",
+        "description": "Create a subscription using external IDs for the customer and the product."
       },
       "SubscriptionCreateExternalCustomer": {
         "properties": {
@@ -76993,14 +77068,7 @@
             ]
           },
           "currency": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PresentmentCurrency"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "$ref": "#/components/schemas/PresentmentCurrency",
             "description": "The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used."
           },
           "external_customer_id": {

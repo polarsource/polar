@@ -512,6 +512,144 @@ class TestCreateSubscription:
         assert json["customer_id"] == str(customer_external_id.id)
         assert json["status"] == SubscriptionStatus.active
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_valid_with_external_ids(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        customer_external_id: Customer,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(None, "usd")],
+            external_id="free",
+            is_current=False,
+        )
+        current = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(None, "usd")],
+            external_id="free",
+        )
+
+        response = await client.post(
+            "/v1/subscriptions/",
+            json={
+                "external_product_id": "free",
+                "external_customer_id": customer_external_id.external_id,
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["product_id"] == str(current.id)
+        assert json["customer_id"] == str(customer_external_id.id)
+        assert json["status"] == SubscriptionStatus.active
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_external_ids_with_organization_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        customer_external_id: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(None, "usd")],
+            external_id="free",
+        )
+
+        response = await client.post(
+            "/v1/subscriptions/",
+            json={
+                "external_product_id": "free",
+                "external_customer_id": customer_external_id.external_id,
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.json()["product_id"] == str(product.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_unknown_external_product_id(
+        self, client: AsyncClient, customer_external_id: Customer
+    ) -> None:
+        response = await client.post(
+            "/v1/subscriptions/",
+            json={
+                "external_product_id": "unknown",
+                "external_customer_id": customer_external_id.external_id,
+            },
+        )
+
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == ["body", "external_product_id"]
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_external_product_id_and_product_id(
+        self,
+        client: AsyncClient,
+        product_recurring_free_price: Product,
+        customer_external_id: Customer,
+    ) -> None:
+        response = await client.post(
+            "/v1/subscriptions/",
+            json={
+                "product_id": str(product_recurring_free_price.id),
+                "external_product_id": "free",
+                "external_customer_id": customer_external_id.external_id,
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.api_version(V2026_10)
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_external_product_id_before_2027_01(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        customer_external_id: Customer,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(None, "usd")],
+            external_id="free",
+        )
+
+        response = await client.post(
+            "/v1/subscriptions/",
+            json={
+                "external_product_id": "free",
+                "external_customer_id": customer_external_id.external_id,
+            },
+        )
+
+        assert response.status_code == 422
+        assert {
+            "type": "missing",
+            "loc": ["body", "SubscriptionCreateExternalCustomer", "product_id"],
+        } in [
+            {"type": error["type"], "loc": error["loc"]}
+            for error in response.json()["detail"]
+        ]
+
     @pytest.mark.auth
     async def test_valid_with_metadata(
         self,

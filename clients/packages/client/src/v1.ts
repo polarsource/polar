@@ -1771,6 +1771,9 @@ export interface paths {
      *     upfront payment setup. Paid subscriptions start with the product's configured
      *     trial period. For other paid products, use the checkout flow.
      *
+     *     Reference the customer by Polar ID or external ID. Reference the product by
+     *     Polar ID, or by external ID together with an external customer ID.
+     *
      *     No initial order will be created and no confirmation email will be sent.
      *
      *     **Scopes**: `subscriptions:write`
@@ -39935,7 +39938,7 @@ export interface components {
        */
       product_id: string
       /** @description The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used. */
-      currency?: components['schemas']['PresentmentCurrency'] | null
+      currency?: components['schemas']['PresentmentCurrency']
       /**
        * Customer Id
        * Format: uuid4
@@ -39943,6 +39946,48 @@ export interface components {
        * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
        */
       customer_id: string
+    }
+    /**
+     * SubscriptionCreateExternal
+     * @description Create a subscription using external IDs for the customer and the product.
+     */
+    SubscriptionCreateExternal: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * External Customer Id
+       * @description The ID of the customer in your system to create the subscription for. It must already exist in Polar.
+       * @example usr_1337
+       */
+      external_customer_id: string
+      /**
+       * External Product Id
+       * @description The ID of the recurring product in your system to subscribe to. Resolves to the current version of the product. Must be a free product or have a trial with no upfront payment setup required. Otherwise, the customer should go through a checkout flow.
+       * @example ext_1337
+       */
+      external_product_id: string
+      /**
+       * Organization Id
+       * @description The ID of the organization owning the customer and product. **Required unless your credential identifies one organization.** Omit this field when using an organization token.
+       */
+      organization_id?: string | null
+      /** @description The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used. */
+      currency?: components['schemas']['PresentmentCurrency']
     }
     /**
      * SubscriptionCreateExternalCustomer
@@ -39974,7 +40019,7 @@ export interface components {
        */
       product_id: string
       /** @description The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used. */
-      currency?: components['schemas']['PresentmentCurrency'] | null
+      currency?: components['schemas']['PresentmentCurrency']
       /**
        * External Customer Id
        * @description The ID of the customer in your system to create the subscription for. It must already exist in Polar.
@@ -52058,6 +52103,7 @@ export interface operations {
         'application/json':
           | components['schemas']['SubscriptionCreateCustomer']
           | components['schemas']['SubscriptionCreateExternalCustomer']
+          | components['schemas']['SubscriptionCreateExternal']
       }
     }
     responses: {

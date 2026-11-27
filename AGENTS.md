@@ -222,6 +222,12 @@ just docs-openapi   # public spec + SDK samples → docs/openapi/
 
 Add new operations and webhooks to the matching groups in `docs/docs.json`; that file is not generated.
 
+`docs/sitemap.xml` overrides Mintlify's generated sitemap so that only the current API version
+(`"default": true` in `docs.json`) is listed. After adding or removing pages, changing endpoint
+summaries or tags, or switching the current version, run `pnpm sitemap` in `docs/` and commit the
+result. When the current version changes, move the `robots: noindex` entries in `seo.paths` too.
+CI checks both.
+
 ## Key Integrations
 
 - **Stripe**: payments and subscriptions. Needs API keys + webhook secret in `server/.env`.

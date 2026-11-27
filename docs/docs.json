@@ -27,7 +27,17 @@
       "og:type": "website",
       "twitter:card": "summary_large_image",
       "twitter:site": "@polar_sh"
-    }
+    },
+    "paths": [
+      {
+        "path": "api-reference/2026-04",
+        "metatags": { "robots": "noindex" }
+      },
+      {
+        "path": "api-reference/2027-01",
+        "metatags": { "robots": "noindex" }
+      }
+    ]
   },
   "integrations": {
     "ga4": {

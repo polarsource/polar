@@ -1,0 +1,43 @@
+name: Docs sitemap
+
+on:
+  pull_request:
+    paths:
+      - "docs/docs.json"
+      - "docs/openapi/**"
+      - "docs/sitemap.xml"
+      - "docs/scripts/generate-sitemap.mjs"
+      - ".github/workflows/docs_sitemap.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  sitemap:
+    name: "Sitemap: docs"
+    timeout-minutes: 5
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    defaults:
+      run:
+        working-directory: docs
+
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Check the sitemap matches docs.json and the OpenAPI specs
+        run: node scripts/generate-sitemap.mjs --check

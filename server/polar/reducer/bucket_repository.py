@@ -41,7 +41,7 @@ from polar.event.schemas import TIMESTAMP_AHEAD_TOLERANCE
 from polar.kit.db.locking import pg_advisory_xact_locks
 from polar.kit.repository import RepositoryBase
 from polar.kit.utils import utc_now
-from polar.meter.aggregation import PropertyAggregation
+from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.models import (
     Customer,
     Event,
@@ -223,6 +223,47 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         result = await self.session.execute(statement)
         return result.one()
 
+    async def aggregate_events_batch(
+        self,
+        requests: Sequence[tuple[Reducer, datetime, datetime, UUID | None, str | None]],
+    ) -> list[tuple[int, UsageSummary]]:
+        """count, sum, min and max of each request's stored and staged events
+        in one statement, tagged with the request index."""
+        statement = union_all(
+            *(
+                self._aggregate_statement(
+                    model,
+                    reducer,
+                    bucket_start,
+                    bucket_end,
+                    customer_id,
+                    external_customer_id,
+                ).add_columns(literal(index).label("index"))
+                for index, (
+                    reducer,
+                    bucket_start,
+                    bucket_end,
+                    customer_id,
+                    external_customer_id,
+                ) in enumerate(requests)
+                for model in (Event, StagedEvent)
+            )
+        )
+        return [
+            (
+                index,
+                UsageSummary(
+                    count=count,
+                    total=Decimal(total),
+                    minimum=None if minimum is None else Decimal(minimum),
+                    maximum=None if maximum is None else Decimal(maximum),
+                ),
+            )
+            for count, total, minimum, maximum, index in await self.session.execute(
+                statement
+            )
+        ]
+
     async def get_identities_with_events(
         self, reducer: Reducer, bucket_start: datetime, bucket_end: datetime
     ) -> Sequence[tuple[UUID | None, str | None]]:
@@ -271,7 +312,11 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
                 func.max(value),
             )
         else:
-            statistics = (literal(0), null(), null())
+            statistics = (
+                literal(0).cast(Numeric),
+                null().cast(Numeric),
+                null().cast(Numeric),
+            )
         return select(
             func.count().label("count"),
             statistics[0].label("sum"),
@@ -600,11 +645,12 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             )
             .render_derived("customer_meter")
         )
-        targets = (
+        resets = (
             select(
                 (customer_meter.c.ordinality - 1).label("index"),
                 customer_meter.c.customer_id,
                 customer_meter.c.external_customer_id,
+                customer_meter.c.meter_id,
                 EventRepository.from_session(self.session)
                 .get_latest_meter_reset_timestamp_statement(
                     customer_meter.c.organization_id,
@@ -612,13 +658,26 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
                     customer_meter.c.meter_id,
                 )
                 .label("since"),
+            )
+            .select_from(customer_meter)
+            # Keep the reset lookup above the MeterReducer join so Postgres
+            # runs it once per (customer, meter) rather than once per reducer.
+            .offset(0)
+            .cte("resets")
+        )
+        targets = (
+            select(
+                resets.c.index,
+                resets.c.customer_id,
+                resets.c.external_customer_id,
+                resets.c.since,
                 Reducer.id.label("reducer_id"),
                 Reducer.organization_id.label("reducer_organization_id"),
                 Reducer.kind,
                 Reducer.aggregation,
             )
-            .select_from(customer_meter)
-            .join(MeterReducer, MeterReducer.meter_id == customer_meter.c.meter_id)
+            .select_from(resets)
+            .join(MeterReducer, MeterReducer.meter_id == resets.c.meter_id)
             .join(Reducer, Reducer.id == MeterReducer.reducer_id)
             .cte("targets")
         )
@@ -704,6 +763,10 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             .select_from(targets.join(totals, true()))
             .where(
                 targets.c.kind == kind,
+                true()
+                if kind == ReducerKind.credit
+                else targets.c.aggregation["func"].astext
+                != AggregationFunction.unique.value,
                 targets.c.external_customer_id.is_not(None)
                 if by_external_id
                 else true(),

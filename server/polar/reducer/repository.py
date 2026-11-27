@@ -25,6 +25,11 @@ class ReducerRepository(RepositoryBase[Reducer]):
         )
         return (await self.session.execute(statement)).scalar_one()
 
+    async def get_by_ids(self, ids: Collection[UUID]) -> dict[UUID, Reducer]:
+        statement = self.get_base_statement().where(Reducer.id.in_(ids))
+        reducers = await self.get_all(statement)
+        return {reducer.id: reducer for reducer in reducers}
+
     async def get_by_meter_and_kind(
         self, meter_id: UUID, kind: ReducerKind
     ) -> Reducer | None:

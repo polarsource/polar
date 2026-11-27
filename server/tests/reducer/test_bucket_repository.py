@@ -13,6 +13,7 @@ from polar.reducer.bucket_repository import ReducerBucketRepository
 from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import REDUCER_BUCKET_SIZE
 from polar.reducer.service import reducer as reducer_service
+from polar.reducer.types import UsageSummary
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
@@ -85,6 +86,59 @@ class TestAggregateEvents:
         ).aggregate_events(reducer, BUCKET_START, BUCKET_END, customer.id, None)
 
         assert count == 1
+
+
+@pytest.mark.anyio
+class TestAggregateEventsBatch:
+    async def test_returns_stored_and_staged_summaries_per_request(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+        meter: Meter,
+    ) -> None:
+        await reducer_service.sync_meter(session, meter)
+        reducer = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            meter.id, ReducerKind.usage
+        )
+        assert reducer is not None
+        in_range = BUCKET_START + timedelta(minutes=1)
+        await create_event(
+            save_fixture,
+            organization=organization,
+            timestamp=in_range,
+            ingested_at=in_range,
+            customer=customer,
+        )
+        await save_fixture(
+            StagedEvent(
+                name=METER_TEST_EVENT,
+                source=EventSource.user,
+                timestamp=in_range,
+                ingested_at=in_range,
+                organization_id=organization.id,
+                customer_id=customer.id,
+                user_metadata={},
+            )
+        )
+
+        summaries = await ReducerBucketRepository.from_session(
+            session
+        ).aggregate_events_batch(
+            [
+                (reducer, BUCKET_START, BUCKET_END, customer.id, None),
+                (reducer, BUCKET_START, BUCKET_END, customer_second.id, None),
+            ]
+        )
+
+        assert summaries == [
+            (0, UsageSummary(count=1, total=Decimal(0), minimum=None, maximum=None)),
+            (0, UsageSummary(count=1, total=Decimal(0), minimum=None, maximum=None)),
+            (1, UsageSummary(count=0, total=Decimal(0), minimum=None, maximum=None)),
+            (1, UsageSummary(count=0, total=Decimal(0), minimum=None, maximum=None)),
+        ]
 
 
 @pytest.mark.anyio

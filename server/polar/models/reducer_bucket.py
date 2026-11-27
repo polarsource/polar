@@ -46,6 +46,15 @@ class ReducerBucket(RecordModel):
             "bucket_end",
             postgresql_where=text("sealed_at IS NULL"),
         ),
+        Index(
+            "ix_reducer_buckets_identity_bucket_start_totals",
+            "organization_id",
+            "reducer_id",
+            "customer_id",
+            "external_customer_id",
+            "bucket_start",
+            postgresql_include=["count", "sum", "min", "max"],
+        ),
         UniqueConstraint(
             "organization_id",
             "reducer_id",

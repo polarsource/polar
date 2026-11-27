@@ -150,9 +150,29 @@ export const isEmpty = (document: ConfigDocument) =>
     (section) => !Array.isArray(section) || section.length === 0,
   )
 
+const pathOf = (location: string) =>
+  [...location.matchAll(/\["?([^"\]]+)"?\]/g)].map(([, key]) => key).join('.')
+
+const reason = (error: BillingConfigError | Error) => {
+  const [problem = '', location = ''] = error.message.split('\n')
+  const path = pathOf(location)
+  if (path === '') return problem
+  return problem === 'Expected no excess property'
+    ? `Not supported yet: ${path}`
+    : `${problem} at ${path}`
+}
+
 export const unwritable =
   (title: string) => (error: BillingConfigError | Error) =>
     new BillingConfigError({
-      message: `This config cannot be written as ${title} yet`,
-      hint: `Pass --format json instead. ${error.message.split('\n').slice(0, 2).join(' ')}`,
+      message: `This version of the CLI can't write your catalog as ${title}`,
+      hint: reason(error),
+    })
+
+export const advised =
+  (advice: string) =>
+  ({ message, hint }: BillingConfigError) =>
+    new BillingConfigError({
+      message,
+      hint: [advice, hint].filter(Boolean).join(' '),
     })

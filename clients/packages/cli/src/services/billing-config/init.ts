@@ -24,6 +24,7 @@ import {
   type Language,
   languageFor,
   LANGUAGES,
+  advised,
   projectRootFor,
   projectsAt,
   writableLanguageOf,
@@ -294,7 +295,16 @@ export const init =
       if (keyed.length > 0) {
         exported = yield* exportConfig(clients, organization)
       }
-      yield* writeConfig(fs, path, yield* language.render(exported.config))
+      const content = yield* language
+        .render(exported.config)
+        .pipe(
+          Effect.mapError(
+            advised(
+              'Run polar update and try again, or pass --format json to create a JSON config instead.',
+            ),
+          ),
+        )
+      yield* writeConfig(fs, path, content)
       return {
         file: display(path),
         format: language.format,

@@ -5,6 +5,7 @@ import type { Clients } from '@/services/billing-config/api'
 import { exportConfig, writeConfig } from '@/services/billing-config/init'
 import {
   LANGUAGES,
+  advised,
   writableLanguageOf,
 } from '@/services/billing-config/languages'
 import { findConfigFile } from '@/services/billing-config/load'
@@ -41,7 +42,9 @@ export const reset =
       }
       const { draft } = yield* catalogs(clients)(organization)
       const exported = yield* exportConfig(clients, organization, draft?.id)
-      const content = yield* language.render(exported.config)
+      const content = yield* language
+        .render(exported.config)
+        .pipe(Effect.mapError(advised('Run polar update and try again.')))
       const pending: ResetPending = {
         file: path,
         source: draft === null ? 'live' : 'draft',

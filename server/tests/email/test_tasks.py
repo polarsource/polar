@@ -1,4 +1,5 @@
 import contextlib
+import json
 from collections.abc import AsyncIterator
 from datetime import timedelta
 
@@ -7,11 +8,14 @@ from pytest_mock import MockerFixture
 from sqlalchemy import select
 
 from polar.config import Environment, settings
+from polar.email.react import serialize_email_props
 from polar.email.repository import EmailLogRepository
+from polar.email.schemas import SeatInvitationEmail, SeatInvitationProps
 from polar.email.sender import SendEmailError
 from polar.email.tasks import email_log_prune, email_send
 from polar.enums import EmailSender
 from polar.kit.utils import utc_now
+from polar.models import Organization
 from polar.models.email_log import EmailLog, EmailLogStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -153,6 +157,86 @@ class TestEmailSend:
         assert log.email_template == "order_confirmation"
         assert str(log.organization_id) == org_id
         assert log.email_props["organization"]["name"] == "Test Org"
+
+    async def test_seat_invitation_log_has_no_raw_token(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.email.tasks.email_sender.send", return_value=None)
+        render = mocker.patch(
+            "polar.email.tasks.render_from_json", return_value="<p>Rendered</p>"
+        )
+        token = "polar_cst_raw_invitation_token"
+        email = SeatInvitationEmail(
+            props=SeatInvitationProps.model_validate(
+                {
+                    "email": "member@example.com",
+                    "organization": organization,
+                    "product_name": "Team plan",
+                    "billing_manager_email": "billing@example.com",
+                    "claim_url": f"https://polar.sh/acme/portal/claim?token={token}",
+                }
+            )
+        )
+
+        await email_send(
+            to_email_addr="member@example.com",
+            subject="You've been invited",
+            html_content=None,
+            from_name="Polar",
+            from_email_addr="noreply@polar.sh",
+            email_headers=None,
+            reply_to_name=None,
+            reply_to_email_addr=None,
+            template=email.template,
+            props_json=serialize_email_props(email),
+        )
+
+        assert token in render.call_args.args[1]
+        log = (await session.execute(select(EmailLog))).scalar_one()
+        assert token not in json.dumps(log.email_props)
+        assert log.email_props["product_name"] == "Team plan"
+
+    @pytest.mark.parametrize(
+        ("template", "field"),
+        [
+            ("login_code", "code"),
+            ("customer_session_code", "code"),
+            ("organization_email_verification", "code"),
+            ("email_update", "url"),
+            ("customer_email_update_verification", "url"),
+        ],
+    )
+    async def test_redacts_secret_props(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        template: str,
+        field: str,
+    ) -> None:
+        mocker.patch("polar.email.tasks.email_sender.send", return_value=None)
+        mocker.patch(
+            "polar.email.tasks.render_from_json", return_value="<p>Rendered</p>"
+        )
+
+        await email_send(
+            to_email_addr="test@example.com",
+            subject="Test Subject",
+            html_content=None,
+            from_name="Polar",
+            from_email_addr="noreply@polar.sh",
+            email_headers=None,
+            reply_to_name=None,
+            reply_to_email_addr=None,
+            template=template,
+            props_json=json.dumps({"email": "test@example.com", field: "SECRET"}),
+        )
+
+        log = (await session.execute(select(EmailLog))).scalar_one()
+        assert "SECRET" not in json.dumps(log.email_props)
+        assert log.email_props["email"] == "test@example.com"
 
     async def test_send_includes_category_and_tenant_tags(
         self,

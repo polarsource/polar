@@ -13,6 +13,7 @@ from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
 
 from .react import render_from_json
 from .repository import EmailLogRepository, extract_organization_id
+from .schemas import EmailTemplate
 from .sender import Attachment, email_sender
 
 log: Logger = structlog.get_logger()
@@ -26,6 +27,26 @@ def _build_tags(template: str | None, email_props: dict[str, Any]) -> dict[str, 
     if organization_id is not None:
         tags["tenant_id"] = str(organization_id)
     return tags
+
+
+SECRET_PROPS: dict[str, tuple[str, ...]] = {
+    EmailTemplate.login_code: ("code",),
+    EmailTemplate.customer_session_code: ("code",),
+    EmailTemplate.organization_email_verification: ("code",),
+    EmailTemplate.email_update: ("url",),
+    EmailTemplate.customer_email_update_verification: ("url",),
+    EmailTemplate.seat_invitation: ("claim_url",),
+}
+
+
+def _redact_secret_props(
+    template: str | None, email_props: dict[str, Any]
+) -> dict[str, Any]:
+    secret_fields = SECRET_PROPS.get(template or "", ())
+    return {
+        key: "[Redacted]" if key in secret_fields else value
+        for key, value in email_props.items()
+    }
 
 
 UNSUPPRESS_WINDOW = timedelta(days=30)
@@ -115,7 +136,7 @@ async def email_send(
                     from_name=from_name,
                     subject=subject,
                     email_template=template,
-                    email_props=email_props,
+                    email_props=_redact_secret_props(template, email_props),
                     error=error,
                     deduplication_key=deduplication_key,
                 )

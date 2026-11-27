@@ -1,12 +1,8 @@
 import threading
-import time
 
 import logfire
 from apscheduler.schedulers.base import STATE_STOPPED
 from apscheduler.schedulers.blocking import BlockingScheduler
-from sqlalchemy import text
-from sqlalchemy.exc import SQLAlchemyError
-from starlette.exceptions import HTTPException
 
 from polar import tasks
 from polar.logfire import configure_logfire
@@ -21,17 +17,20 @@ from polar.subscription.scheduler import (
 
 from ._broker import scheduler_middleware
 from ._cron import CronJobStore
-from ._health import _run_exposition_server, set_heartbeat_checker
+from ._health import (
+    _run_exposition_server,
+    is_scheduler_heartbeat_fresh,
+    set_heartbeat_checker,
+    touch_scheduler_heartbeat,
+)
 
 configure_sentry()
 configure_logfire("worker")
 configure_logging(logfire=True)
 
-HEARTBEAT_STALENESS_SECONDS = 60
 # Cap the idle sleep below the staleness threshold so an idle scheduler keeps
 # refreshing its heartbeat instead of reading as unhealthy.
 HEARTBEAT_INTERVAL_SECONDS = 30
-_last_heartbeat: float = 0.0
 
 
 def _bounded_wait_seconds(wait_seconds: float | None) -> float:
@@ -42,43 +41,28 @@ def _bounded_wait_seconds(wait_seconds: float | None) -> float:
 
 class LogfireBlockingScheduler(BlockingScheduler):
     def _main_loop(self) -> None:
-        global _last_heartbeat
         wait_seconds: float | None = 1
         while self.state != STATE_STOPPED:
             with logfire.span("Scheduler wakeup"):
                 self._event.wait(_bounded_wait_seconds(wait_seconds))
                 self._event.clear()
                 wait_seconds = self._process_jobs()
-                _last_heartbeat = time.monotonic()
+                touch_scheduler_heartbeat()
 
 
-def _is_scheduler_healthy() -> bool:
-    if _last_heartbeat == 0.0:
-        return True
-    return (time.monotonic() - _last_heartbeat) < HEARTBEAT_STALENESS_SECONDS
+def start(*, serve_health: bool = False) -> None:
+    touch_scheduler_heartbeat()
+    engine = create_sync_engine("scheduler")
 
-
-def start() -> None:
-    health_engine = create_sync_engine("scheduler")
-
-    def check_health() -> bool:
-        try:
-            with health_engine.connect() as connection:
-                connection.execute(text("SELECT 1"))
-        except SQLAlchemyError as e:
-            raise HTTPException(
-                status_code=503, detail="Database is not available"
-            ) from e
-        return _is_scheduler_healthy()
-
-    set_heartbeat_checker(check_health)
-    health_thread = threading.Thread(target=_run_exposition_server, daemon=True)
-    health_thread.start()
+    if serve_health:
+        set_heartbeat_checker(is_scheduler_heartbeat_fresh)
+        health_thread = threading.Thread(target=_run_exposition_server, daemon=True)
+        health_thread.start()
 
     scheduler = LogfireBlockingScheduler()
 
     scheduler.add_jobstore(
-        CronJobStore(health_engine, scheduler_middleware.cron_triggers), "cron"
+        CronJobStore(engine, scheduler_middleware.cron_triggers), "cron"
     )
     scheduler.add_jobstore(SubscriptionJobStore(), "subscription")
     scheduler.add_jobstore(SubscriptionResumeJobStore(), "subscription_resume")
@@ -89,11 +73,11 @@ def start() -> None:
     except KeyboardInterrupt:
         scheduler.shutdown()
     finally:
-        health_engine.dispose()
+        engine.dispose()
 
 
 __all__ = ["start", "tasks"]
 
 
 if __name__ == "__main__":
-    start()
+    start(serve_health=True)

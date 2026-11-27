@@ -1,0 +1,29 @@
+sdk/generator/typescript/template/src/base.test.ts
+  s_7671299f8b7483::t_6f7fed952d5e9d 488-492,495,499-503,505-506,529,535-537
+sdk/generator/typescript/template/src/metering/client.ts
+  s_7671299f8b7483::t_a5d3ab24bf6679 43,45,134,191-195,208,212-214,218,220-224,239-240,249,256,258-260,286
+sdk/generator/typescript/template/README.md
+  s_7671299f8b7483::t_a5d3ab24bf6679 222-223
+sdk/typescript/README.md
+  s_7671299f8b7483::t_ec1eee1d4387ce 222-223
+sdk/typescript/src/base.test.ts
+  s_7671299f8b7483::t_ebeab9226e0c2d 467-471,474,478-482,484-485,508,514-516
+sdk/typescript/src/metering/client.ts
+  s_7671299f8b7483::t_3d9580cb2e079b 44,46,136,193-197,211,215-217,221,223-227,242-243,252,260,262-267,293
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ec967a56868b29c57fe8353bb254d255425f660c",
+  "prompts": {},
+  "sessions": {
+    "s_7671299f8b7483": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21d18-2190-7bb2-991b-09c4eaafbef3",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

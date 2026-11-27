@@ -485,7 +485,7 @@ test("warms the actor's customer without starting the delivery queue", async () 
   }
 });
 
-test("shares an Outpost startup failure and retries on the next operation", async () => {
+test("reads Polar's API during an Outpost startup failure and retries on the next operation", async () => {
   const failure = new UnavailableRedisError();
   const startOutpost = vi.spyOn(Outpost.prototype, "start")
     .mockRejectedValueOnce(failure)
@@ -495,7 +495,7 @@ test("shares an Outpost startup failure and retries on the next operation", asyn
   vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
   const local = { meter_id: "meter", consumed_units: 2, credited_units: 3, balance: 1 };
   vi.spyOn(Outpost.prototype, "meter").mockResolvedValue(local);
-  const fetch = vi.spyOn(globalThis, "fetch");
+  const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response('{"items":[]}'));
   const queue = { start: vi.fn(), enqueue: vi.fn(), close: vi.fn(), flush: vi.fn() };
   const polar = createPolar({
     accessToken: "token",
@@ -505,14 +505,14 @@ test("shares an Outpost startup failure and retries on the next operation", asyn
   try {
     const actor = polar.actor({ external_customer_id: "alice" });
     await Promise.all([
-      expect(actor.meter("meter")).rejects.toBe(failure),
-      expect(actor.warmup()).rejects.toBe(failure),
+      expect(actor.meter("meter")).resolves.toBeNull(),
+      expect(actor.warmup()).resolves.toBeUndefined(),
       expect(polar.track(event)).rejects.toBe(failure),
       expect(polar.flush()).rejects.toBe(failure),
     ]);
     expect(startOutpost).toHaveBeenCalledOnce();
     expect(queue.start).not.toHaveBeenCalled();
-    expect(fetch).not.toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledOnce();
 
     await expect(actor.meter("meter")).resolves.toEqual(local);
     await polar.flush();
@@ -562,6 +562,45 @@ test("closes Outpost on a queue startup failure and retries both on the next rea
     await polar.close();
   }
   expect(closeOutpost).toHaveBeenCalledTimes(2);
+});
+
+test("reads Polar's API while the queue cannot reach Redis, and locally once it can", async () => {
+  vi.spyOn(Outpost.prototype, "start").mockImplementation(async function (this: Outpost) {
+    return this;
+  });
+  vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
+  vi.spyOn(Outpost.prototype, "actor").mockResolvedValue(undefined);
+  const local = { meter_id: "meter", consumed_units: 2, credited_units: 3, balance: 1 };
+  vi.spyOn(Outpost.prototype, "meter").mockResolvedValue(local);
+  const refused = Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:6379"), {
+    code: "ECONNREFUSED",
+  });
+  const queue = {
+    start: vi.fn().mockRejectedValueOnce(refused).mockRejectedValueOnce(refused).mockResolvedValue(undefined),
+    enqueue: vi.fn(),
+    flush: vi.fn(),
+    close: vi.fn(),
+  };
+  const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response('{"items":[]}'));
+  const polar = createPolar({
+    accessToken: "token",
+    eventQueue: queue,
+    outpost: outpost({ redis: "redis://localhost" }),
+  });
+  try {
+    await expect(polar.track(event)).rejects.toBe(refused);
+    // Redis is still down: the read goes to Polar, the warmup does nothing.
+    await Promise.all([
+      expect(polar.meter("meter", event)).resolves.toBeNull(),
+      expect(polar.actor(event).warmup()).resolves.toBeUndefined(),
+    ]);
+    expect(fetch).toHaveBeenCalledOnce();
+    await expect(polar.meter("meter", event)).resolves.toEqual(local);
+    expect(queue.start).toHaveBeenCalledTimes(3);
+    expect(fetch).toHaveBeenCalledOnce();
+  } finally {
+    await polar.close();
+  }
 });
 
 test("startup that outlives a close deadline cleans up when it eventually completes", async () => {

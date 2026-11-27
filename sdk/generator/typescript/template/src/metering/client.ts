@@ -1,9 +1,8 @@
-import type { ClientBase } from "../base";
-import { PolarOutpostError } from "../outpost/errors";
+import { PolarError, type ClientBase } from "../base";
+import { isRedisConnectionError } from "../outpost/errors";
 import { validateActor, type Actor, type ActorInput } from "./actor";
 import {
   MeteringTimeoutError,
-  UnknownMeterError,
   deliveryTimeout,
   waitForDelivery,
   type DeliveryOptions,
@@ -26,6 +25,11 @@ interface OutpostBackend {
   onRejected(events: EventInput[], reason: DropReason): Promise<void>;
   redisForUrl(url: string | undefined): object | undefined;
 }
+
+// What Outpost or its queue throws while Redis or Polar is out of reach, startup included: a read
+// goes to Polar's API instead, and a warmup does nothing.
+const isUnavailable = (error: unknown): boolean =>
+  error instanceof PolarError || isRedisConnectionError(error);
 
 export type OutpostFactory = (client: ClientBase) => OutpostBackend;
 
@@ -131,12 +135,11 @@ export class PolarEventClient {
     validateActor(input);
     this.begin();
     try {
-      const outpost = await this.startOutpostForRead();
       try {
+        const outpost = await this.startOutpostForRead();
         if (outpost) return await outpost.meter({ ...input, meter_id: meterId });
       } catch (error) {
-        if (!(error instanceof UnknownMeterError || error instanceof PolarOutpostError))
-          throw error;
+        if (!isUnavailable(error)) throw error;
       }
       const request = this.client.buildRequest(
         "GET",
@@ -187,11 +190,11 @@ export class PolarEventClient {
   private async warmup(customer: MeterInput): Promise<void> {
     this.begin();
     try {
-      const outpost = await this.startOutpostForRead();
       try {
+        const outpost = await this.startOutpostForRead();
         await outpost?.actor(customer);
       } catch (error) {
-        if (!(error instanceof PolarOutpostError)) throw error;
+        if (!isUnavailable(error)) throw error;
       }
     } finally {
       if (--this.activeOperations === 0) this.onDrained?.();

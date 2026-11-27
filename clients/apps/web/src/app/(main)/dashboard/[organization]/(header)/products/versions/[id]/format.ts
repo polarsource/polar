@@ -24,6 +24,7 @@ type Bounds = { ge?: number; le?: number }
 type Settings = {
   payments: { currency: string; tax: schemas['TaxBehaviorOption'] }
   subscriptions: schemas['ConfigSettingsSubscriptionsRead']
+  customer_portal: schemas['ConfigSettingsCustomerPortalRead']
 }
 
 export const plural = (count: number, noun: string) =>
@@ -125,7 +126,24 @@ export const customFieldFields = ({
 
 const yesNo = (value: boolean) => (value ? 'Yes' : 'No')
 
-export const settingsFields = ({ payments, subscriptions }: Settings) => ({
+export const customerPortalSettings = ({
+  usage,
+  subscription,
+  customer,
+}: schemas['OrganizationCustomerPortalSettings']): Settings['customer_portal'] => ({
+  allow_plan_changes: subscription.update_plan,
+  allow_unit_changes: subscription.update_units ?? false,
+  allow_seat_management: subscription.update_seats,
+  allow_pausing: subscription.pause ?? false,
+  allow_email_changes: customer?.allow_email_change ?? false,
+  show_metered_usage: usage.show,
+})
+
+export const settingsFields = ({
+  payments,
+  subscriptions,
+  customer_portal,
+}: Settings) => ({
   default_payment_currency: payments.currency.toUpperCase(),
   default_tax_behavior: taxBehaviorOptionDisplayNames[payments.tax],
   allow_multiple_subscriptions: yesNo(
@@ -138,6 +156,12 @@ export const settingsFields = ({ payments, subscriptions }: Settings) => ({
     BENEFIT_REVOCATION_GRACE_PERIOD_LABELS[
       subscriptions.benefit_revocation_grace_period
     ] ?? `After ${subscriptions.benefit_revocation_grace_period} Days`,
+  allow_plan_changes: yesNo(customer_portal.allow_plan_changes),
+  allow_unit_changes: yesNo(customer_portal.allow_unit_changes),
+  allow_seat_management: yesNo(customer_portal.allow_seat_management),
+  allow_pausing: yesNo(customer_portal.allow_pausing),
+  allow_email_changes: yesNo(customer_portal.allow_email_changes),
+  show_metered_usage: yesNo(customer_portal.show_metered_usage),
 })
 
 const listFieldLabels: Record<string, string> = {

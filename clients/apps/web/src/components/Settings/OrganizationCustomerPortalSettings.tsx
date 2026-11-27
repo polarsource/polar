@@ -86,7 +86,7 @@ const OrganizationCustomerPortalSettings: React.FC<
           <SettingsGroup title="Subscriptions">
             <SettingsGroupItem
               layout="inline"
-              title="Enable subscription plan changes"
+              title="Allow plan changes"
               description="Allow customers to change their subscription plan from the portal."
             >
               <FormField
@@ -108,7 +108,7 @@ const OrganizationCustomerPortalSettings: React.FC<
             </SettingsGroupItem>
             <SettingsGroupItem
               layout="inline"
-              title="Enable subscription unit changes"
+              title="Allow unit changes"
               description="Allow customers to change the number of units on their subscription from the portal."
             >
               <FormField
@@ -130,7 +130,7 @@ const OrganizationCustomerPortalSettings: React.FC<
             </SettingsGroupItem>
             <SettingsGroupItem
               layout="inline"
-              title="Enable subscription seat management"
+              title="Allow seat management"
               description="Allow customers to assign and manage seats for their subscriptions."
             >
               <FormField
@@ -152,7 +152,7 @@ const OrganizationCustomerPortalSettings: React.FC<
             </SettingsGroupItem>
             <SettingsGroupItem
               layout="inline"
-              title="Enable subscription pausing"
+              title="Allow pausing"
               description="Allow customers to pause and resume their subscriptions from the portal."
             >
               <FormField

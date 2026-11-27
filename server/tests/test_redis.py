@@ -77,6 +77,30 @@ class TestFailoverRedis:
 
         pool.disconnect.assert_awaited_once_with(inuse_connections=False)
 
+    async def test_pipeline_watch_readonly_drops_idle_connections(self) -> None:
+        client, pool = create_async_client()
+        pipeline = client.pipeline()
+        assert isinstance(pipeline, FailoverPipeline)
+        pipeline.watching = False
+
+        await pipeline._disconnect_reset_raise_on_watching(
+            create_connection(AsyncMock), ReadOnlyError("READONLY"), **FAILURE
+        )
+
+        pool.disconnect.assert_awaited_once_with(inuse_connections=False)
+
+    async def test_pipeline_watch_other_errors_leave_pool_alone(self) -> None:
+        client, pool = create_async_client()
+        pipeline = client.pipeline()
+        assert isinstance(pipeline, FailoverPipeline)
+        pipeline.watching = False
+
+        await pipeline._disconnect_reset_raise_on_watching(
+            create_connection(AsyncMock), ConnectionError("connection lost"), **FAILURE
+        )
+
+        pool.disconnect.assert_not_awaited()
+
 
 class TestSyncFailoverRedis:
     def test_readonly_drops_idle_connections(self) -> None:
@@ -112,3 +136,27 @@ class TestSyncFailoverRedis:
         )
 
         pool.disconnect.assert_called_once_with(inuse_connections=False)
+
+    def test_pipeline_watch_readonly_drops_idle_connections(self) -> None:
+        client, pool = create_sync_client()
+        pipeline = client.pipeline()
+        assert isinstance(pipeline, SyncFailoverPipeline)
+        pipeline.watching = False
+
+        pipeline._disconnect_reset_raise_on_watching(
+            create_connection(MagicMock), ReadOnlyError("READONLY"), **FAILURE
+        )
+
+        pool.disconnect.assert_called_once_with(inuse_connections=False)
+
+    def test_pipeline_watch_other_errors_leave_pool_alone(self) -> None:
+        client, pool = create_sync_client()
+        pipeline = client.pipeline()
+        assert isinstance(pipeline, SyncFailoverPipeline)
+        pipeline.watching = False
+
+        pipeline._disconnect_reset_raise_on_watching(
+            create_connection(MagicMock), ConnectionError("connection lost"), **FAILURE
+        )
+
+        pool.disconnect.assert_not_called()

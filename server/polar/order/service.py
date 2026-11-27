@@ -304,8 +304,7 @@ class PaymentError(OrderError):
 class PaymentActionRequired(OrderError):
     """
     Off-session charge needs customer interaction (typically 3DS / SCA).
-    The merchant should redirect the customer to the portal to reauthenticate
-    the card.
+    The customer should authenticate the payment in the customer portal.
     """
 
     def __init__(self, order: Order, payment_intent_id: str) -> None:
@@ -1634,18 +1633,6 @@ class OrderService:
             )
             order = await self.handle_payment(session, order, payment)
 
-        if order.paid:
-            # Draft orders reject seat-based and recurring products, so benefits
-            # are granted as soon as the order is paid, like a one-time checkout.
-            enqueue_job(
-                "benefit.enqueue_benefits_grants",
-                task="grant",
-                customer_id=order.customer_id,
-                product_id=order.product_id,
-                order_id=order.id,
-            )
-            enqueue_job("order.admin_notification", order.id)
-
         return order
 
     def _get_intent_charge(
@@ -2288,6 +2275,16 @@ class OrderService:
                     )
                     if payment_mode == PaymentMode.sync:
                         await self._mark_intent_as_failed_sync(e)
+                        # Off-session, Stripe declines a 3DS challenge instead of
+                        # returning `requires_action`
+                        declined_intent = getattr(e.error, "payment_intent", None)
+                        if (
+                            e.code == "authentication_required"
+                            and declined_intent is not None
+                        ):
+                            raise PaymentActionRequired(
+                                order, declined_intent.id
+                            ) from e
                     raise PaymentFailed(PaymentFailedReason.card_error) from e
                 except stripe_lib.InvalidRequestError as e:
                     error = e.error
@@ -3409,6 +3406,19 @@ class OrderService:
                 metadata=metadata,
             ),
         )
+
+        # Paid by the merchant's off-session charge, or by the customer in the portal.
+        # Draft orders reject seat-based and recurring products, so benefits are
+        # granted as soon as the order is paid, like a one-time checkout.
+        if order.is_off_session_purchase:
+            enqueue_job(
+                "benefit.enqueue_benefits_grants",
+                task="grant",
+                customer_id=order.customer_id,
+                product_id=order.product_id,
+                order_id=order.id,
+            )
+            enqueue_job("order.admin_notification", order.id)
 
         if order.subscription_id is not None and order.billing_reason in (
             OrderBillingReasonInternal.subscription_cycle,

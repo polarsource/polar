@@ -395,6 +395,41 @@ class TestPay:
         assert draft_order.status == OrderStatus.draft
         submit.assert_not_awaited()
 
+    async def test_submits_off_session_draft(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        product.is_tax_applicable = False
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+        submit = mocker.patch(
+            "polar.order.service.OrderService.handle_on_session_payment",
+            return_value=order,
+        )
+        payment_method_id = uuid4()
+        order_pay = CustomerOrderPayPaymentMethod(
+            billing_address=AddressInput.model_validate({"country": "FR"}),
+            payment_method_id=payment_method_id,
+        )
+
+        await customer_order_service.pay(session, order, order_pay)
+
+        submit.assert_awaited_once_with(
+            session,
+            order,
+            payment_method_id=payment_method_id,
+            intent_type="payment",
+        )
+
     async def test_rejects_pending_order_of_ended_subscription(
         self,
         session: AsyncSession,

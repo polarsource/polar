@@ -1,0 +1,26 @@
+server/polar/backoffice/products/endpoints.py
+  s_7a0adee3c00fc0::t_3bbe46a9067323 373-375
+  s_7a0adee3c00fc0::t_689bfaeacb691a 4,13,25,27-28,30,36-39,212-220,238-239
+  s_7a0adee3c00fc0::t_12cb7245f9f15b 347-372,376-388
+  s_7a0adee3c00fc0::t_2d842231202bfb 240
+server/polar/tax/calculation/base.py
+  s_7a0adee3c00fc0::t_2dd76d4c8adcb7 82,88-89,95-96
+server/tests/tax/calculation/test_numeral.py
+  s_7a0adee3c00fc0::t_a2d8fdc6ea6ebe 149,188,209-213
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1fd265049808ad093f81fad2cdaa85ba954f9a6d",
+  "prompts": {},
+  "sessions": {
+    "s_7a0adee3c00fc0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21940-0dc0-76e1-90c6-8fc785aaa6bd",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

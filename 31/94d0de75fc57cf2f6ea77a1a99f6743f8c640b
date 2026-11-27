@@ -1,0 +1,73 @@
+sdk/generator/python/template/tests/metering/outbox/test_redis.py
+  s_868513325afaca::t_6d7d2fb2612a24 1-107,110,113
+sdk/generator/typescript/template/tsdown.config.ts
+  s_868513325afaca::t_6d7d2fb2612a24 7
+sdk/generator/generator/emitter.py
+  s_868513325afaca::t_6d7d2fb2612a24 15,19,21,31-40,117-118
+sdk/generator/typescript/template/src/metering/outbox/redis.ts
+  s_868513325afaca::t_6d7d2fb2612a24 1-385
+sdk/generator/python/template/polar/metering/outbox/__init__.py
+  s_868513325afaca::t_6d7d2fb2612a24 1-19
+sdk/generator/typescript/template/src/outpost/reducer.ts
+  s_868513325afaca::t_6d7d2fb2612a24 57
+sdk/generator/python/emitter.py
+  s_868513325afaca::t_6d7d2fb2612a24 134,144-145,159-160
+sdk/generator/typescript/template/src/outpost/client.ts
+  s_868513325afaca::t_6d7d2fb2612a24 15,20-21,75-96,351,398,425,432-435,447,462,480,542,612,891,973,1083,1105
+sdk/generator/redis/constants.toml
+  s_868513325afaca::t_6d7d2fb2612a24 1-74
+sdk/generator/python/template/polar/_redis.py
+  s_868513325afaca::t_6d7d2fb2612a24 1-102
+sdk/generator/tests/test_outpost_scripts.py
+  s_868513325afaca::t_6d7d2fb2612a24 2,7-9,12-25,34,36,39-65
+sdk/generator/typescript/template/src/outpost/confirm.bench.ts
+  s_868513325afaca::t_6d7d2fb2612a24 13
+sdk/generator/python/template/polar/outpost/reducer.py
+  s_868513325afaca::t_6d7d2fb2612a24 91
+sdk/generator/typescript/template/src/metering/outbox/index.ts
+  s_868513325afaca::t_6d7d2fb2612a24 1-9
+sdk/generator/python/template/polar/metering/outbox/redis.py
+  s_868513325afaca::t_6d7d2fb2612a24 1-515
+sdk/generator/python/template/polar/outpost/client.py
+  s_868513325afaca::t_6d7d2fb2612a24 23,36-44,55-63,212,214-234,237,242,247,252,257,260,407,474,485-493,498,514,551,596-597,643-644,1076,1083,1105,1185-1186,1188,1191,1193-1195,1342,1354,1366,1462,1704,1731
+sdk/generator/typescript/template/src/metering/index.ts
+  s_868513325afaca::t_6d7d2fb2612a24 21
+sdk/generator/typescript/template/src/outpost/client.test.ts
+  s_868513325afaca::t_6d7d2fb2612a24 18-19,1398,1401
+sdk/generator/typescript/template/src/metering/outbox/redis.test.ts
+  s_868513325afaca::t_6d7d2fb2612a24 1-47
+sdk/generator/typescript/template/src/outpost/seal-confirmed.bench.ts
+  s_868513325afaca::t_6d7d2fb2612a24 15-16
+sdk/generator/python/template/tests/outpost/test_client.py
+  s_868513325afaca::t_6d7d2fb2612a24 40-41,99,222-225,227-229,2664,2684
+sdk/generator/typescript/emitter.py
+  s_868513325afaca::t_6d7d2fb2612a24 100-103,134
+sdk/generator/python/template/polar/outpost/__init__.py
+  s_868513325afaca::t_6d7d2fb2612a24 1,3
+sdk/generator/typescript/template/src/portability.test.ts
+  s_868513325afaca::t_6d7d2fb2612a24 6,11-12
+sdk/generator/tests/python/test_emitter.py
+  s_868513325afaca::t_6d7d2fb2612a24 5,65,71-77
+sdk/generator/typescript/template/package.json
+  s_868513325afaca::t_6d7d2fb2612a24 22-25
+sdk/generator/typescript/template/src/outpost/scripts.ts
+  s_868513325afaca::t_6d7d2fb2612a24 2,5,8,11,14,17
+sdk/generator/typescript/template/src/redis.ts
+  s_868513325afaca::t_6d7d2fb2612a24 1-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3194d0de75fc57cf2f6ea77a1a99f6743f8c640b",
+  "prompts": {},
+  "sessions": {
+    "s_868513325afaca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2138b-136c-7cf0-b8fd-2500c8a89c9c",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

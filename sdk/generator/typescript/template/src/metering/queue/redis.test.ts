@@ -71,6 +71,23 @@ it.each([
   }
 });
 
+// A serverless instance frozen while Redis dropped its connection wakes up before it sees the close.
+it("queues an event on a connection Redis closed while the instance slept", async () => {
+  const server = await startRedisServer();
+  const redis = new Redis(server.socket);
+  const queue = new RedisEventQueue(server.socket, { stream: "test:queue" });
+  try {
+    await queue.start({ ingest: vi.fn().mockResolvedValue(undefined) });
+    queue["redis"]!.stream.destroy();
+    await queue.enqueue({ name: "call", external_customer_id: "alice", external_id: "event-0" });
+    expect(await redis.xlen("test:queue")).toBe(1);
+  } finally {
+    await queue.close();
+    redis.disconnect();
+    await server.stop();
+  }
+});
+
 it("keeps an entry until its rejection hook succeeds", async () => {
   const server = await startRedisServer();
   const redis = new Redis(server.socket);

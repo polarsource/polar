@@ -14,14 +14,22 @@ from plain_client import (
 )
 from pytest_mock import MockerFixture
 
+from polar.integrations.plain.schemas import (
+    CustomerCardCustomer,
+    CustomerCardKey,
+    CustomerCardsRequest,
+)
 from polar.integrations.plain.service import (
     CUSTOMER_CARD_TTL_SECONDS,
     PlainCustomerError,
     PlainService,
 )
-from polar.models import Feedback, Organization, User
+from polar.models import Customer, Feedback, Organization, Product, User
 from polar.models.feedback import FeedbackType
 from polar.models.organization import OrganizationStatus
+from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_order
 
 
 @contextlib.asynccontextmanager
@@ -412,3 +420,34 @@ class TestGetCustomerEmail:
         assert json.loads(handler.call_args.args[0].content)["variables"] == {
             "customerId": "c_123"
         }
+
+
+@pytest.mark.anyio
+class TestGetOrderCard:
+    async def test_includes_orders_of_soft_deleted_customer(
+        self,
+        plain_service: PlainService,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer, product=product)
+        customer.set_deleted_at()
+        await save_fixture(customer)
+
+        assert customer.email is not None
+        card = await plain_service._get_order_card(
+            session,
+            CustomerCardsRequest(
+                cardKeys=[CustomerCardKey.order],
+                customer=CustomerCardCustomer(
+                    id="c_123", email=customer.email, externalId=None
+                ),
+                thread=None,
+            ),
+        )
+
+        assert card is not None
+        assert card.key == CustomerCardKey.order
+        assert f"/orders/{order.id}" in json.dumps(card.components)

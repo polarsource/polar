@@ -110,7 +110,9 @@ class OrganizationSubscriptionSettings(TypedDict):
     )
     benefit_revocation_grace_period: int
     trial_ended_reactivation_period: Annotated[
-        NotRequired[int], Field(ge=0), Version(starting_from=V2027_01)
+        NotRequired[int],
+        Field(ge=0),
+        Version(starting_from=V2027_01, required_in_response=True),
     ]
     prevent_trial_abuse: bool
     # Legacy - to be removed separately
@@ -953,9 +955,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     @property
     def trial_ended_reactivation_period(self) -> int:
-        return self.subscription_settings.get(
-            "trial_ended_reactivation_period", DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD
-        )
+        return self.subscription_settings["trial_ended_reactivation_period"]
 
     @property
     def prevent_trial_abuse(self) -> bool:

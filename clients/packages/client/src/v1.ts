@@ -32136,7 +32136,7 @@ export interface components {
         | components['schemas']['OrganizationFeatureSettings']
         | null
       /** @description Settings related to subscriptions management */
-      subscription_settings: components['schemas']['OrganizationSubscriptionSettings']
+      subscription_settings: components['schemas']['OrganizationSubscriptionSettings-Output']
       /** @description Settings related to customer emails */
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
@@ -33020,7 +33020,7 @@ export interface components {
         | components['schemas']['OrganizationFeatureSettingsUpdate']
         | null
       subscription_settings?:
-        | components['schemas']['OrganizationSubscriptionSettings']
+        | components['schemas']['OrganizationSubscriptionSettings-Input']
         | null
       customer_email_settings?:
         | components['schemas']['OrganizationCustomerEmailSettings']
@@ -33543,7 +33543,7 @@ export interface components {
         | components['schemas']['OrganizationFeatureSettings']
         | null
       /** @description Settings related to subscriptions management */
-      subscription_settings: components['schemas']['OrganizationSubscriptionSettings']
+      subscription_settings: components['schemas']['OrganizationSubscriptionSettings-Output']
       /** @description Settings related to customer emails */
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
@@ -34552,7 +34552,7 @@ export interface components {
       applies_at: string
     }
     /** OrganizationSubscriptionSettings */
-    OrganizationSubscriptionSettings: {
+    'OrganizationSubscriptionSettings-Input': {
       /** Allow Multiple Subscriptions */
       allow_multiple_subscriptions: boolean
       /** Proration Behavior */
@@ -34561,6 +34561,21 @@ export interface components {
       benefit_revocation_grace_period: number
       /** Trial Ended Reactivation Period */
       trial_ended_reactivation_period?: number
+      /** Prevent Trial Abuse */
+      prevent_trial_abuse: boolean
+      /** Allow Customer Updates */
+      allow_customer_updates: boolean
+    }
+    /** OrganizationSubscriptionSettings */
+    'OrganizationSubscriptionSettings-Output': {
+      /** Allow Multiple Subscriptions */
+      allow_multiple_subscriptions: boolean
+      /** Proration Behavior */
+      proration_behavior: ('invoice' | 'prorate' | 'next_period') | 'auto'
+      /** Benefit Revocation Grace Period */
+      benefit_revocation_grace_period: number
+      /** Trial Ended Reactivation Period */
+      trial_ended_reactivation_period: number
       /** Prevent Trial Abuse */
       prevent_trial_abuse: boolean
       /** Allow Customer Updates */
@@ -34847,7 +34862,7 @@ export interface components {
           )
         | null
       feature_settings?: components['schemas']['OrganizationFeatureSettingsUpdate']
-      subscription_settings?: components['schemas']['OrganizationSubscriptionSettings']
+      subscription_settings?: components['schemas']['OrganizationSubscriptionSettings-Input']
       customer_email_settings?: components['schemas']['OrganizationCustomerEmailSettings']
       customer_portal_settings?: components['schemas']['OrganizationCustomerPortalSettings']
       dispute_settings?: components['schemas']['OrganizationDisputeSettingsUpdate']
@@ -34993,7 +35008,7 @@ export interface components {
         | components['schemas']['OrganizationFeatureSettings']
         | null
       /** @description Settings related to subscriptions management */
-      subscription_settings: components['schemas']['OrganizationSubscriptionSettings']
+      subscription_settings: components['schemas']['OrganizationSubscriptionSettings-Output']
       /** @description Settings related to customer emails */
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
@@ -77832,8 +77847,11 @@ export const organizationStatusValues: ReadonlyArray<
   'offboarding',
   'offboarded',
 ]
-export const organizationSubscriptionSettingsProration_behaviorAnyOf0Values: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['OrganizationSubscriptionSettings']['proration_behavior']
+export const organizationSubscriptionSettingsInputProration_behaviorAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationSubscriptionSettings-Input']['proration_behavior']
+> = ['invoice', 'prorate', 'next_period']
+export const organizationSubscriptionSettingsOutputProration_behaviorAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationSubscriptionSettings-Output']['proration_behavior']
 > = ['invoice', 'prorate', 'next_period']
 export const organizationUpdateCountryAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationUpdate']['country']

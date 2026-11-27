@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, NotRequired, TypedDict
 
 import pytest
 from fastapi import Depends, FastAPI, Query, Request
@@ -246,6 +246,33 @@ def test_versioned_fields_are_included_in_versioned_openapi_schema() -> None:
         == "Only available in the next API version."
     )
     assert set(next_product["required"]) == {"name", "shared_field", "next_field"}
+
+
+@pytest.mark.parametrize("api_version", [CURRENT_VERSION, NEXT_VERSION])
+def test_versioned_field_required_in_response(api_version: APIVersion) -> None:
+    class Settings(TypedDict):
+        name: str
+        period: Annotated[
+            NotRequired[int],
+            Version(starting_from=NEXT_VERSION, required_in_response=True),
+        ]
+
+    class Model(BaseModel):
+        settings: Settings
+
+    with api_version_context(api_version):
+        validation = Model.model_json_schema(mode="validation")["$defs"]["Settings"]
+        serialization = Model.model_json_schema(mode="serialization")["$defs"][
+            "Settings"
+        ]
+
+    assert validation["required"] == ["name"]
+    if api_version == NEXT_VERSION:
+        assert "period" in validation["properties"]
+        assert serialization["required"] == ["name", "period"]
+    else:
+        assert "period" not in validation["properties"]
+        assert serialization == validation
 
 
 @pytest.mark.parametrize("api_version", [CURRENT_VERSION, NEXT_VERSION])

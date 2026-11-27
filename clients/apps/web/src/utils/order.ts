@@ -27,14 +27,28 @@ const _getOrderById = async (
 export const getOrderById = cache(_getOrderById)
 
 /**
- * Determines if an order is eligible for payment retry
+ * Draft orders aren't finalized yet, so the customer portal doesn't list them
+ */
+export const isListableCustomerOrder = (
+  order: schemas['CustomerOrder'],
+): boolean => order.status !== 'draft'
+
+/**
+ * A draft order on a subscription reactivates an ended trial. Other drafts are
+ * a merchant's off-session charge the customer pays themselves.
+ */
+export const isReactivationOrder = (order: schemas['CustomerOrder']): boolean =>
+  order.status === 'draft' && order.subscription !== null
+
+/**
+ * A pending subscription order can be paid until its subscription ends:
+ * paying it afterwards settles the order but doesn't restore the subscription
  */
 export const canRetryOrderPayment = (
   order: schemas['CustomerOrder'],
 ): boolean => {
   return (
     order.status === 'pending' &&
-    order.next_payment_attempt_at !== null &&
     order.subscription !== null &&
     order.subscription.ended_at === null
   )

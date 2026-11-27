@@ -20,6 +20,7 @@ interface SavedCardsSelectorProps {
   onSelectPaymentMethod: (paymentMethodId: string) => void
   onAddNewCard: () => void
   disabled?: boolean
+  showAddNewCard?: boolean
 }
 
 export const SavedCardsSelector = ({
@@ -27,6 +28,7 @@ export const SavedCardsSelector = ({
   onSelectPaymentMethod,
   onAddNewCard,
   disabled = false,
+  showAddNewCard = true,
 }: SavedCardsSelectorProps) => {
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null)
 
@@ -103,15 +105,17 @@ export const SavedCardsSelector = ({
           )
         })}
       </PortalCardList>
-      <Box justifyContent="end">
-        <Button
-          onClick={handleAddNewCard}
-          disabled={disabled}
-          variant="secondary"
-        >
-          Use a different card
-        </Button>
-      </Box>
+      {showAddNewCard && (
+        <Box justifyContent="end">
+          <Button
+            onClick={handleAddNewCard}
+            disabled={disabled}
+            variant="secondary"
+          >
+            Use a different card
+          </Button>
+        </Box>
+      )}
     </Box>
   )
 }

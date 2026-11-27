@@ -106,7 +106,7 @@ const CustomerSubscriptionDetails = ({
       {isTrialing && !isCanceled && (
         <TrialBillingDetailsAlert subscription={subscription} />
       )}
-      {isTrialEnded && <TrialEndedAlert subscription={subscription} />}
+      {isTrialEnded && <TrialEndedAlert />}
 
       <CustomerSubscriptionHeader subscription={subscription} />
 

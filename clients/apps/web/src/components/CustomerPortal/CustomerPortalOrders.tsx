@@ -4,8 +4,6 @@ import { Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { formatCurrency } from '@polar-sh/currency'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { getThemePreset } from '@polar-sh/ui/hooks/theming'
-import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -40,9 +38,6 @@ export const CustomerPortalOrders = ({
   const [selectedOrder, setSelectedOrder] = useState<
     schemas['CustomerOrder'] | null
   >(null)
-
-  const theme = useTheme()
-  const themingPreset = getThemePreset(theme.resolvedTheme as 'light' | 'dark')
 
   const {
     isShown: isOrderModalOpen,
@@ -128,7 +123,6 @@ export const CustomerPortalOrders = ({
                   api={api}
                   order={selectedOrder}
                   customerSessionToken={customerSessionToken}
-                  themingPreset={themingPreset}
                 />
               </Box>
             </>

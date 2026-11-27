@@ -5256,7 +5256,7 @@
             }
           },
           "403": {
-            "description": "Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, pausing/resuming is not enabled for the organization, or the organization can't renew subscriptions.",
+            "description": "Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5275,9 +5275,6 @@
                     },
                     {
                       "$ref": "#/components/schemas/UpdateSubscriptionUnitsNotAllowed"
-                    },
-                    {
-                      "$ref": "#/components/schemas/PaymentNotReady"
                     }
                   ],
                   "title": "Response 403 Customer Portal:Subscriptions:Update"
@@ -5296,7 +5293,7 @@
             }
           },
           "409": {
-            "description": "The subscription has no payment method to charge, is not scheduled to be canceled, or can't be reactivated: its trial hasn't ended without converting, or the customer has no payment method or complete billing address.",
+            "description": "The subscription has no payment method to charge, or is not scheduled to be canceled.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5306,12 +5303,6 @@
                     },
                     {
                       "$ref": "#/components/schemas/SubscriptionNotScheduledToCancel"
-                    },
-                    {
-                      "$ref": "#/components/schemas/NotTrialEndedSubscription"
-                    },
-                    {
-                      "$ref": "#/components/schemas/MissingBillingDetails"
                     }
                   ],
                   "title": "Response 409 Customer Portal:Subscriptions:Update"
@@ -54503,22 +54494,6 @@
         ],
         "title": "CustomerSubscriptionProduct"
       },
-      "CustomerSubscriptionReactivate": {
-        "properties": {
-          "reactivate": {
-            "type": "boolean",
-            "const": true,
-            "title": "Reactivate",
-            "description": "Reactivate a subscription whose trial ended."
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "reactivate"
-        ],
-        "title": "CustomerSubscriptionReactivate"
-      },
       "CustomerSubscriptionResume": {
         "properties": {
           "resume": {
@@ -54570,9 +54545,6 @@
           },
           {
             "$ref": "#/components/schemas/CustomerSubscriptionResume"
-          },
-          {
-            "$ref": "#/components/schemas/CustomerSubscriptionReactivate"
           },
           {
             "$ref": "#/components/schemas/CustomerSubscriptionUpdateClear"
@@ -65654,28 +65626,6 @@
         "type": "object",
         "title": "MetricsTotals"
       },
-      "MissingBillingDetails": {
-        "properties": {
-          "error": {
-            "type": "string",
-            "const": "MissingBillingDetails",
-            "title": "Error",
-            "examples": [
-              "MissingBillingDetails"
-            ]
-          },
-          "detail": {
-            "type": "string",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "required": [
-          "error",
-          "detail"
-        ],
-        "title": "MissingBillingDetails"
-      },
       "MissingInvoiceBillingDetails": {
         "properties": {
           "error": {
@@ -65741,28 +65691,6 @@
           "detail"
         ],
         "title": "NotPermitted"
-      },
-      "NotTrialEndedSubscription": {
-        "properties": {
-          "error": {
-            "type": "string",
-            "const": "NotTrialEndedSubscription",
-            "title": "Error",
-            "examples": [
-              "NotTrialEndedSubscription"
-            ]
-          },
-          "detail": {
-            "type": "string",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "required": [
-          "error",
-          "detail"
-        ],
-        "title": "NotTrialEndedSubscription"
       },
       "OAuth2ClientConfiguration": {
         "properties": {

@@ -1,27 +1,19 @@
 'use client'
 
-import revalidate from '@/app/actions'
 import { toast } from '@/components/Toast/use-toast'
 import {
   useCustomerCancelSubscription,
   useCustomerPortalCustomer,
-  useCustomerReactivateSubscription,
+  useCustomerReactivationOrder,
 } from '@/hooks/queries/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
 import { Alert, Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { getTaxAddressFields } from '@polar-sh/ui/lib/taxAddressFields'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
+import { hasCompleteBillingAddress } from './BillingDetailsFields'
 import CustomerCancellationModal from './CustomerCancellationModal'
-import { PortalConfirmDialog } from './PortalDialog'
-
-const hasCompleteBillingAddress = (
-  address: schemas['CustomerPortalCustomer']['billing_address'],
-) =>
-  !!address &&
-  getTaxAddressFields(address.country).every((field) => !!address[field])
 
 const useMissingBillingDetails = (
   subscription: schemas['CustomerSubscription'],
@@ -121,27 +113,13 @@ export const TrialSubscriptionActions = ({
   )
 }
 
-export const TrialEndedAlert = ({
-  subscription,
-}: {
-  subscription: schemas['CustomerSubscription']
-}) => {
-  const missing = useMissingBillingDetails(subscription)
-  const isMissingBillingDetails =
-    missing.paymentMethod || missing.billingAddress
-
-  return (
-    <Alert
-      variant="warning"
-      title="Your trial has ended"
-      description={
-        isMissingBillingDetails
-          ? `Add ${describeMissingDetails(missing)}, then reactivate to keep your subscription.`
-          : 'Reactivate to keep your subscription.'
-      }
-    />
-  )
-}
+export const TrialEndedAlert = () => (
+  <Alert
+    variant="warning"
+    title="Your trial has ended"
+    description="Reactivate to keep your subscription."
+  />
+)
 
 export const TrialEndedSubscriptionActions = ({
   api,
@@ -152,55 +130,28 @@ export const TrialEndedSubscriptionActions = ({
 }) => {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const missing = useMissingBillingDetails(subscription)
-  const reactivateSubscription = useCustomerReactivateSubscription(api)
-  const [showConfirm, setShowConfirm] = useState(false)
+  const reactivationOrder = useCustomerReactivationOrder(api)
 
-  if (missing.paymentMethod || missing.billingAddress) {
-    return (
-      <Box>
-        <Link
-          href={`/${subscription.product.organization.slug}/portal/settings?${searchParams.toString()}`}
-        >
-          <Button>Add billing details</Button>
-        </Link>
-      </Box>
-    )
-  }
-
-  const handleReactivate = async () => {
+  const onReactivate = async () => {
     try {
-      await reactivateSubscription.mutateAsync({ id: subscription.id })
-      await revalidate('customer_portal')
-      router.refresh()
+      const order = await reactivationOrder.mutateAsync(subscription.id)
+      router.push(
+        `/${subscription.product.organization.slug}/portal/orders/${order.id}/pay?${searchParams.toString()}`,
+      )
+    } catch {
       toast({
-        title: 'Subscription reactivated',
-        description: 'Your subscription is active again.',
-      })
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'Failed to reactivate the subscription.',
+        title: 'Could not reactivate subscription',
+        description: 'Try again in a moment.',
       })
     }
   }
 
   return (
-    <>
-      <Button onClick={() => setShowConfirm(true)}>
-        Reactivate subscription
-      </Button>
-      <PortalConfirmDialog
-        isShown={showConfirm}
-        hide={() => setShowConfirm(false)}
-        title="Reactivate subscription?"
-        description="We'll charge your payment method now and start a new billing period."
-        confirmText="Reactivate and pay"
-        onConfirm={handleReactivate}
-      />
-    </>
+    <Button
+      onClick={onReactivate}
+      loading={reactivationOrder.isPending || reactivationOrder.isSuccess}
+    >
+      Reactivate subscription
+    </Button>
   )
 }

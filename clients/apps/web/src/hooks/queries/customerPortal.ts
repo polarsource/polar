@@ -649,38 +649,63 @@ export const useCustomerResumeSubscription = (api: Client) =>
     },
   })
 
-export const useCustomerReactivateSubscription = (api: Client) =>
+export const useCustomerOrderUpdate = (api: Client) =>
   useMutation({
-    mutationFn: async (variables: { id: string }) => {
-      const result = await api.PATCH('/v1/customer-portal/subscriptions/{id}', {
+    mutationFn: (variables: {
+      id: string
+      body: schemas['CustomerOrderUpdate']
+    }) =>
+      api.PATCH('/v1/customer-portal/orders/{id}', {
         params: { path: { id: variables.id } },
-        body: {
-          reactivate: true,
-        },
-      })
-      if (result.error) {
-        throw new Error(
-          extractApiErrorMessage(
-            result.error,
-            'Failed to reactivate subscription',
-          ),
-        )
+        body: variables.body,
+      }),
+  })
+
+export const useCustomerOrderPay = (api: Client) =>
+  useMutation({
+    mutationFn: (variables: {
+      id: string
+      body: schemas['CustomerOrderPay']
+    }) =>
+      api.PATCH('/v1/customer-portal/orders/{id}/pay', {
+        params: { path: { id: variables.id } },
+        body: variables.body,
+      }),
+  })
+
+// The API refuses a second draft order for a subscription, so reuse an open one
+export const useCustomerReactivationOrder = (api: Client) =>
+  useMutation({
+    mutationFn: async (subscriptionId: string) => {
+      const orders = await unwrap(
+        api.GET('/v1/customer-portal/orders/', {
+          params: { query: { subscription_id: subscriptionId, limit: 10 } },
+        }),
+      )
+      const existing = orders.items.find(
+        (order) => order.status === 'draft' || order.status === 'pending',
+      )
+      if (existing) {
+        return existing
       }
-      return result
-    },
-    onSuccess: () => {
-      const queryClient = getQueryClient()
-      queryClient.invalidateQueries({
-        queryKey: ['customer_subscriptions'],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['customer_orders'],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['customer_benefit_grants'],
-      })
+      return unwrap(
+        api.POST('/v1/customer-portal/orders/', {
+          body: { subscription_id: subscriptionId },
+        }),
+      )
     },
   })
+
+export const invalidatePaidOrder = () => {
+  const queryClient = getQueryClient()
+  for (const queryKey of [
+    ['customer_subscriptions'],
+    ['customer_orders'],
+    ['customer_benefit_grants'],
+  ]) {
+    queryClient.invalidateQueries({ queryKey })
+  }
+}
 
 export const useCustomerCustomerMeters = (
   api: Client,
@@ -697,49 +722,6 @@ export const useCustomerCustomerMeters = (
         }),
       ),
     retry: defaultRetry,
-  })
-
-export const useCustomerOrderConfirmPayment = (api: Client) =>
-  useMutation({
-    mutationFn: async (variables: {
-      orderId: string
-      confirmation_token_id?: string
-      payment_method_id?: string
-      payment_processor?: schemas['PaymentProcessor']
-    }) =>
-      api.POST('/v1/customer-portal/orders/{id}/confirm-payment', {
-        params: { path: { id: variables.orderId } },
-        body: {
-          ...(variables.confirmation_token_id && {
-            confirmation_token_id: variables.confirmation_token_id,
-          }),
-          ...(variables.payment_method_id && {
-            payment_method_id: variables.payment_method_id,
-          }),
-          payment_processor: variables.payment_processor || 'stripe',
-        } as schemas['CustomerOrderConfirmPayment'],
-      }),
-    onSuccess: async (result, variables) => {
-      if (result.error) {
-        return
-      }
-      // Invalidate order queries to refresh data
-      const queryClient = getQueryClient()
-      queryClient.invalidateQueries({
-        queryKey: ['customer_order', { id: variables.orderId }],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['customer_orders'],
-      })
-    },
-  })
-
-export const useCustomerOrderPaymentStatus = (api: Client) =>
-  useMutation({
-    mutationFn: async (variables: { orderId: string }) =>
-      api.GET('/v1/customer-portal/orders/{id}/payment-status', {
-        params: { path: { id: variables.orderId } },
-      }),
   })
 
 export const useCustomerSeats = (

@@ -2,6 +2,7 @@
 
 import { CustomerPortalOrders } from '@/components/CustomerPortal/CustomerPortalOrders'
 import { PortalPageHeader } from '@/components/CustomerPortal/PortalPrimitives'
+import { isListableCustomerOrder } from '@/utils/order'
 import { schemas } from '@polar-sh/client'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 
@@ -22,7 +23,7 @@ const ClientPage = ({
       />
       <CustomerPortalOrders
         organization={organization}
-        orders={orders.items ?? []}
+        orders={orders.items.filter(isListableCustomerOrder)}
         customerSessionToken={customerSessionToken}
       />
     </NuqsAdapter>

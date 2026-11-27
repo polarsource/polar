@@ -87,7 +87,8 @@
         "src/app/**/portal/request/page.tsx",
         "src/app/**/portal/authenticate/page.tsx",
         "src/app/**/portal/verify-email/page.tsx",
-        "src/app/**/portal/claim/page.tsx"
+        "src/app/**/portal/claim/page.tsx",
+        "src/app/**/portal/orders/[[]id]/pay/page.tsx"
       ],
       "rules": {
         "polar/require-customer-portal-page": "off"

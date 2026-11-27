@@ -12,17 +12,20 @@ import {
 import { useRequirePaymentMethod } from '@/hooks/useRequirePaymentMethod'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { hasBillingPermission } from '@/utils/customerPortal'
+import { canRetryOrderPayment, isListableCustomerOrder } from '@/utils/order'
 import { getUnitLabels, isUnitBasedPrice } from '@/utils/product'
 import { getPauseAction } from '@/utils/subscription'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { useModal } from '../Modal/useModal'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
+import { OrderStatus } from '../Orders/OrderStatus'
 import CustomerCancellationModal from './CustomerCancellationModal'
 import CustomerPauseSubscriptionModal from './CustomerPauseSubscriptionModal'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
@@ -87,6 +90,7 @@ const CustomerPortalSubscription = ({
   })
 
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const cancelSubscription = useCustomerCancelSubscription(api)
   const clearPendingUpdate = useCustomerClearPendingSubscriptionUpdate(api)
@@ -97,7 +101,8 @@ const CustomerPortalSubscription = ({
 
   const pendingUpdate = subscription.pending_update
 
-  const hasInvoices = orders?.items && orders.items.length > 0
+  const invoices = orders?.items.filter(isListableCustomerOrder) ?? []
+  const hasInvoices = invoices.length > 0
 
   const isCancelled = !!(
     subscription.cancel_at_period_end || subscription.ended_at
@@ -274,7 +279,7 @@ const CustomerPortalSubscription = ({
       {hasInvoices && (
         <PortalSection title="Invoices">
           <PortalCardList>
-            {orders.items.map((order) => (
+            {invoices.map((order) => (
               <PortalListItem
                 key={order.id}
                 title={
@@ -286,20 +291,34 @@ const CustomerPortalSubscription = ({
                 }
                 subtitle={order.invoice_number}
                 meta={
-                  <PortalText tone="primary" className="tabular-nums">
-                    {formatCurrency('compact')(
-                      order.total_amount,
-                      order.currency,
-                    )}
-                  </PortalText>
+                  <>
+                    <OrderStatus status={order.status} />
+                    <PortalText
+                      tone="primary"
+                      className="min-w-[72px] text-right tabular-nums"
+                    >
+                      {formatCurrency('compact')(
+                        order.total_amount,
+                        order.currency,
+                      )}
+                    </PortalText>
+                  </>
                 }
                 actions={
-                  <DownloadInvoicePortal
-                    customerSessionToken={customerSessionToken}
-                    order={order}
-                    onInvoiceGenerated={refetchOrders}
-                    dropdown
-                  />
+                  canManageBilling && canRetryOrderPayment(order) ? (
+                    <Link
+                      href={`/${subscription.product.organization.slug}/portal/orders/${order.id}/pay?${searchParams.toString()}`}
+                    >
+                      <Button>Pay now</Button>
+                    </Link>
+                  ) : (
+                    <DownloadInvoicePortal
+                      customerSessionToken={customerSessionToken}
+                      order={order}
+                      onInvoiceGenerated={refetchOrders}
+                      dropdown
+                    />
+                  )
                 }
               />
             ))}

@@ -34,7 +34,6 @@ from ..schemas.subscription import (
     CustomerSubscriptionChangeSeats,
     CustomerSubscriptionChangeUnits,
     CustomerSubscriptionPause,
-    CustomerSubscriptionReactivate,
     CustomerSubscriptionResume,
     CustomerSubscriptionUpdate,
     CustomerSubscriptionUpdateClear,
@@ -255,14 +254,6 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                 raise PauseResumeNotAllowed()
 
             return await self.resume(session, subscription)
-
-        if isinstance(updates, CustomerSubscriptionReactivate):
-            async with SubscriptionUpdateContext(
-                session, subscription, subscription_service
-            ) as ctx:
-                return await subscription_service.reactivate_ended_trial(
-                    session, ctx, subscription
-                )
 
         cancel = updates.cancel_at_period_end is True
         uncancel = updates.cancel_at_period_end is False

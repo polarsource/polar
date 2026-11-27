@@ -182,13 +182,7 @@ class CustomerOrderService:
         self, session: AsyncSession, order: Order, order_pay: CustomerOrderPay
     ) -> Order:
         original_status = order.status
-        if original_status != OrderStatus.pending and (
-            original_status != OrderStatus.draft
-            or order.subscription is None
-            or order.subscription.status != SubscriptionStatus.trial_ended
-        ):
-            raise OrderNotEligibleForRetry(order)
-        if order.subscription is not None and order.subscription.ended_at is not None:
+        if not order.is_payable_by_customer:
             raise OrderNotEligibleForRetry(order)
 
         try:

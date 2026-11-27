@@ -5,8 +5,6 @@ import { PortalBackLink } from '@/components/CustomerPortal/PortalPrimitives'
 import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import { useParams } from 'next/navigation'
-import { getThemePreset } from '@polar-sh/ui/hooks/theming'
-import { useTheme } from 'next-themes'
 
 const ClientPage = ({
   order,
@@ -15,8 +13,6 @@ const ClientPage = ({
   order: schemas['CustomerOrder']
   customerSessionToken: string
 }) => {
-  const theme = useTheme()
-  const themingPreset = getThemePreset(theme.resolvedTheme as 'light' | 'dark')
   const params = useParams<{ organization: string }>()
   const api = createClientSideAPI(customerSessionToken)
 
@@ -31,7 +27,6 @@ const ClientPage = ({
         api={api}
         order={order}
         customerSessionToken={customerSessionToken}
-        themingPreset={themingPreset}
       />
     </>
   )

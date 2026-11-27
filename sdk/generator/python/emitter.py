@@ -158,6 +158,8 @@ class PythonEmitter(EmitterBase):
             ("tests", "metering", "queue", "test_memory.py"),
             ("tests", "metering", "queue", "test_redis.py"),
             ("tests", "test_webhooks.py"),
+            ("tests", "redis.py"),
+            ("tests", "conftest.py"),
             ("tests", "outpost", "__init__.py"),
             ("tests", "outpost", "conftest.py"),
             ("tests", "outpost", "test_client.py"),

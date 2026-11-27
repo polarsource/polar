@@ -120,6 +120,7 @@ SETTINGS_FIELDS = {
     "subscriptions.allow_multiple_subscriptions": "allow_multiple_subscriptions",
     "subscriptions.proration_behavior": "proration_behavior",
     "subscriptions.benefit_revocation_grace_period": "benefit_revocation_grace_period",
+    "subscriptions.trial_ended_reactivation_period": "trial_ended_reactivation_period",
     "subscriptions.prevent_trial_abuse": "prevent_trial_abuse",
     "customer_portal.allow_plan_changes": "customer_portal_subscription_update_plan",
     "customer_portal.allow_unit_changes": "customer_portal_subscription_update_units",

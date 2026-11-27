@@ -30,6 +30,11 @@ const key = (value: string): string =>
 const camelCase = (value: string): string =>
   value.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())
 
+const PERIOD_SETTINGS = new Set([
+  'benefit_revocation_grace_period',
+  'trial_ended_reactivation_period',
+])
+
 const gracePeriod = (days: number): string =>
   days === 0 ? 'immediately' : `${days} ${days === 1 ? 'day' : 'days'}`
 
@@ -587,9 +592,7 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
         Object.fromEntries(
           Object.entries(fields).map(([name, value]) => [
             camelCase(name),
-            name === 'benefit_revocation_grace_period'
-              ? gracePeriod(value)
-              : value,
+            PERIOD_SETTINGS.has(name) ? gracePeriod(value) : value,
           ]),
         ),
       )},`,

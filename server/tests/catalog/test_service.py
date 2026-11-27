@@ -236,6 +236,7 @@ class TestPublishDraft:
             "allow_multiple_subscriptions": False,
             "proration_behavior": "prorate",
             "benefit_revocation_grace_period": 0,
+            "trial_ended_reactivation_period": 14,
             "prevent_trial_abuse": False,
             "customer_portal_usage_show": True,
             "customer_portal_subscription_update_plan": True,

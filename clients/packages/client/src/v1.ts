@@ -18889,6 +18889,12 @@ export interface components {
        */
       benefit_revocation_grace_period: number
       /**
+       * Trial Ended Reactivation Period
+       * @description Days a customer can add a payment method to reactivate a subscription whose trial ended without one, before it's canceled. Defaults to `14`.
+       * @default 14
+       */
+      trial_ended_reactivation_period: number
+      /**
        * Prevent Trial Abuse
        * @description Whether a customer who already had a trial is refused another one. Defaults to `false`.
        * @default false
@@ -18905,6 +18911,8 @@ export interface components {
         | 'auto'
       /** Benefit Revocation Grace Period */
       benefit_revocation_grace_period: number
+      /** Trial Ended Reactivation Period */
+      trial_ended_reactivation_period: number
       /** Prevent Trial Abuse */
       prevent_trial_abuse: boolean
     }

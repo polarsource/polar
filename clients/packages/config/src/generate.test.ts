@@ -744,6 +744,7 @@ test('renders the subscription settings an organization exports', async () => {
           allow_multiple_subscriptions: false,
           proration_behavior: 'prorate',
           benefit_revocation_grace_period: 7,
+          trial_ended_reactivation_period: 14,
           prevent_trial_abuse: false,
         },
       },
@@ -752,6 +753,7 @@ test('renders the subscription settings an organization exports', async () => {
   )
   expect(source).toContain("prorationBehavior: 'prorate'")
   expect(source).toContain("benefitRevocationGracePeriod: '7 days'")
+  expect(source).toContain("trialEndedReactivationPeriod: '14 days'")
 })
 
 test('renders date bounds as the UTC day they fall on', async () => {

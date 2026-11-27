@@ -34,6 +34,9 @@ export const plural = (count: number, noun: string) =>
 const capitalize = (text: string) =>
   text.charAt(0).toUpperCase() + text.slice(1)
 
+const period = (days: number) =>
+  BENEFIT_REVOCATION_GRACE_PERIOD_LABELS[days] ?? `After ${days} Days`
+
 const humanize = (key: string) => capitalize(key.replaceAll('_', ' '))
 
 const intervalAdverb: Record<string, string> = {
@@ -173,10 +176,12 @@ export const settingsFields = ({
   prevent_trial_abuse: yesNo(subscriptions.prevent_trial_abuse),
   proration_behavior:
     PRORATION_BEHAVIOR_LABELS[subscriptions.proration_behavior],
-  benefit_revocation_grace_period:
-    BENEFIT_REVOCATION_GRACE_PERIOD_LABELS[
-      subscriptions.benefit_revocation_grace_period
-    ] ?? `After ${subscriptions.benefit_revocation_grace_period} Days`,
+  benefit_revocation_grace_period: period(
+    subscriptions.benefit_revocation_grace_period,
+  ),
+  trial_ended_reactivation_period: period(
+    subscriptions.trial_ended_reactivation_period,
+  ),
   allow_plan_changes: yesNo(customer_portal.allow_plan_changes),
   allow_unit_changes: yesNo(customer_portal.allow_unit_changes),
   allow_seat_management: yesNo(customer_portal.allow_seat_management),

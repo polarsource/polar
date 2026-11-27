@@ -154,6 +154,7 @@ SUBSCRIPTION_SETTINGS = (
     "allow_multiple_subscriptions",
     "proration_behavior",
     "benefit_revocation_grace_period",
+    "trial_ended_reactivation_period",
     "prevent_trial_abuse",
 )
 PORTAL_SETTINGS = {

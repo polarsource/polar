@@ -1,0 +1,51 @@
+sdk/generator/python/template/README.md
+  s_7671299f8b7483::t_85a05bd708a4b8 179-181
+sdk/generator/python/template/tests/test_base.py
+  s_7671299f8b7483::t_85a05bd708a4b8 567,803-814
+  s_7671299f8b7483::t_2f20354cdda9a1 815-816
+sdk/generator/typescript/template/src/metering/actor.ts
+  s_7671299f8b7483::t_14569629d5bbb5 22-24
+sdk/generator/typescript/template/src/base.test.ts
+  s_7671299f8b7483::t_85a05bd708a4b8 463-487
+sdk/generator/typescript/template/README.md
+  s_7671299f8b7483::t_85a05bd708a4b8 223-225
+sdk/generator/typescript/template/src/portability.test.ts
+  s_7671299f8b7483::t_85a05bd708a4b8 53
+sdk/generator/python/template/polar/actor.py
+  s_7671299f8b7483::t_14569629d5bbb5 38-52
+sdk/generator/typescript/template/src/metering/client.ts
+  s_7671299f8b7483::t_14569629d5bbb5 22,108-110,112,114,186-195
+  s_7671299f8b7483::t_1ff1fa037d6646 196-197
+sdk/python/README.md
+  s_7671299f8b7483::t_147f12de8a2b3d 177-179
+sdk/python/polar/actor.py
+  s_7671299f8b7483::t_d0908e0ba216e2 37-51
+sdk/python/tests/test_base.py
+  s_7671299f8b7483::t_a20ff2839e7e2b 601,858-875
+sdk/typescript/README.md
+  s_7671299f8b7483::t_19c12fe2074974 223-225
+sdk/typescript/src/base.test.ts
+  s_7671299f8b7483::t_cf93b9bbbbf26a 442-466
+sdk/typescript/src/metering/actor.ts
+  s_7671299f8b7483::t_7d67ffe4e8710f 22-24
+sdk/typescript/src/metering/client.ts
+  s_7671299f8b7483::t_513bfb8de0553b 23,109-112,114,116,188-199
+sdk/typescript/src/portability.test.ts
+  s_7671299f8b7483::t_7a0134905eb78f 53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8c8a94debd73e51c34faf8cddac2a99a00bb21bd",
+  "prompts": {},
+  "sessions": {
+    "s_7671299f8b7483": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21d18-2190-7bb2-991b-09c4eaafbef3",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

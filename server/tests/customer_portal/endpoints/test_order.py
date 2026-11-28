@@ -409,6 +409,66 @@ class TestPayOrder:
 
 
 @pytest.mark.anyio
+@pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+class TestListOrders:
+    @pytest.mark.api_version(V2027_01)
+    async def test_status_filter(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        paid_order = await create_order(
+            save_fixture, product=product, customer=customer, status=OrderStatus.paid
+        )
+        refunded_order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.refunded,
+        )
+        await create_order(
+            save_fixture, product=product, customer=customer, status=OrderStatus.pending
+        )
+
+        response = await client.get(
+            "/v1/customer-portal/orders/",
+            params={"status": ["paid", "refunded"]},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 2
+        assert {item["id"] for item in json["items"]} == {
+            str(paid_order.id),
+            str(refunded_order.id),
+        }
+
+    @pytest.mark.api_version(V2026_10)
+    async def test_status_filter_ignored_before_v2027_01(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        await create_order(
+            save_fixture, product=product, customer=customer, status=OrderStatus.paid
+        )
+        await create_order(
+            save_fixture, product=product, customer=customer, status=OrderStatus.pending
+        )
+
+        response = await client.get(
+            "/v1/customer-portal/orders/", params={"status": "paid"}
+        )
+
+        assert response.status_code == 200
+        assert response.json()["pagination"]["total_count"] == 2
+
+
+@pytest.mark.anyio
 class TestGetOrder:
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     @pytest.mark.api_version(V2026_10)

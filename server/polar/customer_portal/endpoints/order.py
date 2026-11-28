@@ -92,6 +92,7 @@ async def list(
         product_billing_type=filters.product_billing_type,
         subscription_id=filters.subscription_id,
         query=filters.query,
+        status=filters.status,
         pagination=pagination,
         sorting=sorting,
     )

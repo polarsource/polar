@@ -70,6 +70,7 @@ class CustomerOrderService:
         product_billing_type: Sequence[ProductBillingType] | None = None,
         subscription_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
+        status: Sequence[OrderStatus] | None = None,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[CustomerOrderSortProperty]] = (
             (CustomerOrderSortProperty.created_at, True),
@@ -97,6 +98,9 @@ class CustomerOrderService:
 
         if query is not None:
             statement = statement.where(Product.name.icontains(query, autoescape=True))
+
+        if status is not None:
+            statement = statement.where(Order.status.in_(status))
 
         order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

@@ -50453,6 +50453,11 @@ export interface operations {
         subscription_id?: string | string[] | null
         /** @description Search by product or organization name. */
         query?: string | null
+        /** @description Filter by order status. */
+        status?:
+          | components['schemas']['OrderStatus']
+          | components['schemas']['OrderStatus'][]
+          | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

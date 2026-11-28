@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, func, or_, select
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.enums import PaymentProcessor
@@ -54,6 +54,33 @@ class PaymentRepository(
         )
         result = await self.session.execute(statement)
         return result.scalars().all()
+
+    async def get_all_succeeded_by_authorization_code(
+        self,
+        processor: PaymentProcessor,
+        authorization_code: str,
+        card_last4: str,
+        *,
+        currency: str,
+        amount: int,
+        created_after: datetime,
+        created_before: datetime,
+    ) -> Sequence[Payment]:
+        statement = self.get_base_statement().where(
+            Payment.processor == processor,
+            Payment.status == PaymentStatus.succeeded,
+            Payment.currency == currency,
+            Payment.amount == amount,
+            Payment.created_at >= created_after,
+            Payment.created_at < created_before,
+            Payment.method_metadata["authorization_code"].astext == authorization_code,
+            # With a wallet, the network sees the device card number
+            or_(
+                Payment.method_metadata["last4"].astext == card_last4,
+                Payment.method_metadata["wallet"]["dynamic_last4"].astext == card_last4,
+            ),
+        )
+        return await self.get_all(statement)
 
     async def get_all_by_customer(
         self, customer_id: UUID, *, status: PaymentStatus | None = None

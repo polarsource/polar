@@ -32,6 +32,7 @@ from polar.models.support_case import DisputeSupportCase
 from polar.payment.repository import PaymentRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
+from polar.refund.repository import RefundRepository
 from polar.refund.service import refund as refund_service
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import SubscriptionUpdateContext
@@ -56,6 +57,11 @@ from .stripe import get_dispute_balance_transaction, is_rapid_resolution_dispute
 # merchant's own reply to take the dispute out of scope.
 DISPUTE_AUTO_ACCEPT_DELAY = timedelta(hours=24)
 
+# ChargebackStop gives the authorisation day at midnight, without a time.
+# We look for the payment from the day before to the end of the day after.
+ALERT_AUTHORIZATION_WINDOW_BEFORE = timedelta(days=1)
+ALERT_AUTHORIZATION_WINDOW_AFTER = timedelta(days=2)
+
 
 class DisputeError(PolarError):
     pass
@@ -76,6 +82,16 @@ class DisputeAlertTransactionNotLinkedError(DisputeError):
     def __init__(self, alert_id: str) -> None:
         self.alert_id = alert_id
         super().__init__(f"ChargebackStop alert {alert_id} has no linked transaction.")
+
+
+class DisputeAlertTargetsRefundError(DisputeError):
+    def __init__(self, alert_id: str, refund_id: uuid.UUID) -> None:
+        self.alert_id = alert_id
+        self.refund_id = refund_id
+        super().__init__(
+            f"ChargebackStop alert {alert_id} is about refund {refund_id}, "
+            "not a payment. Check that the refund reached the customer."
+        )
 
 
 class DisputeNotOpenError(DisputeError):
@@ -402,15 +418,6 @@ class DisputeService:
     ) -> Dispute:
         repository = DisputeRepository.from_session(session)
 
-        # ChargebackStop uses PaymentIntent ID, but we use Charge ID
-        payment_intent_id = alert["integration_transaction_id"]
-        if payment_intent_id is None:
-            raise DisputeAlertTransactionNotLinkedError(alert["id"])
-        payment_intent = await stripe_service.get_payment_intent(payment_intent_id)
-        latest_charge = payment_intent.latest_charge
-        assert latest_charge is not None
-        charge_id = get_expandable_id(latest_charge)
-
         # First try to find by alert processor ID. Locked so concurrent alert
         # deliveries can't both see a non-prevented dispute and revoke twice.
         dispute = await repository.get_by_alert_processor_id(
@@ -421,6 +428,7 @@ class DisputeService:
         )
         # Then try to find by matching payment info, in case Stripe already pinged us about the dispute
         if dispute is None:
+            charge_id = await self._get_alert_charge_id(session, alert)
             dispute = await repository.get_matching_by_dispute_alert(
                 PaymentProcessor.stripe,
                 charge_id,
@@ -430,25 +438,25 @@ class DisputeService:
                 for_update=True,
             )
 
-        if dispute is None:
-            payment, order = await self._get_payment_and_order_from_processor_id(
-                session, PaymentProcessor.stripe, charge_id
-            )
-            amount, tax_amount = order.calculate_refunded_tax_from_total(
-                alert["transaction_amount_in_cents"]
-            )
-            dispute = await repository.create(
-                Dispute(
-                    amount=amount,
-                    tax_amount=tax_amount,
-                    currency=alert["transaction_currency_code"].lower(),
-                    payment_processor=PaymentProcessor.stripe,
-                    payment_processor_id=None,  # We don't know the dispute ID yet
-                    order=order,
-                    payment=payment,
-                    status=DisputeStatus.early_warning,
+            if dispute is None:
+                payment, order = await self._get_payment_and_order_from_processor_id(
+                    session, PaymentProcessor.stripe, charge_id
                 )
-            )
+                amount, tax_amount = order.calculate_refunded_tax_from_total(
+                    alert["transaction_amount_in_cents"]
+                )
+                dispute = await repository.create(
+                    Dispute(
+                        amount=amount,
+                        tax_amount=tax_amount,
+                        currency=alert["transaction_currency_code"].lower(),
+                        payment_processor=PaymentProcessor.stripe,
+                        payment_processor_id=None,  # We don't know the dispute ID yet
+                        order=order,
+                        payment=payment,
+                        status=DisputeStatus.early_warning,
+                    )
+                )
 
         dispute.dispute_alert_processor = DisputeAlertProcessor.chargeback_stop
         dispute.dispute_alert_processor_id = alert["id"]
@@ -467,6 +475,56 @@ class DisputeService:
                 await dispute_case_service.prevent(session, case)
 
         return await repository.update(dispute)
+
+    async def _get_alert_charge_id(
+        self, session: AsyncSession, alert: ChargebackStopAlert
+    ) -> str:
+        # ChargebackStop uses PaymentIntent ID, but we use Charge ID
+        payment_intent_id = alert["integration_transaction_id"]
+        if payment_intent_id is None:
+            return await self._get_unlinked_alert_charge_id(session, alert)
+        payment_intent = await stripe_service.get_payment_intent(payment_intent_id)
+        latest_charge = payment_intent.latest_charge
+        assert latest_charge is not None
+        return get_expandable_id(latest_charge)
+
+    async def _get_unlinked_alert_charge_id(
+        self, session: AsyncSession, alert: ChargebackStopAlert
+    ) -> str:
+        """
+        Find the charge of an alert ChargebackStop could not link itself.
+
+        It happens with wallets, where the card number the network sees is not
+        the one Stripe shows, and when the alert is about a refund.
+        """
+        reference = alert.get("transaction_acquirer_reference_number")
+        if reference:
+            refund_repository = RefundRepository.from_session(session)
+            refund = await refund_repository.get_by_card_reference(reference)
+            if refund is not None:
+                raise DisputeAlertTargetsRefundError(alert["id"], refund.id)
+
+        authorization_code = alert.get("transaction_authorisation_code")
+        card_last4 = alert.get("transaction_card_last4")
+        authorized_at = alert.get("transaction_authorised_at")
+        if authorization_code and card_last4 and authorized_at:
+            authorized_day = datetime.fromisoformat(authorized_at)
+            payment_repository = PaymentRepository.from_session(session)
+            payments = await payment_repository.get_all_succeeded_by_authorization_code(
+                PaymentProcessor.stripe,
+                authorization_code,
+                card_last4,
+                currency=alert["transaction_currency_code"].lower(),
+                amount=alert["transaction_amount_in_cents"],
+                created_after=authorized_day - ALERT_AUTHORIZATION_WINDOW_BEFORE,
+                created_before=authorized_day + ALERT_AUTHORIZATION_WINDOW_AFTER,
+            )
+            # Authorisation codes are short and can repeat: only trust a
+            # single match that also has the same card last 4.
+            if len(payments) == 1:
+                return payments[0].processor_id
+
+        raise DisputeAlertTransactionNotLinkedError(alert["id"])
 
     async def _get_payment_and_order_from_processor_id(
         self, session: AsyncSession, processor: PaymentProcessor, processor_id: str

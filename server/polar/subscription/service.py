@@ -2238,21 +2238,6 @@ class SubscriptionService:
                 ]
             )
 
-        # Unit → non-unit plan changes are not yet supported.
-        old_has_unit_prices = any(is_unit_price(p) for p in subscription.prices)
-        new_has_unit_prices = any(is_unit_price(p) for p in currency_prices)
-        if old_has_unit_prices and not new_has_unit_prices:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", loc),
-                        "msg": "Can't switch from a unit-based to a non-unit-based product.",
-                        "input": input_value,
-                    }
-                ]
-            )
-
         return product, currency_prices
 
     async def validate_units_change(

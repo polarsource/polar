@@ -422,7 +422,61 @@ class TestUpdateUnits:
 
 @pytest.mark.anyio
 class TestUnitProductChange:
-    async def test_switch_away_from_unit_product_rejected(
+    async def test_switch_away_from_unit_product_clears_units(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        create_order_mock: AsyncMock,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        unit_product = await create_product_unit_based(
+            save_fixture, organization=organization, price_per_unit=1000
+        )
+        other_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=unit_product.recurring_interval,
+            prices=[(2000, "usd")],
+        )
+
+        with time_machine.travel(
+            datetime(2024, 1, 1, tzinfo=UTC), tick=False
+        ) as frozen_time:
+            subscription = await create_subscription_with_units(
+                save_fixture, product=unit_product, customer=customer, units=3
+            )
+
+            frozen_time.move_to(datetime(2024, 1, 16, 12, tzinfo=UTC))
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated = await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=other_product.id,
+                    proration_behavior=SubscriptionProrationBehavior.prorate,
+                )
+            await session.flush()
+
+        assert updated.product == other_product
+        assert updated.units is None
+        assert updated.amount == 2000
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        amounts = {entry.direction: entry.amount for entry in entries}
+        assert amounts == {
+            BillingEntryDirection.credit: (3 * 1000) // 2,
+            BillingEntryDirection.debit: 2000 // 2,
+        }
+
+    async def test_scheduled_switch_away_from_unit_product_clears_units_on_apply(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -430,21 +484,47 @@ class TestUnitProductChange:
         customer: Customer,
     ) -> None:
         unit_product = await create_product_unit_based(
-            save_fixture, organization=organization
+            save_fixture, organization=organization, price_per_unit=1000
         )
         other_product = await create_product(
             save_fixture,
             organization=organization,
             recurring_interval=unit_product.recurring_interval,
+            prices=[(2000, "usd")],
         )
         subscription = await create_subscription_with_units(
             save_fixture, product=unit_product, customer=customer, units=3
         )
 
-        with pytest.raises(PolarRequestValidationError):
-            await subscription_service.validate_product_change(
-                session, subscription, product_id=other_product.id
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=other_product.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
             )
+            await subscription_service.update_units(
+                session,
+                ctx,
+                subscription,
+                units=2,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
+
+        assert subscription.product == unit_product
+        assert subscription.units == 3
+        pending = subscription.pending_update
+        assert pending is not None
+        assert pending.units == 2
+
+        updated = pending.apply_update()
+
+        assert updated.product == other_product
+        assert updated.units is None
+        assert updated.amount == 2000
 
     async def test_switch_to_unit_product_promotes_minimum(
         self,

@@ -1,4 +1,7 @@
+import { createSpinner, spinnerStyles } from './utils/spinner'
+
 const POLAR_CHECKOUT_EVENT = 'POLAR_CHECKOUT'
+const BACKDROP_COLOR = 'rgba(0, 0, 0, 0.5)'
 
 /**
  * Message sent to the parent window when the embedded checkout is fully loaded.
@@ -125,19 +128,39 @@ class EmbedCheckout {
     const theme =
       parsedURL.searchParams.get('theme') === 'dark' ? 'dark' : 'light'
 
+    const spinnerColor = theme === 'dark' ? '#fff' : '#000'
     const styleSheet = document.createElement('style')
     styleSheet.innerText = `
-      .polar-loader-spinner {
-        width: 20px;
-        aspect-ratio: 1;
-        border-radius: 50%;
-        background: ${theme === 'dark' ? '#000' : '#fff'};
-        box-shadow: 0 0 0 0 ${theme === 'dark' ? '#fff' : '#000'};
-        animation: polar-loader-spinner-animation 1s infinite;
+      .polar-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        background: ${BACKDROP_COLOR};
       }
-      @keyframes polar-loader-spinner-animation {
-        100% {box-shadow: 0 0 0 30px #0000}
+      .polar-loader-card {
+        position: absolute;
+        inset: 0;
+        max-width: 512px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 24px;
+        background: ${theme === 'dark' ? '#111' : '#f9fafb'};
+        color: ${spinnerColor};
       }
+      @media (min-width: 768px) {
+        .polar-loader-card {
+          inset: 24px;
+          background: ${theme === 'dark' ? '#111' : '#fff'};
+        }
+      }
+      @media (min-width: 1024px) {
+        .polar-loader-card {
+          border-radius: 32px;
+        }
+      }
+      ${spinnerStyles}
       body.polar-no-scroll {
         overflow: hidden;
       }
@@ -146,17 +169,16 @@ class EmbedCheckout {
 
     // Create loader
     const loader = document.createElement('div')
-    loader.style.position = 'absolute'
-    loader.style.top = '50%'
-    loader.style.left = '50%'
-    loader.style.transform = 'translate(-50%, -50%)'
-    loader.style.zIndex = '2147483647'
+    loader.className = 'polar-loader'
     loader.style.colorScheme = 'auto'
 
+    const card = document.createElement('div')
+    card.className = 'polar-loader-card'
+    loader.appendChild(card)
+
     // Create spinning icon
-    const spinner = document.createElement('div')
-    spinner.className = 'polar-loader-spinner'
-    loader.appendChild(spinner)
+    const spinner = createSpinner()
+    card.appendChild(spinner)
 
     // Insert into the DOM
     document.body.classList.add('polar-no-scroll')
@@ -172,7 +194,6 @@ class EmbedCheckout {
     iframe.style.height = '100%'
     iframe.style.border = 'none'
     iframe.style.zIndex = '2147483647'
-    iframe.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
     iframe.style.colorScheme = theme
 
     // Opt the overlay out of smooth-scroll libraries (Lenis) on the embedding
@@ -235,6 +256,7 @@ class EmbedCheckout {
     window.removeEventListener('message', this.windowMessageListener)
     if (document.body.contains(this.iframe))
       document.body.removeChild(this.iframe)
+    this.loader.remove()
     document.body.classList.remove('polar-no-scroll')
   }
 
@@ -324,13 +346,15 @@ class EmbedCheckout {
   }
 
   /**
-   * Default action for the `loaded` event: remove the loader spinner.
+   * Default action for the `loaded` event: remove the loader and hand its
+   * backdrop over to the iframe.
    */
   private handleLoaded(): void {
     if (this.loaded) {
       return
     }
-    document.body.removeChild(this.loader)
+    this.iframe.style.backgroundColor = BACKDROP_COLOR
+    this.loader.remove()
     this.loaded = true
   }
 

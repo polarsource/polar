@@ -87,6 +87,28 @@ describe('PolarEmbedPaymentMethod', () => {
       embed.close()
     })
 
+    it('shows a placeholder card until the embed loads', async () => {
+      const promise = PolarEmbedPaymentMethod.create({
+        sessionToken: CUSTOMER_SESSION_TOKEN,
+      })
+
+      const iframe = document.querySelector('iframe')!
+      expect(
+        document.querySelector('.polar-payment-method-loader-card'),
+      ).not.toBeNull()
+      expect(iframe.style.backgroundColor).toBe('')
+
+      dispatchLoaded()
+      const embed = await promise
+
+      expect(
+        document.querySelector('.polar-payment-method-loader-card'),
+      ).toBeNull()
+      expect(iframe.style.backgroundColor).toBe('rgba(0, 0, 0, 0.5)')
+
+      embed.close()
+    })
+
     it('sets theme query parameter when provided', async () => {
       const promise = PolarEmbedPaymentMethod.create({
         sessionToken: CUSTOMER_SESSION_TOKEN,

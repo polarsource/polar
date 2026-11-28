@@ -217,7 +217,7 @@ const Checkout = ({
 
   if (embed) {
     return (
-      <ShadowBox className="dark:md:bg-polar-900 flex flex-col gap-y-12 divide-gray-200 overflow-hidden rounded-3xl md:bg-white dark:divide-transparent">
+      <ShadowBox className="dark:md:bg-polar-900 flex min-h-dvh flex-col gap-y-12 divide-gray-200 overflow-hidden rounded-3xl md:min-h-[calc(100dvh-3rem)] md:bg-white dark:divide-transparent">
         {shouldBlockCheckout && (
           <PaymentNotReadyBanner
             organizationStatus={paymentStatus?.organization_status}

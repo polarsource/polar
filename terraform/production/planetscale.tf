@@ -108,3 +108,13 @@ module "planetscale_metrics" {
     password = var.grafana_cloud_prometheus_password
   }
 }
+
+module "planetscale_audit_log" {
+  source = "../modules/planetscale_audit_log"
+
+  name                     = "polar-production-planetscale-audit-log"
+  organization             = var.planetscale_organization
+  token                    = var.planetscale_audit_log_token
+  bucket_name              = "polar-sh-planetscale-audit-log"
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+}

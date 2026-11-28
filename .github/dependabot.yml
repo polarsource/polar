@@ -54,6 +54,21 @@ updates:
         patterns:
           - "*"
   - package-ecosystem: "uv"
+    directory: "/lambda/planetscale-audit-log"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    groups:
+      planetscale-audit-log-production:
+        dependency-type: "production"
+        patterns:
+          - "*"
+      planetscale-audit-log-development:
+        dependency-type: "development"
+        patterns:
+          - "*"
+  - package-ecosystem: "uv"
     directory: "/sdk/generator"
     schedule:
       interval: "weekly"

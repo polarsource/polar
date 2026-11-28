@@ -206,14 +206,18 @@ if (meter !== null) console.log(meter.consumed_units, meter.credited_units, mete
 
 Pass `outpost()` from `@polar-sh/sdk/outpost` to `createPolar` to enable Redis-backed local meter reads.
 The client opens Outpost on first use and shares its authenticated HTTP transport.
-Outpost requires the optional `ioredis` and `@opentelemetry/*` peer dependencies.
+Outpost requires the optional `ioredis` and `@opentelemetry/*` peer dependencies, and a
+`RedisEventQueue`: an event Outpost has counted stays in Redis until Polar takes it.
 
 ```typescript
+import { RedisEventQueue } from "@polar-sh/sdk/metering/queue/redis";
 import { outpost } from "@polar-sh/sdk/outpost";
 
+const redis = "redis://localhost:6379";
 const polar = createPolar({
     accessToken: "polar_oat_xxx",
-    outpost: outpost({ redis: "redis://localhost:6379" }),
+    eventQueue: new RedisEventQueue(redis, { stream: "my-app:metering" }),
+    outpost: outpost({ redis }),
 });
 ```
 
@@ -240,19 +244,7 @@ const polar = createPolar({
 ```
 
 `RedisEventQueue` from `@polar-sh/sdk/metering/queue/redis` uses a Redis stream for persistent
-delivery. Either queue can be used with Outpost.
-
-```typescript
-import { RedisEventQueue } from "@polar-sh/sdk/metering/queue/redis";
-import { outpost } from "@polar-sh/sdk/outpost";
-
-const redis = "redis://localhost:6379";
-const polar = createPolar({
-    accessToken: "polar_oat_xxx",
-    eventQueue: new RedisEventQueue(redis, { stream: "my-app:metering" }),
-    outpost: outpost({ redis }),
-});
-```
+delivery. Outpost needs it, as in the example above.
 
 The SDK opens a single Redis client when the queue and Outpost use the same URL. Both also
 accept an existing `ioredis` client, which your application manages and closes.

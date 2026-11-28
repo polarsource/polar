@@ -300,6 +300,8 @@ Set `current_billing_period_end` to move the renewal date, for example to line s
 
 If the subscription is set to cancel at period end, it ends on the new date instead.
 
+By default the move isn't billed: the customer keeps what they paid for the current period, and the next invoice charges the full price on the new date. Set `prorate` to `true` in the API to bill the difference on the next invoice instead. Days you remove are credited and days you add are charged, at the daily rate of a regular period. Nothing is prorated while the subscription is trialing or set to cancel at period end.
+
 <Tabs>
   <Tab title="Dashboard">
     - Open an active subscription

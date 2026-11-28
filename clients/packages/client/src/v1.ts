@@ -42158,6 +42158,14 @@ export interface components {
        * @example 2026-01-01T00:00:00.000000Z
        */
       current_billing_period_end: string
+      /**
+       * Prorate
+       * @description Prorate the price of the current period for the days removed or added. Removed days are credited and added days are charged on the next invoice.
+       *
+       *     Not applied to a subscription that is trialing or set to cancel at the end of the period.
+       * @default false
+       */
+      prorate: boolean
     }
     /** SubscriptionUpdateClear */
     SubscriptionUpdateClear: {

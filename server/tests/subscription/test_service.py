@@ -12462,6 +12462,272 @@ class TestUpdateBillingPeriod:
         assert updated_subscription.current_period_start == new_period_end
         assert updated_subscription.current_period_end == expected_new_cycle_end
 
+    @time_machine.travel("2026-03-17T12:00:00Z", tick=False)
+    async def test_prorate_shorter_period_credits_removed_days(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        period_start = datetime(2026, 3, 17, tzinfo=UTC)
+        old_period_end = datetime(2026, 4, 17, tzinfo=UTC)
+        new_period_end = datetime(2026, 4, 1, tzinfo=UTC)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_start=period_start,
+            current_period_end=old_period_end,
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_currrent_billing_period_end(
+                session,
+                ctx,
+                subscription,
+                new_period_end=new_period_end,
+                prorate=True,
+            )
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert len(billing_entries) == 1
+        billing_entry = billing_entries[0]
+        assert billing_entry.type == BillingEntryType.proration
+        assert billing_entry.direction == BillingEntryDirection.credit
+        assert billing_entry.start_timestamp == new_period_end
+        assert billing_entry.end_timestamp == old_period_end
+        assert billing_entry.amount == round(
+            price.price_amount * Decimal(16) / Decimal(31)
+        )
+        assert billing_entry.product_price_id == price.id
+
+        events = await get_all_by_name(
+            session, SystemEvent.subscription_billing_period_updated
+        )
+        assert len(events) == 1
+        assert billing_entry.event_id == events[0].id
+
+    @time_machine.travel("2026-03-17T12:00:00Z", tick=False)
+    async def test_prorate_longer_period_charges_added_days(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        old_period_end = datetime(2026, 4, 17, tzinfo=UTC)
+        new_period_end = datetime(2026, 4, 27, tzinfo=UTC)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_start=datetime(2026, 3, 17, tzinfo=UTC),
+            current_period_end=old_period_end,
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_currrent_billing_period_end(
+                session,
+                ctx,
+                subscription,
+                new_period_end=new_period_end,
+                prorate=True,
+            )
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert len(billing_entries) == 1
+        billing_entry = billing_entries[0]
+        assert billing_entry.direction == BillingEntryDirection.debit
+        assert billing_entry.start_timestamp == old_period_end
+        assert billing_entry.end_timestamp == new_period_end
+        assert billing_entry.amount == round(
+            price.price_amount * Decimal(10) / Decimal(31)
+        )
+
+    @time_machine.travel("2026-03-17T12:00:00Z", tick=False)
+    async def test_prorate_moving_out_and_back_nets_to_zero(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        old_period_end = datetime(2026, 4, 17, tzinfo=UTC)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_start=datetime(2026, 3, 17, tzinfo=UTC),
+            current_period_end=old_period_end,
+        )
+
+        for new_period_end in (datetime(2026, 4, 27, tzinfo=UTC), old_period_end):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_currrent_billing_period_end(
+                    session,
+                    ctx,
+                    subscription,
+                    new_period_end=new_period_end,
+                    prorate=True,
+                )
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert {entry.direction for entry in billing_entries} == {
+            BillingEntryDirection.debit,
+            BillingEntryDirection.credit,
+        }
+        assert len({entry.amount for entry in billing_entries}) == 1
+
+    @time_machine.travel("2026-03-17T12:00:00Z", tick=False)
+    async def test_prorate_applies_discount(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount,
+            current_period_start=datetime(2026, 3, 17, tzinfo=UTC),
+            current_period_end=datetime(2026, 4, 17, tzinfo=UTC),
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_currrent_billing_period_end(
+                session,
+                ctx,
+                subscription,
+                new_period_end=datetime(2026, 4, 1, tzinfo=UTC),
+                prorate=True,
+            )
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert len(billing_entries) == 1
+        assert billing_entries[0].amount == round(
+            price.price_amount * Decimal("0.5") * Decimal(16) / Decimal(31)
+        )
+
+    async def test_no_proration_by_default(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_currrent_billing_period_end(
+                session,
+                ctx,
+                subscription,
+                new_period_end=subscription.current_period_end + timedelta(days=7),
+            )
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        assert (
+            await billing_entry_repository.get_pending_by_subscription(subscription.id)
+            == []
+        )
+
+    async def test_prorate_skipped_while_trialing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_currrent_billing_period_end(
+                session,
+                ctx,
+                subscription,
+                new_period_end=subscription.current_period_end + timedelta(days=7),
+                prorate=True,
+            )
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        assert (
+            await billing_entry_repository.get_pending_by_subscription(subscription.id)
+            == []
+        )
+
+    async def test_prorate_skipped_when_canceling_at_period_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_currrent_billing_period_end(
+                session,
+                ctx,
+                subscription,
+                new_period_end=subscription.current_period_end + timedelta(days=7),
+                prorate=True,
+            )
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        assert (
+            await billing_entry_repository.get_pending_by_subscription(subscription.id)
+            == []
+        )
+
 
 @pytest.mark.anyio
 class TestCancelCustomer:

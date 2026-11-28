@@ -566,6 +566,16 @@ class SubscriptionUpdateBillingPeriod(Schema):
             """
         ),
     )
+    prorate: bool = Field(
+        default=False,
+        description=inspect.cleandoc(
+            """
+            Prorate the price of the current period for the days removed or added. Removed days are credited and added days are charged on the next invoice.
+
+            Not applied to a subscription that is trialing or set to cancel at the end of the period.
+            """
+        ),
+    )
 
 
 class SubscriptionCancelBase(Schema):

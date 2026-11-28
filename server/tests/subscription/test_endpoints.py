@@ -8,6 +8,7 @@ from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
+from polar.billing_entry.repository import BillingEntryRepository
 from polar.enums import (
     SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
@@ -28,6 +29,7 @@ from polar.models import (
     Subscription,
     UserOrganization,
 )
+from polar.models.billing_entry import BillingEntryDirection
 from polar.models.billing_interval import UsagePolicy
 from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
@@ -1948,6 +1950,37 @@ class TestSubscriptionUpdateBillingPeriod:
             json={"current_billing_period_end": new_period_end},
         )
         assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_prorate(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        new_period_end = datetime.now(UTC) + timedelta(days=365)
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={
+                "current_billing_period_end": new_period_end.isoformat(),
+                "prorate": True,
+            },
+        )
+
+        assert response.status_code == 200
+        billing_entries = await BillingEntryRepository.from_session(
+            session
+        ).get_pending_by_subscription(subscription.id)
+        assert [entry.direction for entry in billing_entries] == [
+            BillingEntryDirection.debit
+        ]
 
     @pytest.mark.auth
     async def test_valid_extension(

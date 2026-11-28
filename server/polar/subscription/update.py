@@ -68,17 +68,14 @@ def _collect_proratable_amounts(
     return priced_entries
 
 
-def _generate_product_credit_proration_billing_entries(
+def _generate_current_prices_proration_billing_entries(
     *,
     subscription: Subscription,
-    applies_at: datetime,
-    initial_cycle_start: datetime,
-    initial_cycle_end: datetime,
+    direction: BillingEntryDirection,
+    fraction: Decimal,
+    start_timestamp: datetime,
+    end_timestamp: datetime,
 ) -> list[BillingEntry]:
-    initial_cycle_pct_remaining = _calculate_time_proration(
-        initial_cycle_start, initial_cycle_end, applies_at
-    )
-
     priced_entries = _collect_proratable_amounts(
         PriceSet.from_prices(
             subscription.prices, subscription.currency
@@ -94,7 +91,7 @@ def _generate_product_credit_proration_billing_entries(
         )
 
     billing_entries: list[BillingEntry] = []
-    for (initial_price, base_amount), discount_amount in zip(
+    for (price, base_amount), discount_amount in zip(
         priced_entries, discount_amounts, strict=True
     ):
         # Prorations have discounts applied to the `BillingEntry.amount`
@@ -107,21 +104,70 @@ def _generate_product_credit_proration_billing_entries(
         # $20 discount should _not_ apply to the prorations because the
         # prorations are happening "this cycle" and shouldn't take away
         # from next cycle's discount.
-        entry_unused_time = BillingEntry(
-            type=BillingEntryType.proration,
-            direction=BillingEntryDirection.credit,
-            start_timestamp=applies_at,
-            end_timestamp=initial_cycle_end,
-            amount=round((base_amount - discount_amount) * initial_cycle_pct_remaining),
-            discount_amount=discount_amount,
-            currency=subscription.currency,
-            customer=subscription.customer,
-            product_price=initial_price,
-            subscription=subscription,
+        billing_entries.append(
+            BillingEntry(
+                type=BillingEntryType.proration,
+                direction=direction,
+                start_timestamp=start_timestamp,
+                end_timestamp=end_timestamp,
+                amount=round((base_amount - discount_amount) * fraction),
+                discount_amount=discount_amount,
+                currency=subscription.currency,
+                customer=subscription.customer,
+                product_price=price,
+                subscription=subscription,
+            )
         )
-        billing_entries.append(entry_unused_time)
 
     return billing_entries
+
+
+def _generate_product_credit_proration_billing_entries(
+    *,
+    subscription: Subscription,
+    applies_at: datetime,
+    initial_cycle_start: datetime,
+    initial_cycle_end: datetime,
+) -> list[BillingEntry]:
+    return _generate_current_prices_proration_billing_entries(
+        subscription=subscription,
+        direction=BillingEntryDirection.credit,
+        fraction=_calculate_time_proration(
+            initial_cycle_start, initial_cycle_end, applies_at
+        ),
+        start_timestamp=applies_at,
+        end_timestamp=initial_cycle_end,
+    )
+
+
+def generate_billing_period_proration_billing_entries(
+    subscription: Subscription, *, new_period_end: datetime
+) -> list[BillingEntry]:
+    """Credit the days removed from the current period, or charge the days
+    added to it, at the daily rate of a regular period.
+
+    The rate comes from the regular interval rather than the current period
+    length, so moving the date out and back nets to zero.
+    """
+    period_start = subscription.current_period_start
+    old_period_end = subscription.current_period_end
+    regular_period_end = subscription.recurring_interval.get_next_period(
+        period_start, period_start.day, subscription.recurring_interval_count
+    )
+    regular_period = (regular_period_end - period_start).total_seconds()
+    shift = (new_period_end - old_period_end).total_seconds()
+    if shift == 0:
+        return []
+
+    return _generate_current_prices_proration_billing_entries(
+        subscription=subscription,
+        direction=BillingEntryDirection.debit
+        if shift > 0
+        else BillingEntryDirection.credit,
+        fraction=Decimal(abs(shift)) / Decimal(regular_period),
+        start_timestamp=min(old_period_end, new_period_end),
+        end_timestamp=max(old_period_end, new_period_end),
+    )
 
 
 def _generate_product_debit_proration_billing_entries(

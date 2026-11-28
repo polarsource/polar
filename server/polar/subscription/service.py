@@ -168,6 +168,7 @@ from .schemas import (
 )
 from .sorting import SubscriptionSortProperty
 from .update import (
+    generate_billing_period_proration_billing_entries,
     generate_subscription_update,
     next_cycle_bounds,
     resolve_proration_behavior,
@@ -2056,6 +2057,7 @@ class SubscriptionService:
                 ctx,
                 subscription,
                 new_period_end=update.current_billing_period_end,
+                prorate=update.prorate,
             )
 
         if isinstance(update, SubscriptionCancel):
@@ -3062,6 +3064,7 @@ class SubscriptionService:
         subscription: Subscription,
         *,
         new_period_end: datetime,
+        prorate: bool = False,
     ) -> Subscription:
         if subscription.revoked:
             raise AlreadyCanceledSubscription(subscription)
@@ -3071,6 +3074,18 @@ class SubscriptionService:
 
         old_period_end = subscription.current_period_end
 
+        # Nothing is billed during a trial, and a subscription due to cancel has
+        # no next invoice to carry the proration.
+        billing_entries = (
+            generate_billing_period_proration_billing_entries(
+                subscription, new_period_end=new_period_end
+            )
+            if prorate
+            and not subscription.trialing
+            and not subscription.cancel_at_period_end
+            else []
+        )
+
         subscription.current_period_end = new_period_end
         subscription.anchor_day = new_period_end.day
 
@@ -3079,7 +3094,7 @@ class SubscriptionService:
 
         await self._realign_pending_update_cycle(session, subscription)
 
-        await event_service.create_event(
+        event = await event_service.create_event(
             session,
             build_system_event(
                 SystemEvent.subscription_billing_period_updated,
@@ -3092,6 +3107,10 @@ class SubscriptionService:
                 },
             ),
         )
+
+        for entry in billing_entries:
+            entry.event = event
+            session.add(entry)
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)

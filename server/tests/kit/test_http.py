@@ -322,14 +322,20 @@ class TestSSRFSafeTransport:
         assert backend.connected_hosts == []
 
     @pytest.mark.anyio
-    async def test_falls_back_to_next_ip_on_connect_error(self) -> None:
+    @pytest.mark.parametrize(
+        "connect_exception",
+        [httpcore2.ConnectError("refused"), httpcore2.ConnectTimeout("timed out")],
+    )
+    async def test_falls_back_to_next_ip_on_connect_failure(
+        self, connect_exception: Exception
+    ) -> None:
         backend = _RecordingBackend(_response(200))
         original_connect_tcp = backend.connect_tcp
 
         async def connect_tcp(host: str, port: int, **kwargs: Any) -> Any:
             stream = await original_connect_tcp(host, port, **kwargs)
             if host == "93.184.216.34":
-                raise httpcore2.ConnectError("refused")
+                raise connect_exception
             return stream
 
         with patch(

@@ -108,7 +108,7 @@ class _SSRFSafeNetworkBackend(httpcore2.AsyncNetworkBackend):
                 f"DNS resolution timed out for {host}"
             ) from e
 
-        error: httpcore2.ConnectError | None = None
+        error: httpcore2.ConnectError | httpcore2.ConnectTimeout | None = None
         for ip in ips:
             try:
                 return await self._backend.connect_tcp(
@@ -118,7 +118,7 @@ class _SSRFSafeNetworkBackend(httpcore2.AsyncNetworkBackend):
                     local_address=local_address,
                     socket_options=socket_options,
                 )
-            except httpcore2.ConnectError as e:
+            except (httpcore2.ConnectError, httpcore2.ConnectTimeout) as e:
                 error = e
         assert error is not None
         raise error

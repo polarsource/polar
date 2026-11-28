@@ -1,8 +1,12 @@
 import asyncio
 import contextlib
 import os
+import sys
+import tempfile
+import time
 from collections.abc import AsyncGenerator, Callable, Mapping
 from datetime import timedelta
+from pathlib import Path
 from typing import Any
 
 import logfire
@@ -37,12 +41,34 @@ log: Logger = structlog.get_logger()
 HTTP_HOST = os.getenv("dramatiq_prom_host", "0.0.0.0")
 HTTP_PORT = int(os.getenv("dramatiq_prom_port", "9191"))
 
+SCHEDULER_HEARTBEAT_PATH = (
+    Path(tempfile.gettempdir()) / f"polar-scheduler-heartbeat-{HTTP_PORT}"
+)
+SCHEDULER_HEARTBEAT_STALENESS_SECONDS = 60
+SCHEDULER_FORK_FUNCTION = "polar.worker.scheduler:start"
+
 _heartbeat_checker: Callable[[], bool] | None = None
 
 
 def set_heartbeat_checker(checker: Callable[[], bool]) -> None:
     global _heartbeat_checker
     _heartbeat_checker = checker
+
+
+def touch_scheduler_heartbeat() -> None:
+    SCHEDULER_HEARTBEAT_PATH.touch()
+
+
+def _is_scheduler_fork_configured() -> bool:
+    return any(arg.endswith(SCHEDULER_FORK_FUNCTION) for arg in sys.argv)
+
+
+def is_scheduler_heartbeat_fresh() -> bool:
+    try:
+        last_heartbeat = SCHEDULER_HEARTBEAT_PATH.stat().st_mtime
+    except FileNotFoundError:
+        return False
+    return time.time() - last_heartbeat < SCHEDULER_HEARTBEAT_STALENESS_SECONDS
 
 
 class HealthMiddleware(Middleware):
@@ -187,6 +213,9 @@ def _run_server(*, database: bool) -> int:
     log.debug("Starting exposition server...")
     configure_logfire("worker")
     configure_logging(logfire=True)
+    if _is_scheduler_fork_configured():
+        touch_scheduler_heartbeat()
+        set_heartbeat_checker(is_scheduler_heartbeat_fresh)
     app = create_app(database=database)
     config = uvicorn.Config(
         app, host=HTTP_HOST, port=HTTP_PORT, log_level="error", access_log=False

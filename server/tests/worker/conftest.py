@@ -6,6 +6,7 @@ autouse fixtures from the main test suite to prevent connection attempts.
 """
 
 import os
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -53,3 +54,11 @@ def current_message() -> Any:
     The worker tests don't need dramatiq messages.
     """
     return None
+
+
+@pytest.fixture(autouse=True)
+def scheduler_heartbeat_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    path = tmp_path / "scheduler-heartbeat"
+    monkeypatch.setattr("polar.worker._health.SCHEDULER_HEARTBEAT_PATH", path)
+    monkeypatch.setattr("polar.worker._health._heartbeat_checker", None)
+    return path

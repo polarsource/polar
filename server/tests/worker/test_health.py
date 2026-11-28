@@ -1,5 +1,7 @@
 import contextlib
+import os
 import time
+from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -20,6 +22,8 @@ from starlette.testclient import TestClient
 import polar.worker._health as health_module
 from polar.config import Environment, settings
 from polar.worker._health import (
+    SCHEDULER_FORK_FUNCTION,
+    SCHEDULER_HEARTBEAT_STALENESS_SECONDS,
     HealthMiddleware,
     _create_lifespan,
     _run_exposition_server,
@@ -27,6 +31,9 @@ from polar.worker._health import (
     create_app,
     handle_server_error,
     health,
+    is_scheduler_heartbeat_fresh,
+    set_heartbeat_checker,
+    touch_scheduler_heartbeat,
 )
 
 
@@ -136,69 +143,60 @@ class TestHealth:
         assert response.status_code == 200
 
 
-class TestIsSchedulerHealthy:
-    def test_healthy_before_first_heartbeat(self) -> None:
-        import polar.worker.scheduler as scheduler_module
-        from polar.worker.scheduler import _is_scheduler_healthy
+class TestIsSchedulerHeartbeatFresh:
+    def test_not_fresh_without_heartbeat_file(self) -> None:
+        assert is_scheduler_heartbeat_fresh() is False
 
-        original = scheduler_module._last_heartbeat
-        scheduler_module._last_heartbeat = 0.0
-        try:
-            assert _is_scheduler_healthy() is True
-        finally:
-            scheduler_module._last_heartbeat = original
+    def test_fresh_with_recent_heartbeat(self) -> None:
+        touch_scheduler_heartbeat()
 
-    def test_healthy_with_recent_heartbeat(self) -> None:
-        import polar.worker.scheduler as scheduler_module
-        from polar.worker.scheduler import _is_scheduler_healthy
+        assert is_scheduler_heartbeat_fresh() is True
 
-        original = scheduler_module._last_heartbeat
-        scheduler_module._last_heartbeat = time.monotonic()
-        try:
-            assert _is_scheduler_healthy() is True
-        finally:
-            scheduler_module._last_heartbeat = original
+    def test_not_fresh_with_old_heartbeat(self, scheduler_heartbeat_path: Path) -> None:
+        touch_scheduler_heartbeat()
+        old = time.time() - SCHEDULER_HEARTBEAT_STALENESS_SECONDS - 1
+        os.utime(scheduler_heartbeat_path, (old, old))
 
-    def test_unhealthy_with_stale_heartbeat(self) -> None:
-        import polar.worker.scheduler as scheduler_module
-        from polar.worker.scheduler import (
-            HEARTBEAT_STALENESS_SECONDS,
-            _is_scheduler_healthy,
+        assert is_scheduler_heartbeat_fresh() is False
+
+
+class TestRunServer:
+    @pytest.fixture
+    def server(self, mocker: MockerFixture) -> MagicMock:
+        mocker.patch.object(health_module, "configure_logfire")
+        mocker.patch.object(health_module, "configure_logging")
+        return mocker.patch("polar.worker._health.uvicorn.Server")
+
+    def test_checks_scheduler_heartbeat_with_scheduler_fork(
+        self,
+        mocker: MockerFixture,
+        server: MagicMock,
+        scheduler_heartbeat_path: Path,
+    ) -> None:
+        mocker.patch(
+            "polar.worker._health.sys.argv",
+            ["dramatiq", "-f", SCHEDULER_FORK_FUNCTION, "polar.worker.run"],
         )
 
-        original = scheduler_module._last_heartbeat
-        scheduler_module._last_heartbeat = (
-            time.monotonic() - HEARTBEAT_STALENESS_SECONDS - 1
-        )
-        try:
-            assert _is_scheduler_healthy() is False
-        finally:
-            scheduler_module._last_heartbeat = original
+        _run_exposition_server()
 
+        assert health_module._heartbeat_checker is is_scheduler_heartbeat_fresh
+        assert scheduler_heartbeat_path.exists()
+        server.return_value.run.assert_called_once()
 
-class TestBoundedWaitSeconds:
-    def test_caps_long_wait_to_heartbeat_interval(self) -> None:
-        from polar.worker.scheduler import (
-            HEARTBEAT_INTERVAL_SECONDS,
-            HEARTBEAT_STALENESS_SECONDS,
-            _bounded_wait_seconds,
-        )
+    def test_no_scheduler_heartbeat_without_scheduler_fork(
+        self,
+        mocker: MockerFixture,
+        server: MagicMock,
+        scheduler_heartbeat_path: Path,
+    ) -> None:
+        mocker.patch("polar.worker._health.sys.argv", ["dramatiq", "polar.worker.run"])
 
-        assert _bounded_wait_seconds(900) == HEARTBEAT_INTERVAL_SECONDS
-        assert HEARTBEAT_INTERVAL_SECONDS < HEARTBEAT_STALENESS_SECONDS
+        _run_exposition_server()
 
-    def test_caps_none_wait_to_heartbeat_interval(self) -> None:
-        from polar.worker.scheduler import (
-            HEARTBEAT_INTERVAL_SECONDS,
-            _bounded_wait_seconds,
-        )
-
-        assert _bounded_wait_seconds(None) == HEARTBEAT_INTERVAL_SECONDS
-
-    def test_keeps_short_wait_unchanged(self) -> None:
-        from polar.worker.scheduler import _bounded_wait_seconds
-
-        assert _bounded_wait_seconds(5) == 5
+        assert health_module._heartbeat_checker is None
+        assert not scheduler_heartbeat_path.exists()
+        server.return_value.run.assert_called_once()
 
 
 def _create_test_app() -> Starlette:
@@ -252,6 +250,25 @@ class TestSchedulerHealthIntegration:
                 assert "heartbeat" in response.text.lower()
         finally:
             health_module._heartbeat_checker = original
+
+    async def test_unhealthy_when_scheduler_heartbeat_goes_stale(
+        self, scheduler_heartbeat_path: Path
+    ) -> None:
+        app = _create_test_app()
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            touch_scheduler_heartbeat()
+            set_heartbeat_checker(is_scheduler_heartbeat_fresh)
+            response = await client.get("/")
+            assert response.status_code == 200
+
+            old = time.time() - SCHEDULER_HEARTBEAT_STALENESS_SECONDS - 1
+            os.utime(scheduler_heartbeat_path, (old, old))
+
+            response = await client.get("/")
+            assert response.status_code == 503
+            assert "Scheduler heartbeat is stale" in response.text
 
     async def test_workers_unaffected_without_heartbeat_checker(self) -> None:
         original = health_module._heartbeat_checker

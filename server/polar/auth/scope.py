@@ -39,6 +39,8 @@ class Scope(StrEnum):
     benefits_read = "benefits:read"
     benefits_write = "benefits:write"
 
+    catalogs_write = "catalogs:write"
+
     events_read = "events:read"
     events_write = "events:write"
 
@@ -147,8 +149,10 @@ READ_ONLY_SCOPES: set[Scope] = {
 
 # What an unclaimed agent's tokens carry: the resources it may set up before the
 # claim (ADR-0014). Declarative config is covered by its sections' scopes, minus
-# webhooks.
+# webhooks. It can publish its catalog so people can try Polar end to end; an
+# unclaimed organization can't take payments.
 UNCLAIMED_AGENT_SCOPES: set[Scope] = {
+    Scope.catalogs_write,
     Scope.organizations_read,
     Scope.organizations_write,
     Scope.products_read,
@@ -180,9 +184,12 @@ SCOPES_SUPPORTED = [
     }
 ]
 
-# What a claimed agent's tokens carry: it acts for the user who claimed it
-# (ADR-0014), with everything an OAuth app can be granted, like our MCP client.
-CLAIMED_AGENT_SCOPES: set[Scope] = {Scope(scope) for scope in SCOPES_SUPPORTED}
+# Publishing catalogs is granted to a token deliberately, so it's left out of
+# OAuth clients' default scope and of claimed agents' tokens, which carry that
+# default (ADR-0014).
+DEFAULT_CLIENT_SCOPES = [s for s in SCOPES_SUPPORTED if s != Scope.catalogs_write]
+
+CLAIMED_AGENT_SCOPES: set[Scope] = {Scope(scope) for scope in DEFAULT_CLIENT_SCOPES}
 
 SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.openid: "OpenID",
@@ -208,6 +215,7 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.products_write: "Create or modify products",
     Scope.benefits_read: "Read benefits",
     Scope.benefits_write: "Create or modify benefits",
+    Scope.catalogs_write: "Publish catalog changes",
     Scope.events_read: "Read events",
     Scope.events_write: "Create events",
     Scope.meters_read: "Read meters",

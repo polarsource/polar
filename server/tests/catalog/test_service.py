@@ -211,6 +211,25 @@ class TestPublishDraft:
                 session, auth_subject, organization, draft
             )
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.products_write})
+    )
+    async def test_without_catalogs_write(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
+    ) -> None:
+        _, _, draft, _ = catalogs
+
+        with pytest.raises(InsufficientScopeError):
+            await catalog_service.publish_draft(
+                session, auth_subject, organization, draft
+            )
+
+        assert draft.status == CatalogStatus.draft
+
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_settings(
         self,
@@ -263,7 +282,10 @@ class TestPublishDraft:
         )
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.products_write})
+        AuthSubjectFixture(
+            subject="organization",
+            scopes={Scope.products_write, Scope.catalogs_write},
+        )
     )
     async def test_unchanged_settings(
         self,
@@ -305,7 +327,10 @@ class TestPublishDraft:
             )
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.products_write})
+        AuthSubjectFixture(
+            subject="organization",
+            scopes={Scope.products_write, Scope.catalogs_write},
+        )
     )
     async def test_settings_require_organizations_scope(
         self,

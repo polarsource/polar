@@ -34,6 +34,7 @@ const config = {
   scopes: [
     'benefits:read',
     'benefits:write',
+    'catalogs:write',
     'checkout_links:read',
     'checkout_links:write',
     'checkouts:read',

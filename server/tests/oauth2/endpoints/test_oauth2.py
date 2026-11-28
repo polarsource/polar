@@ -241,6 +241,23 @@ class TestOAuth2Register:
         for value in json.values():
             assert value is not None
 
+    @pytest.mark.auth
+    async def test_default_scope_excludes_catalogs_write(
+        self, client: AsyncClient
+    ) -> None:
+        response = await client.post(
+            "/v1/oauth2/register",
+            json={
+                "client_name": "Test Client",
+                "redirect_uris": ["https://example.com/callback"],
+            },
+        )
+
+        assert response.status_code == 201
+        scopes = response.json()["scope"].split()
+        assert Scope.products_write in scopes
+        assert Scope.catalogs_write not in scopes
+
     @pytest.mark.auth(AuthSubjectFixture(subject="user"))
     async def test_valid_public_client(self, client: AsyncClient) -> None:
         """Test that public clients (token_endpoint_auth_method='none') don't receive client_secret."""

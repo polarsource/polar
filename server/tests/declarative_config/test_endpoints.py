@@ -5,6 +5,7 @@ import pytest
 from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.auth.scope import Scope
 from polar.kit.utils import utc_now
 from polar.meter.unit import MeterUnit
 from polar.models import Organization, UserOrganization
@@ -140,6 +141,20 @@ class TestDraft:
     )
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_organization_token(
+        self, mocker: MockerFixture, client: AsyncClient
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+
+        response = await client.post("/v1/config/draft", json={"meters": [METER]})
+
+        assert response.status_code == 200
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.meters_write}),
+        AuthSubjectFixture(subject="agent", scopes={Scope.meters_write}),
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_without_catalogs_write(
         self, mocker: MockerFixture, client: AsyncClient
     ) -> None:
         mocker.patch("polar.meter.service.enqueue_job")

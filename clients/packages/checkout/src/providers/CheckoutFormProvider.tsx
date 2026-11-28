@@ -237,6 +237,7 @@ export const CheckoutFormProvider = ({
           case 'AlreadyActiveSubscriptionError':
           case 'NotOpenCheckout':
           case 'PaymentNotReady':
+          case 'CheckoutConfirmRateLimited':
             setError('root', { message: error.detail })
             break
           case 'DiscountRedemptionLimitReached':

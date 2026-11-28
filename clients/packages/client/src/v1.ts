@@ -15215,6 +15215,17 @@ export interface components {
     CheckoutConfirm:
       | components['schemas']['CheckoutConfirmStripe']
       | components['schemas']['CheckoutConfirmSharedPaymentToken']
+    /** CheckoutConfirmRateLimited */
+    CheckoutConfirmRateLimited: {
+      /**
+       * Error
+       * @example CheckoutConfirmRateLimited
+       * @constant
+       */
+      error: 'CheckoutConfirmRateLimited'
+      /** Detail */
+      detail: string
+    }
     /**
      * CheckoutConfirmSharedPaymentToken
      * @description Confirm a checkout session using a Stripe shared payment token granted by an agent.
@@ -52513,6 +52524,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+      /** @description Too many payment attempts for this customer email. */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CheckoutConfirmRateLimited']
         }
       }
     }

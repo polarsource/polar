@@ -121,6 +121,8 @@ from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.schemas import ProductPriceCreateList
 from polar.product.service import product as product_service
 from polar.product.unit_price import validate_unit_limits
+from polar.rate_limit import get_checkout_confirm_email_retry_after
+from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import TaxCode
@@ -245,6 +247,13 @@ class DiscountRedemptionLimitReached(CheckoutError):
             "times allowed per customer."
         )
         super().__init__(message, 403)
+
+
+class CheckoutConfirmRateLimited(CheckoutError):
+    def __init__(self, retry_after: int) -> None:
+        self.retry_after = retry_after
+        message = "Too many payment attempts. Please try again later."
+        super().__init__(message, 429, {"Retry-After": str(retry_after)})
 
 
 class CheckoutLocked(CheckoutError):
@@ -1088,9 +1097,19 @@ class CheckoutService:
         await self._after_checkout_updated(session, checkout)
         return checkout
 
+    async def check_confirm_rate_limit(self, redis: Redis, checkout: Checkout) -> None:
+        if checkout.customer_email is None:
+            return
+        retry_after = await get_checkout_confirm_email_retry_after(
+            redis, checkout.customer_email
+        )
+        if retry_after:
+            raise CheckoutConfirmRateLimited(retry_after)
+
     async def confirm(
         self,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
@@ -1112,7 +1131,7 @@ class CheckoutService:
                 ) as discount_redemption:
                     discount_redemption.checkout = checkout
                     return await self._confirm_inner(
-                        session, auth_subject, checkout, checkout_confirm
+                        session, redis, auth_subject, checkout, checkout_confirm
                     )
             except DiscountNotRedeemableError as e:
                 raise PolarRequestValidationError(
@@ -1127,12 +1146,13 @@ class CheckoutService:
                 ) from e
 
         return await self._confirm_inner(
-            session, auth_subject, checkout, checkout_confirm
+            session, redis, auth_subject, checkout, checkout_confirm
         )
 
     async def _confirm_inner(
         self,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
@@ -1312,6 +1332,9 @@ class CheckoutService:
             and isinstance(checkout_confirm, CheckoutConfirmSharedPaymentToken)
         ):
             self._validate_shared_payment_token(checkout)
+
+        if checkout.is_payment_form_required:
+            await self.check_confirm_rate_limit(redis, checkout)
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             async with self._create_or_update_customer(

@@ -28,6 +28,7 @@ from polar.checkout.schemas import (
 )
 from polar.checkout.service import (
     AlreadyActiveSubscriptionError,
+    CheckoutConfirmRateLimited,
     CheckoutCustomerDeleted,
     CheckoutCustomerExternalIdMismatch,
     DiscountRedemptionLimitReached,
@@ -108,6 +109,7 @@ from polar.product.schemas import (
     ProductPriceSeatBasedCreate,
 )
 from polar.product.tiers import Tiers, TiersInput, TierType
+from polar.redis import Redis
 from polar.subscription.service import SubscriptionService
 from polar.tax.calculation import (
     InvalidTaxIDError,
@@ -5337,6 +5339,7 @@ class TestConfirm:
         missing_fields: set[tuple[str, ...]],
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -5351,6 +5354,7 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(payload),
@@ -5365,6 +5369,7 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         customer: Customer,
         pro_versions: tuple[Product, Product],
@@ -5375,6 +5380,7 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout,
                 CheckoutConfirmStripe(
@@ -5389,6 +5395,7 @@ class TestConfirm:
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -5403,6 +5410,7 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(
@@ -5425,6 +5433,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -5446,6 +5455,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -5465,6 +5475,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -5486,6 +5497,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -5503,12 +5515,14 @@ class TestConfirm:
     async def test_not_open(
         self,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_confirmed_one_time: Checkout,
     ) -> None:
         with pytest.raises(NotOpenCheckout):
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_confirmed_one_time,
                 CheckoutConfirmStripe.model_validate(
@@ -5520,6 +5534,7 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
         organization: Organization,
@@ -5533,6 +5548,7 @@ class TestConfirm:
         with pytest.raises(CheckoutCustomerDeleted):
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(
@@ -5549,6 +5565,7 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
         organization: Organization,
@@ -5566,6 +5583,7 @@ class TestConfirm:
         with pytest.raises(CheckoutCustomerExternalIdMismatch):
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(
@@ -5583,6 +5601,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
         organization: Organization,
@@ -5608,6 +5627,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -5628,6 +5648,7 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -5641,6 +5662,7 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(
@@ -5656,12 +5678,14 @@ class TestConfirm:
     async def test_missing_required_custom_field(
         self,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_custom_fields: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_custom_fields,
                 CheckoutConfirmStripe.model_validate(
@@ -5678,6 +5702,7 @@ class TestConfirm:
     async def test_validate_custom_fields_even_if_data_unset(
         self,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_custom_fields: Checkout,
     ) -> None:
@@ -5688,6 +5713,7 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_custom_fields,
                 CheckoutConfirmStripe.model_validate(
@@ -5704,6 +5730,7 @@ class TestConfirm:
         self,
         calculate_tax_mock: AsyncMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -5712,6 +5739,7 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(
@@ -5752,6 +5780,7 @@ class TestConfirm:
         self,
         payload: dict[str, Any],
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
@@ -5762,6 +5791,7 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(
@@ -5791,6 +5821,7 @@ class TestConfirm:
         expected_tax_metadata: dict[str, str],
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -5805,6 +5836,7 @@ class TestConfirm:
         )
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -5885,6 +5917,7 @@ class TestConfirm:
         expected_confirmation_token_fetched: bool,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -5899,6 +5932,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -5994,6 +6028,7 @@ class TestConfirm:
         mocker: MockerFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -6012,6 +6047,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -6063,6 +6099,7 @@ class TestConfirm:
         expected_tax_metadata: dict[str, str],
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_discount_percentage_100: Checkout,
         discount_percentage_100: Discount,
@@ -6075,6 +6112,7 @@ class TestConfirm:
         )
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_discount_percentage_100,
             CheckoutConfirmStripe.model_validate(
@@ -6118,6 +6156,7 @@ class TestConfirm:
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -6129,6 +6168,7 @@ class TestConfirm:
         )
         await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -6149,6 +6189,7 @@ class TestConfirm:
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_discount_percentage_100: Checkout,
     ) -> None:
@@ -6160,6 +6201,7 @@ class TestConfirm:
         )
         await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_discount_percentage_100,
             CheckoutConfirmStripe.model_validate(
@@ -6181,6 +6223,7 @@ class TestConfirm:
         stripe_service_mock: MagicMock,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_discount_percentage_100_forever: Checkout,
         discount_percentage_100_forever: Discount,
@@ -6202,6 +6245,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_discount_percentage_100_forever,
             CheckoutConfirmStripe.model_validate(
@@ -6240,6 +6284,7 @@ class TestConfirm:
         stripe_service_mock: MagicMock,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
         discount_percentage_100: Discount,
@@ -6257,6 +6302,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -6285,6 +6331,7 @@ class TestConfirm:
         stripe_service_mock: MagicMock,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
         discount_percentage_100: Discount,
@@ -6300,6 +6347,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -6318,6 +6366,7 @@ class TestConfirm:
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_custom: Checkout,
         discount_percentage_50: Discount,
@@ -6330,6 +6379,7 @@ class TestConfirm:
         )
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_custom,
             CheckoutConfirmStripe.model_validate(
@@ -6377,6 +6427,7 @@ class TestConfirm:
         stripe_service_mock: MagicMock,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_free: Checkout,
     ) -> None:
@@ -6388,6 +6439,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_free,
             CheckoutConfirmStripe.model_validate(
@@ -6415,6 +6467,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_one_time_fixed: Checkout,
@@ -6436,6 +6489,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -6458,6 +6512,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_one_time_fixed: Checkout,
@@ -6478,6 +6533,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -6503,6 +6559,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_one_time_fixed: Checkout,
@@ -6523,6 +6580,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -6555,6 +6613,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_one_time_fixed: Checkout,
@@ -6582,6 +6641,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -6608,6 +6668,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
         customer: Customer,
@@ -6623,6 +6684,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -6646,6 +6708,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -6661,6 +6724,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -6682,6 +6746,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -6694,6 +6759,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -6732,6 +6798,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_recurring_fixed: Checkout,
@@ -6756,6 +6823,7 @@ class TestConfirm:
         )
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_recurring_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -6785,6 +6853,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_recurring_fixed: Checkout,
@@ -6819,6 +6888,7 @@ class TestConfirm:
         with pytest.raises(TrialAlreadyRedeemed):
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_recurring_fixed,
                 CheckoutConfirmStripe.model_validate(
@@ -6836,6 +6906,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_recurring_fixed: Checkout,
     ) -> None:
@@ -6850,6 +6921,7 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_recurring_fixed,
                 CheckoutConfirmStripe.model_validate(
@@ -6872,6 +6944,7 @@ class TestConfirm:
         stripe_service_mock: MagicMock,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         product: Product,
@@ -6895,6 +6968,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_recurring_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -6923,6 +6997,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         product: Product,
@@ -6955,6 +7030,7 @@ class TestConfirm:
         with pytest.raises(TrialAlreadyRedeemed):
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_recurring_fixed,
                 CheckoutConfirmStripe.model_validate(
@@ -6972,6 +7048,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         product: Product,
@@ -7028,6 +7105,7 @@ class TestConfirm:
         with pytest.raises(DiscountRedemptionLimitReached):
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout,
                 CheckoutConfirmStripe.model_validate(
@@ -7045,6 +7123,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         product: Product,
@@ -7109,6 +7188,7 @@ class TestConfirm:
         with pytest.raises(DiscountRedemptionLimitReached):
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout,
                 CheckoutConfirmStripe.model_validate(
@@ -7126,6 +7206,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         product: Product,
@@ -7172,6 +7253,7 @@ class TestConfirm:
 
         confirmed = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout,
             CheckoutConfirmStripe.model_validate(
@@ -7193,6 +7275,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         product: Product,
@@ -7217,6 +7300,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout,
             CheckoutConfirmStripe.model_validate(
@@ -7242,6 +7326,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         product: Product,
@@ -7260,6 +7345,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout,
             CheckoutConfirmStripe.model_validate(
@@ -7283,6 +7369,7 @@ class TestConfirm:
         self,
         calculate_tax_mock: AsyncMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_discount_percentage_100: Checkout,
     ) -> None:
@@ -7296,6 +7383,7 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_discount_percentage_100,
                 CheckoutConfirmStripe.model_validate(
@@ -7346,6 +7434,7 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         product: Product,
@@ -7364,6 +7453,7 @@ class TestConfirm:
         with pytest.raises(PaymentNotReady):
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_recurring_fixed,
                 CheckoutConfirmStripe.model_validate(
@@ -7378,6 +7468,7 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_one_time_fixed: Checkout,
@@ -7389,6 +7480,7 @@ class TestConfirm:
         with pytest.raises(PaymentNotReady):
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe(
@@ -7401,6 +7493,7 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_one_time_fixed: Checkout,
@@ -7432,6 +7525,7 @@ class TestConfirm:
         # Should be allowed since account setup is complete (is_details_submitted=True)
         confirmed_checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -7457,6 +7551,7 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_one_time_free: Checkout,
@@ -7479,6 +7574,7 @@ class TestConfirm:
         # Free products should be allowed even when payment not ready
         confirmed_checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_free,
             CheckoutConfirmStripe(
@@ -7494,6 +7590,7 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_recurring_fixed: Checkout,
@@ -7505,6 +7602,7 @@ class TestConfirm:
         with pytest.raises(PaymentNotReady):
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_recurring_fixed,
                 CheckoutConfirmStripe.model_validate(
@@ -7527,6 +7625,7 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_one_time_fixed: Checkout,
@@ -7554,6 +7653,7 @@ class TestConfirm:
         # Grandfathered organizations should be allowed
         confirmed_checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -7579,6 +7679,7 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         account: Account,
@@ -7614,6 +7715,7 @@ class TestConfirm:
         # Should be allowed since setup is complete (active and payout account exists)
         confirmed_checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -7639,6 +7741,7 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_discount_percentage_100: Checkout,
@@ -7659,6 +7762,7 @@ class TestConfirm:
         with pytest.raises(PaymentNotReady):
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_discount_percentage_100,
                 CheckoutConfirmStripe.model_validate(
@@ -7681,6 +7785,7 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         product: Product,
@@ -7726,6 +7831,7 @@ class TestConfirm:
         # Should be allowed: forever discount won't expire
         confirmed_checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout,
             CheckoutConfirmStripe.model_validate(
@@ -7750,6 +7856,7 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         product_one_time: Product,
@@ -7790,6 +7897,7 @@ class TestConfirm:
         # Should be allowed: one-time products have no future charges
         confirmed_checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout,
             CheckoutConfirmStripe(
@@ -7805,6 +7913,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -7833,6 +7942,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -7861,6 +7971,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -7879,6 +7990,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -7905,6 +8017,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -7926,6 +8039,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -7951,6 +8065,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -7975,6 +8090,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -8000,6 +8116,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
         customer: Customer,
@@ -8013,6 +8130,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -8035,6 +8153,7 @@ class TestConfirm:
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -8047,6 +8166,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmSharedPaymentToken.model_validate(
@@ -8091,12 +8211,14 @@ class TestConfirm:
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmSharedPaymentToken.model_validate(
@@ -8113,12 +8235,14 @@ class TestConfirm:
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_recurring_fixed: Checkout,
     ) -> None:
         with pytest.raises(SharedPaymentTokenError):
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_recurring_fixed,
                 CheckoutConfirmSharedPaymentToken.model_validate(
@@ -8139,6 +8263,7 @@ class TestConfirm:
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -8159,6 +8284,7 @@ class TestConfirm:
         with pytest.raises(PaymentError) as e:
             await checkout_service.confirm(
                 session,
+                redis,
                 auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmSharedPaymentToken.model_validate(
@@ -8178,6 +8304,7 @@ class TestConfirm:
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -8192,6 +8319,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            redis,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmSharedPaymentToken.model_validate(
@@ -8560,6 +8688,31 @@ class TestHandleSuccess:
         await checkout_service.handle_success(session, checkout)
 
         seat_service_mock.assign_seat.assert_not_called()
+
+
+@pytest.mark.anyio
+class TestCheckConfirmRateLimit:
+    async def test_limited_per_normalized_email(
+        self,
+        mocker: MockerFixture,
+        redis: Redis,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        mocker.patch.object(settings, "ENV", Environment.production)
+
+        for index in range(20):
+            checkout_one_time_fixed.customer_email = f"John.Doe+{index}@gmail.com"
+            await checkout_service.check_confirm_rate_limit(
+                redis, checkout_one_time_fixed
+            )
+
+        checkout_one_time_fixed.customer_email = "johndoe@googlemail.com"
+        with pytest.raises(CheckoutConfirmRateLimited):
+            await checkout_service.check_confirm_rate_limit(
+                redis, checkout_one_time_fixed
+            )
+        checkout_one_time_fixed.customer_email = "jane@example.com"
+        await checkout_service.check_confirm_rate_limit(redis, checkout_one_time_fixed)
 
 
 @pytest.mark.anyio

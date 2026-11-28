@@ -242,6 +242,7 @@ def create_app(
         app.add_middleware(
             rate_limit.get_authentication_middleware, redis=rate_limit_redis
         )
+        app.add_middleware(rate_limit.get_checkout_middleware, redis=rate_limit_redis)
         app.add_middleware(rate_limit.get_ip_middleware, redis=rate_limit_redis)
     app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
     if settings.is_vercel():

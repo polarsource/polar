@@ -13,6 +13,7 @@ from polar.middlewares import TransactionalMiddleware
 from polar.rate_limit import (
     _authenticate,
     get_authentication_middleware,
+    get_checkout_middleware,
     get_ip_middleware,
     get_middleware,
 )
@@ -147,6 +148,36 @@ class TestAuthenticationMiddleware:
         assert response.status_code == 429
 
 
+@pytest.mark.anyio
+class TestCheckoutMiddleware:
+    @pytest.mark.parametrize(
+        "environment", [Environment.production, Environment.sandbox]
+    )
+    async def test_confirm_attempts_limited_per_checkout(
+        self, mocker: MockerFixture, redis: Redis, environment: Environment
+    ) -> None:
+        mocker.patch.object(settings, "ENV", environment)
+
+        async def endpoint(scope: Scope, receive: Receive, send: Send) -> None:
+            await Response(status_code=204)(scope, receive, send)
+
+        limiter = get_checkout_middleware(endpoint, redis)
+        async with AsyncClient(
+            transport=ASGITransport(app=limiter), base_url="http://test"
+        ) as client:
+            statuses = []
+            for index in range(21):
+                response = await client.post(
+                    "/v1/checkouts/client/secret-1/confirm",
+                    headers={"true-client-ip": f"1.1.1.{index}"},
+                )
+                statuses.append(response.status_code)
+            other_checkout = await client.post("/v1/checkouts/client/secret-2/confirm")
+
+        assert statuses == [204] * 20 + [429]
+        assert other_checkout.status_code == 204
+
+
 class TestMiddleware:
     @pytest.mark.anyio
     @pytest.mark.auth
@@ -201,6 +232,7 @@ class TestMiddleware:
         for factory in (
             get_middleware,
             get_authentication_middleware,
+            get_checkout_middleware,
             get_ip_middleware,
         ):
             assert (
@@ -208,6 +240,7 @@ class TestMiddleware:
             )
         assert (
             middleware.index(get_ip_middleware)
+            < middleware.index(get_checkout_middleware)
             < middleware.index(get_authentication_middleware)
             < middleware.index(TransactionalMiddleware)
             < middleware.index(AuthSubjectMiddleware)

@@ -30,9 +30,24 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          enable-cache: true
+
       - name: Build deployment package
         working-directory: ./lambda/planetscale-audit-log
-        run: zip package.zip handler.py
+        run: |
+          uv export --frozen --no-dev --no-emit-project -o requirements.txt
+          uv pip install \
+            --target package \
+            --python-platform x86_64-manylinux2014 \
+            --only-binary=:all: \
+            --python-version 3.13 \
+            -r requirements.txt
+          cp handler.py package/
+          cd package
+          zip -qr ../package.zip .
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0

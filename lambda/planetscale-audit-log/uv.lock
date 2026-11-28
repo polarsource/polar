@@ -741,10 +741,12 @@ wheels = [
 name = "planetscale-audit-log"
 version = "0.0.0"
 source = { virtual = "." }
+dependencies = [
+    { name = "boto3" },
+]
 
 [package.dev-dependencies]
 dev = [
-    { name = "boto3" },
     { name = "boto3-stubs", extra = ["s3", "secretsmanager"] },
     { name = "moto", extra = ["s3"] },
     { name = "mypy" },
@@ -754,10 +756,10 @@ dev = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "boto3", specifier = ">=1.43.64" }]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "boto3", specifier = ">=1.43.64" },
     { name = "boto3-stubs", extras = ["s3", "secretsmanager"], specifier = ">=1.43.64" },
     { name = "moto", extras = ["s3", "secretsmanager"], specifier = ">=5.2.2" },
     { name = "mypy", specifier = ">=2.3.0" },

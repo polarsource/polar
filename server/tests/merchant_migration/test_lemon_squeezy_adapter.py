@@ -412,6 +412,30 @@ class TestExtract:
         assert product.prices[0].amount is None
         assert product.prices[0].pricing_scheme == CanonicalPricingScheme.tiered
 
+    async def test_package_price_imports_as_fixed(self) -> None:
+        adapter, _ = _adapter(
+            {
+                "/v1/prices": _page(
+                    [
+                        _price(
+                            "21",
+                            10,
+                            1099,
+                            "2026-01-01T00:00:00Z",
+                            scheme="package",
+                            package_size=5,
+                        )
+                    ]
+                )
+            }
+        )
+
+        records = [record async for record in adapter.extract()]
+
+        [product] = [r for r in records if isinstance(r, CanonicalProduct)]
+        assert product.prices[0].amount == 1099
+        assert product.prices[0].pricing_scheme == CanonicalPricingScheme.fixed
+
     async def test_default_variant_is_sold_under_the_product_name(self) -> None:
         variants = ROUTES["/v1/variants"]
         adapter, _ = _adapter(

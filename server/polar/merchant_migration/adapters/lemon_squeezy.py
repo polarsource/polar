@@ -344,9 +344,9 @@ class LemonSqueezyAdapter:
         match attributes.get("scheme"):
             case "graduated" | "volume":
                 return CanonicalPricingScheme.tiered
-            case "package":
-                return CanonicalPricingScheme.package
             case _:
+                # Includes "package": one unit costs exactly unit_price, and the
+                # pre-check skips subscriptions with any other quantity.
                 return CanonicalPricingScheme.fixed
 
     async def _extract_discounts(

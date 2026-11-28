@@ -1,16 +1,14 @@
 import type { MeterProvider } from "@opentelemetry/sdk-metrics";
 import type { TracerProvider } from "@opentelemetry/sdk-trace";
 
-import {
-  INVALID_SPAN_CONTEXT,
-  SpanStatusCode,
-  trace,
-  type Attributes,
-  type Counter,
-  type Gauge,
-  type Histogram,
-  type Span,
-  type Tracer,
+import type {
+  Attributes,
+  Counter,
+  Gauge,
+  Histogram,
+  Span,
+  SpanContext,
+  Tracer,
 } from "@opentelemetry/api";
 import type { Redis, ChainableCommander } from "ioredis";
 import { createHash, randomUUID } from "node:crypto";
@@ -62,14 +60,7 @@ import {
   COMMIT_PULL_SCRIPT,
   CONFIRM_SCRIPT,
 } from "./scripts";
-import {
-  createMeterProvider,
-  createTracerProvider,
-  isTelemetryEnabled,
-  TelemetryBuffer,
-  relay,
-  SAMPLE_RATE_ATTRIBUTE,
-} from "./telemetry";
+import type { TelemetryBuffer } from "./telemetry";
 
 // Shared by every Outpost SDK: sdk/generator/redis/constants.toml says what each one means.
 const KEY_VERSION = "{{ redis_constants.outpost_key_version }}";
@@ -279,9 +270,32 @@ const reportLocalValue = (
 // The reset count of a state whose snapshot Polar did not confirm.
 const UNCONFIRMED = -1;
 
-const recordError = (span: Span, error: unknown): void => {
-  span.recordException(error instanceof Error ? error : String(error));
-  span.setStatus({ code: SpanStatusCode.ERROR });
+export const TELEMETRY_ENV = "POLAR_OUTPOST_TELEMETRY";
+
+const isTelemetryEnabled = (): boolean => process.env[TELEMETRY_ENV] !== "0";
+
+// Loaded once, by the first instance that sends telemetry: the others in the process share it.
+let telemetryModule: Promise<typeof import("./telemetry")> | undefined;
+const loadTelemetry = () => (telemetryModule ??= import("./telemetry"));
+
+// What a span is without telemetry: OpenTelemetry is an optional peer dependency.
+const NO_SPAN_CONTEXT: SpanContext = {
+  traceId: "00000000000000000000000000000000",
+  spanId: "0000000000000000",
+  traceFlags: 0,
+};
+const NO_SPAN: Span = {
+  spanContext: () => NO_SPAN_CONTEXT,
+  setAttribute: () => NO_SPAN,
+  setAttributes: () => NO_SPAN,
+  addEvent: () => NO_SPAN,
+  addLink: () => NO_SPAN,
+  addLinks: () => NO_SPAN,
+  setStatus: () => NO_SPAN,
+  updateName: () => NO_SPAN,
+  end: () => {},
+  isRecording: () => false,
+  recordException: () => {},
 };
 
 export const isSampled = (traceId: string): boolean =>
@@ -298,8 +312,6 @@ const customerArguments = (customer: string): Customer => {
 
 export interface OutpostOptions {
   client: Pick<ClientBase, "buildRequest" | "sendRequest" | "parseResponse">;
-  /** Send Outpost telemetry to Polar. Also disabled by `POLAR_OUTPOST_TELEMETRY=0`. */
-  telemetry?: boolean;
   /** How long a read of a cold customer waits for its first snapshot, in milliseconds. */
   snapshotTimeout?: number;
   /**
@@ -325,7 +337,8 @@ export class Outpost {
   private reducers: Reducer[] = [];
   private matchers: ReducerMatchers = [];
   private readonly requesting = new Map<string, Promise<void>>();
-  private readonly telemetryBuffer = new TelemetryBuffer();
+  private telemetry?: typeof import("./telemetry");
+  private readonly telemetryBuffer: TelemetryBuffer = { spans: [], metrics: [] };
   private queued: { identity: string; done: () => void }[] = [];
   private fetchTimer?: ReturnType<typeof setTimeout>;
   private fetchedPoll?: Promise<string | null>;
@@ -375,6 +388,9 @@ export class Outpost {
   }
 
   async start(): Promise<this> {
+    // Loaded before the guard: from it to this.redis, start runs without yielding, so a start that
+    // overlaps this one finds this.redis set.
+    const telemetry = isTelemetryEnabled() ? (this.telemetry ??= await loadTelemetry()) : undefined;
     if (this.redis) throw new Error("Outpost is already connected");
     this.failure = undefined;
     this.pullRetryAt = 0;
@@ -382,10 +398,10 @@ export class Outpost {
     this.resets = null;
     this.isConfigured = false;
     this.applying = Promise.resolve();
-    if (isTelemetryEnabled(this.options.telemetry ?? true)) {
-      this.tracerProvider = createTracerProvider(this.telemetryBuffer);
+    if (telemetry) {
+      this.tracerProvider = telemetry.createTracerProvider(this.telemetryBuffer);
       this.tracer = this.tracerProvider.getTracer("polar.outpost");
-      this.meterProvider = createMeterProvider(this.telemetryBuffer);
+      this.meterProvider = telemetry.createMeterProvider(this.telemetryBuffer);
       const meter = this.meterProvider.getMeter("polar.outpost");
       this.ingestDuration = meter.createHistogram("outpost.ingest.duration", { unit: "s" });
       this.ingestBuckets = meter.createCounter("outpost.ingest.buckets");
@@ -1338,7 +1354,8 @@ export class Outpost {
 
   // The instance that pulled sends the fleet's telemetry: one relay of each kind per pull.
   private async relayTelemetry(): Promise<void> {
-    if (!this.tracerProvider) return;
+    const telemetry = this.telemetry;
+    if (!this.tracerProvider || !telemetry) return;
     const redis = this.requireRedis();
     const lock = `${this.prefix}:telemetry:lock`;
     const token = await takeLock(redis, lock, RELAY_LOCK_TTL);
@@ -1355,7 +1372,7 @@ export class Outpost {
         if (!(await redis.exists(batch))) await redis.rename(key, batch).catch(() => {});
         const exports = await redis.lrangeBuffer(batch, 0, -1);
         if (!exports.length) continue;
-        const status = await relay(this.options.client, path, Buffer.concat(exports));
+        const status = await telemetry.relay(this.options.client, path, Buffer.concat(exports));
         // One Polar refused would be refused again.
         if (status < 500 && status !== 429) await redis.del(batch);
       }
@@ -1379,7 +1396,8 @@ export class Outpost {
   }
 
   private startSpan(name: string, attributes: Attributes = {}): Span {
-    if (!this.tracer) return trace.wrapSpanContext(INVALID_SPAN_CONTEXT);
+    const telemetry = this.telemetry;
+    if (!this.tracer || !telemetry) return NO_SPAN;
     const span = this.tracer.startSpan(name, {
       root: true,
       attributes: this._connectionId
@@ -1387,7 +1405,7 @@ export class Outpost {
         : attributes,
     });
     if (isSampled(span.spanContext().traceId))
-      span.setAttribute(SAMPLE_RATE_ATTRIBUTE, SPAN_SAMPLE_RATE);
+      span.setAttribute(telemetry.SAMPLE_RATE_ATTRIBUTE, SPAN_SAMPLE_RATE);
     return span;
   }
 
@@ -1400,7 +1418,7 @@ export class Outpost {
     try {
       return await run(span);
     } catch (error) {
-      recordError(span, error);
+      this.telemetry?.recordError(span, error);
       throw error;
     } finally {
       span.end();
@@ -1409,7 +1427,7 @@ export class Outpost {
 
   private event(name: string, error?: Error): void {
     const span = this.startSpan(name);
-    if (error) recordError(span, error);
+    if (error) this.telemetry?.recordError(span, error);
     span.end();
   }
 }

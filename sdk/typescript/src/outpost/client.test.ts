@@ -15,13 +15,13 @@ import { PolarEventClient } from "../metering/client";
 import { UnknownMeterError } from "../metering/errors";
 import { createIngest } from "../metering/event";
 import { RedisEventQueue } from "../metering/queue/redis";
-import { Outpost, outpost, type OutpostOptions, isSampled } from "./client";
+import { Outpost, outpost, type OutpostOptions, isSampled, TELEMETRY_ENV } from "./client";
 import { PolarOutpostError, UnavailableRedisError } from "./errors";
 import { NotReadyError } from "./index";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT, CONFIRM_SCRIPT } from "./scripts";
 import { decodeState } from "./state";
-import { SAMPLE_RATE_ATTRIBUTE, TELEMETRY_ENV } from "./telemetry";
+import { SAMPLE_RATE_ATTRIBUTE } from "./telemetry";
 import { startRedisServer, type RedisServer } from "./testing";
 
 const { exported, metrics } = vi.hoisted(() => ({
@@ -2005,16 +2005,20 @@ it("sends telemetry spans tagged with the connection ID", async () => {
     expect(span.attributes["outpost.connection_id"]).toBe(connectionId);
 });
 
-it.each([
-  ["option", false, undefined],
-  ["environment", true, "0"],
-] as const)("turns telemetry off through the %s", async (_, telemetry, environment) => {
-  if (environment !== undefined) vi.stubEnv(TELEMETRY_ENV, environment);
-  const outpost = new Outpost(redisServer.socket, {
-    client: core,
-    telemetry,
-    snapshotTimeout: 100,
+it("refuses a start that overlaps another", async () => {
+  const outpost = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
+  outposts.push(outpost);
+  const [first, second] = await Promise.allSettled([outpost.start(), outpost.start()]);
+  expect(first.status).toBe("fulfilled");
+  expect(second).toMatchObject({
+    status: "rejected",
+    reason: new Error("Outpost is already connected"),
   });
+});
+
+it("turns telemetry off through the environment", async () => {
+  vi.stubEnv(TELEMETRY_ENV, "0");
+  const outpost = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
   outposts.push(outpost);
   await outpost.start();
   await ingest(outpost, 3);
@@ -2656,7 +2660,10 @@ describe("Redis cost", () => {
     };
   };
   // Telemetry relays its exports through Redis after a pull: only its own test counts them.
-  const quiet = (options: Partial<OutpostOptions> = {}) => start({ telemetry: false, ...options });
+  const quiet = (options: Partial<OutpostOptions> = {}) => {
+    vi.stubEnv(TELEMETRY_ENV, "0");
+    return start(options);
+  };
   const event = () => ({
     ...customer,
     name: "api_call",

@@ -270,10 +270,10 @@ accept an existing `ioredis` client, which your application manages and closes.
 | Option            | Default  | Meaning                                                  |
 | ----------------- | -------- | -------------------------------------------------------- |
 | `redis`           | Required | Redis instance used by Outpost.                          |
-| `telemetry`       | `true`   | Send Outpost metrics and traces to Polar.                |
 | `snapshotTimeout` | `5000`   | Milliseconds a cold read waits for its initial snapshot. |
 
-Telemetry can also be disabled with `POLAR_OUTPOST_TELEMETRY=0`.
+Outpost sends its metrics and traces to Polar. Set `POLAR_OUTPOST_TELEMETRY=0` to turn this off:
+Outpost then loads no `@opentelemetry/*` package.
 
 ### Delivery callbacks
 

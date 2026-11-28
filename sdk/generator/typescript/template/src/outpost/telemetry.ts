@@ -1,4 +1,4 @@
-import { SpanStatusCode } from "@opentelemetry/api";
+import { SpanStatusCode, type Span } from "@opentelemetry/api";
 import {
   ProtobufMetricsSerializer,
   ProtobufTraceSerializer,
@@ -26,7 +26,6 @@ import type { ClientBase } from "../base";
 
 import { VERSION } from "../version";
 
-export const TELEMETRY_ENV = "POLAR_OUTPOST_TELEMETRY";
 const FORWARDED_HEADERS = ["Authorization", "Polar-Organization"];
 const EXPORT_INTERVAL = 30_000;
 export const METRIC_VIEWS: ViewOptions[] = [
@@ -42,9 +41,6 @@ export const METRIC_VIEWS: ViewOptions[] = [
 type ExportResult = Parameters<Parameters<SpanExporter["export"]>[1]>[0];
 // Set on the spans a sample keeps: each stands for this many spans without an error or a drift.
 export const SAMPLE_RATE_ATTRIBUTE = "outpost.sample_rate";
-
-export const isTelemetryEnabled = (telemetry: boolean): boolean =>
-  telemetry && process.env[TELEMETRY_ENV] !== "0";
 
 /** The serialized exports an instance holds until it hands them to the shared Redis. */
 export class TelemetryBuffer {
@@ -146,3 +142,8 @@ export const createMeterProvider = (buffer: TelemetryBuffer): MeterProvider =>
       }),
     ],
   });
+
+export const recordError = (span: Span, error: unknown): void => {
+  span.recordException(error instanceof Error ? error : String(error));
+  span.setStatus({ code: SpanStatusCode.ERROR });
+};

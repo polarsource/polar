@@ -210,7 +210,11 @@ async def stop(process: anyio.abc.Process) -> None:
 @contextlib.asynccontextmanager
 async def launch(*command: str):
     process = await anyio.open_process(
-        command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None
+        command,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=None,
+        env={**os.environ, "POLAR_OUTPOST_TELEMETRY": "0"},
     )
     rpc = Process(process)
     try:

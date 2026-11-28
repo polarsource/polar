@@ -12,7 +12,6 @@ type Command =
 const [redisUrl, baseUrl] = process.argv.slice(2);
 const outpost = new Outpost(redisUrl, {
   client: createPolarCore({ accessToken: "harness-token", baseUrl }),
-  telemetry: false,
 });
 const respond = (response: { result: unknown } | { error: string }) =>
   console.log(JSON.stringify(response));

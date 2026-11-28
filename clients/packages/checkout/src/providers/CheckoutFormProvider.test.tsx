@@ -403,6 +403,45 @@ describe('CheckoutFormProvider', () => {
       expect(confirm).toHaveBeenCalledTimes(1)
     })
 
+    it('waits for an update queued while confirm is already waiting', async () => {
+      const first = createDeferred<UpdateResult>()
+      const second = createDeferred<UpdateResult>()
+      const update = vi
+        .fn<CheckoutContextProps['update']>()
+        .mockReturnValueOnce(first.promise)
+        .mockReturnValueOnce(second.promise)
+      const confirm = vi.fn<CheckoutContextProps['confirm']>(
+        async () =>
+          ({
+            ok: true,
+            value: { id: 'ch_confirmed', status: 'confirmed' },
+          }) as ConfirmResult,
+      )
+      const getCtx = renderWithCheckout({
+        checkout: { is_payment_form_required: false },
+        update,
+        confirm,
+      })
+
+      await act(async () => {
+        void getCtx().update({ customer_billing_address: { country: 'SE' } })
+        await vi.advanceTimersByTimeAsync(100)
+        void getCtx().confirm({ customer_email: 'a@b.com' }, null, null)
+        void getCtx().update({ customer_billing_address: { country: 'DE' } })
+      })
+      await act(async () => {
+        first.resolve({ ok: true, value: { id: 'ch_1' } } as UpdateResult)
+        await vi.advanceTimersByTimeAsync(100)
+      })
+      expect(update).toHaveBeenCalledTimes(2)
+      expect(confirm).not.toHaveBeenCalled()
+
+      await act(async () => {
+        second.resolve({ ok: true, value: { id: 'ch_2' } } as UpdateResult)
+      })
+      expect(confirm).toHaveBeenCalledTimes(1)
+    })
+
     it.each([
       [
         'keeps submit enabled while saving an address',
@@ -504,6 +543,7 @@ describe('CheckoutFormProvider', () => {
       'AlreadyActiveSubscriptionError',
       'NotOpenCheckout',
       'PaymentNotReady',
+      'CheckoutLocked',
     ] as const)('sets root error for %s', async (errorCode) => {
       const getCtx = renderWithCheckout({
         checkout: freeCheckout,
@@ -527,6 +567,7 @@ describe('CheckoutFormProvider', () => {
 
     it.each([
       ['PaymentError', true],
+      ['CheckoutLocked', true],
       ['ResourceNotFound', false],
       ['ExpiredCheckoutError', false],
       ['UnexpectedError', false],

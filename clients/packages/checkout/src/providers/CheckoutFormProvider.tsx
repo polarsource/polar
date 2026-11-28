@@ -224,7 +224,11 @@ export const CheckoutFormProvider = ({
     async (
       checkoutConfirmStripe: schemas['CheckoutConfirmStripe'],
     ): Promise<schemas['CheckoutPublicConfirmed']> => {
-      await lastUpdateRef.current.catch(() => {})
+      let awaitedUpdate: Promise<unknown>
+      do {
+        awaitedUpdate = lastUpdateRef.current
+        await awaitedUpdate.catch(() => {})
+      } while (awaitedUpdate !== lastUpdateRef.current)
       const { ok, value, error } = await confirmOuter(checkoutConfirmStripe)
 
       if (ok) {
@@ -241,6 +245,7 @@ export const CheckoutFormProvider = ({
           case 'AlreadyActiveSubscriptionError':
           case 'NotOpenCheckout':
           case 'PaymentNotReady':
+          case 'CheckoutLocked':
             setError('root', { message: error.detail })
             break
           case 'DiscountRedemptionLimitReached':

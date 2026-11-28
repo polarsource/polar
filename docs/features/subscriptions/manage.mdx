@@ -100,6 +100,8 @@ And the subscription must not be canceled, scheduled to cancel or `trial_ended`.
 
 **Seat-based products.** You can move a non-seat subscription to a seat-based product: the customer becomes a `team` customer and takes a seat. That change must apply now, so `next_period` isn't allowed. You can't move a seat-based subscription back to a non-seat product.
 
+**Unit-based products.** You can move a subscription between unit-based and other products in both directions. Moving to a unit-based product starts at its minimum quantity and must apply now, so `next_period` isn't allowed. Moving away from one drops the quantity, and the unused time on the old units is prorated like any other product change.
+
 **During a trial.** The trial carries over, with its end recalculated from the new product's trial length and the original `trial_start`. If the new product has no trial, or it would already be over, the trial ends and a paid cycle starts on the new product.
 
 **Discounts carry over.** The current discount stays on the new product unless you also send `discount_id: null`.

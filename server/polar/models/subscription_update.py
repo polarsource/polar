@@ -137,12 +137,16 @@ class SubscriptionUpdate(RecordModel):
             # Resolve new product prices before updating the subscription to
             # avoid inconsistent states if PriceSet.from_product raises, e.g.
             # NoPricesForCurrencies.
+            new_prices = PriceSet.from_product(self.product, subscription.currency)
             subscription_product_prices = [
                 SubscriptionProductPrice.from_price(
                     price, seats=subscription.seats, units=subscription.units
                 )
-                for price in PriceSet.from_product(self.product, subscription.currency)
+                for price in new_prices
             ]
+            if new_prices.get_unit_price() is None:
+                subscription.units = None
+                self.units = None
             subscription.product = self.product
             subscription.subscription_product_prices = subscription_product_prices
             subscription.recurring_interval = self.product.recurring_interval

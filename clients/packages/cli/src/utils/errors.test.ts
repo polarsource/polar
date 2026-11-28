@@ -91,6 +91,14 @@ describe('describeError', () => {
       title: 'No asset',
       hint: releasesHint,
     })
+    expect(
+      describeError(
+        new UpdateError({ message: 'Not compiled', hint: 'Build first' }),
+      ),
+    ).toEqual({
+      title: 'Not compiled',
+      hint: 'Build first',
+    })
   })
 
   test('prefixes GitHub release errors', () => {

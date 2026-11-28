@@ -14,9 +14,10 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { BunFileSystem } from '@effect/platform-bun'
-import { Console, Effect, Layer } from 'effect'
+import { Cause, Console, Effect, Exit, Layer } from 'effect'
 import { downloadAndUpdate, update } from '@/commands/update'
-import { getReleaseArchiveName } from '@/services/update'
+import { CompiledBinary } from '@/services/telemetry'
+import { getReleaseArchiveName, UpdateError } from '@/services/update'
 import { type Method, Updater, UpdaterError } from '@/services/updater'
 import { captureConsole, runCli } from '@/utils/test-utils/cli'
 import { fakeHttp } from '@/utils/test-utils/http'
@@ -43,13 +44,17 @@ describe('update command', () => {
     args: string[],
     updater: ReturnType<typeof fakeUpdater>,
     http = fakeHttp(),
+    compiled = true,
   ) => {
     const cli = runCli(update, args)
+    const effect = cli.effect.pipe(
+      Effect.provide(http.layer),
+      Effect.provideService(Updater, updater),
+    )
     const promise = Effect.runPromise(
-      cli.effect.pipe(
-        Effect.provide(http.layer),
-        Effect.provideService(Updater, updater),
-      ),
+      compiled
+        ? effect.pipe(Effect.provideService(CompiledBinary, true))
+        : effect,
     )
     return { cli, promise, http }
   }
@@ -118,6 +123,43 @@ describe('update command', () => {
     const { promise } = runUpdate([], fakeUpdater('yarn', 'v9.9.9', failure))
 
     await expect(promise).rejects.toThrow('exited with code 1')
+  })
+
+  test.each([
+    ['without --method', []],
+    ['with --method binary', ['--method', 'binary']],
+  ])('refuses to update from source %s', async (_label, args) => {
+    const cli = runCli(update, args)
+    const http = fakeHttp()
+    const exit = await Effect.runPromiseExit(
+      cli.effect.pipe(
+        Effect.provide(http.layer),
+        Effect.provideService(Updater, fakeUpdater('binary')),
+      ),
+    )
+
+    expect(Exit.isFailure(exit)).toBe(true)
+    const error = Exit.isFailure(exit) ? Cause.squash(exit.cause) : undefined
+    expect(error).toBeInstanceOf(UpdateError)
+    expect(error).toMatchObject({
+      message: 'polar update only works on the compiled CLI binary',
+      hint: expect.stringContaining('pnpm build:binary'),
+    })
+    expect(http.urls()).toEqual([])
+    expect(cli.output()).toBe('')
+  })
+
+  test('allows an explicit package manager --method when running from source', async () => {
+    const { promise, http } = runUpdate(
+      ['--method', 'npm'],
+      fakeUpdater(undefined),
+      fakeHttp(),
+      false,
+    )
+    await promise
+
+    expect(upgrades).toEqual([['npm', 'v9.9.9']])
+    expect(http.urls()).toEqual([])
   })
 })
 

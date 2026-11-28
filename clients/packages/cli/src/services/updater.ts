@@ -11,6 +11,7 @@ import {
 import { HttpClient, HttpClientResponse } from 'effect/http'
 import type { PlatformError } from 'effect/PlatformError'
 import { ChildProcess, ChildProcessSpawner } from 'effect/process'
+import { CompiledBinary } from '@/services/telemetry'
 import { isJson } from '@/utils/output'
 
 export const PACKAGE_NAME = '@polar-sh/cli'
@@ -151,6 +152,7 @@ export const detectMethod = (
   FileSystem.FileSystem | ChildProcessSpawner.ChildProcessSpawner
 > =>
   Effect.gen(function* () {
+    if (!(yield* CompiledBinary)) return undefined
     if (!(yield* installedPackage(executable))) return 'binary'
     const results = yield* Effect.forEach(
       listCommands,

@@ -23,6 +23,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+asgi = ["asgiref>=3.8.1"]
+fastapi = ["asgiref>=3.8.1", "fastapi>=0.95.1"]
 outpost = ["redis[hiredis]>=5.0.4", "opentelemetry-sdk>=1.30.0", "opentelemetry-exporter-otlp-proto-common>=1.30.0"]
 
 [project.urls]

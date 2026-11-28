@@ -68,7 +68,7 @@ const run = (
         )
       }
       installed.push(status.client)
-      return Effect.void
+      return Effect.succeed(status.update ?? status.version)
     },
     skills: (scope) => Effect.succeed(skillsStatus(scope)),
     installSkills: (scope) => {
@@ -124,9 +124,24 @@ describe('agent setup', () => {
     await cli.promise
 
     expect(cli.installed).toEqual(['codex', 'cursor'])
-    expect(cli.output()).toContain('Claude Code already set up')
-    expect(cli.output()).toContain('2 set up, 1 already set up, 0 failed')
-    expect(cli.output()).toContain('codex mcp login polar')
+    expect(cli.output()).toMatch(/Claude Code\s+✔ already set up/)
+    expect(cli.output()).toMatch(/Codex\s+✔ set up/)
+    expect(cli.output()).toMatch(/Cursor\s+✔ set up/)
+    expect(cli.output()).toContain('1. Restart your agent so it loads Polar')
+    expect(cli.output()).toContain('2. Ask it to get you started')
+    expect(cli.output()).toContain('"Help me get started with Polar"')
+  })
+
+  test('still suggests what to ask when everything was already set up', async () => {
+    const cli = run(['--confirm'], {
+      statuses: [client('claude-code', { installed: true })],
+    })
+    await cli.promise
+
+    expect(cli.installed).toEqual([])
+    expect(cli.output()).toContain('  Ask your agent to get you started')
+    expect(cli.output()).toContain('"Help me get started with Polar"')
+    expect(cli.output()).not.toContain('Restart your agent')
   })
 
   test('only sets up the agent it runs inside', async () => {
@@ -212,7 +227,8 @@ describe('agent setup', () => {
     expect(cli.output()).toContain(
       'plugin install exited with code 1: network down',
     )
-    expect(cli.output()).toContain('1 set up, 0 already set up, 2 failed')
+    expect(cli.output()).toMatch(/Cursor\s+✔ set up/)
+    expect(cli.output()).toMatch(/Claude Code\s+✖ Update Claude Code\./)
   })
 
   test('asks what to set up, preselecting the clients that are missing', async () => {
@@ -226,7 +242,74 @@ describe('agent setup', () => {
     await cli.promise
 
     expect(cli.terminal()).toContain('What should be set up for Polar?')
+    expect(cli.output()).toContain(
+      'none installed in .agents/skills or ~/.agents/skills',
+    )
     expect(cli.installed).toEqual(['codex'])
+  })
+
+  test('preselects a client whose plugin has an update and says what changed', async () => {
+    const cli = run(
+      [],
+      {
+        statuses: [
+          client('claude-code', {
+            installed: true,
+            version: '0.2.2',
+            update: '0.3.0',
+          }),
+          client('codex', { installed: true, version: '0.3.0' }),
+        ],
+      },
+      { interactive: true, input: [keys.enter] },
+    )
+    await cli.promise
+
+    expect(cli.terminal()).toContain('◉ Claude Code')
+    expect(cli.terminal()).toContain('○ Codex')
+    expect(cli.installed).toEqual(['claude-code'])
+    expect(cli.output()).toContain('updated from 0.2.2 to 0.3.0')
+  })
+
+  test('--confirm updates a plugin with an update and reports it', async () => {
+    const cli = run(['--confirm', '--json'], {
+      statuses: [
+        client('claude-code', {
+          installed: true,
+          version: '0.2.2',
+          update: '0.3.0',
+        }),
+      ],
+    })
+    await cli.promise
+
+    expect(cli.installed).toEqual(['claude-code'])
+    expect(JSON.parse(cli.output()).steps).toEqual([
+      {
+        target: 'claude-code',
+        name: 'Claude Code',
+        outcome: 'updated',
+        detail: 'updated from 0.2.2 to 0.3.0',
+      },
+    ])
+  })
+
+  test('--status shows an available plugin update', async () => {
+    const cli = run(['--status'], {
+      statuses: [
+        client('claude-code', {
+          installed: true,
+          version: '0.2.2',
+          update: '0.3.0',
+        }),
+      ],
+    })
+    await cli.promise
+
+    expect(cli.output()).toContain('plugin 0.2.2')
+    expect(cli.output()).toContain('0.3.0 available')
+    expect(cli.output()).toContain('to set up or update them')
+    expect(cli.installed).toEqual([])
   })
 
   test('preselects outdated skills so a re-run updates them', async () => {
@@ -240,8 +323,9 @@ describe('agent setup', () => {
     )
     await cli.promise
 
-    expect(cli.terminal()).toContain('☒ Polar skills (project)')
-    expect(cli.terminal()).toContain('☐ Polar skills (global)')
+    expect(cli.output()).toContain('project out of date, global up to date')
+    expect(cli.terminal()).toContain('◉ Polar skills (project)')
+    expect(cli.terminal()).toContain('○ Polar skills (global)')
     expect(cli.installed).toEqual(['skills:project'])
   })
 })

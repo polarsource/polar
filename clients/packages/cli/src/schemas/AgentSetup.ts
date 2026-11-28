@@ -12,6 +12,7 @@ export const ClientStatus = Schema.Struct({
   detected: Schema.Boolean,
   installed: Schema.Boolean,
   version: Schema.optionalKey(Schema.String),
+  update: Schema.optionalKey(Schema.String),
   problem: Schema.optionalKey(Schema.String),
 })
 export type ClientStatus = typeof ClientStatus.Type

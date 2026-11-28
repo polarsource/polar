@@ -169,12 +169,17 @@ export const pad = (text: string, width: number) =>
   text + ' '.repeat(Math.max(width - Bun.stringWidth(text), 0))
 
 export const hideCursor = '\x1b[?25l'
+export const showCursor = '\x1b[?25h'
 
 export const inverse = pc.inverse
 
 const clearLine = '\r\x1b[2K'
 export const clearLines = (rows: number) =>
   rows > 0 ? clearLine + `\x1b[1A${clearLine}`.repeat(rows - 1) : ''
+
+export const cursorUp = (rows: number) => `\x1b[${rows}A`
+export const cursorDown = (rows: number) => `\x1b[${rows}B`
+export const cursorColumn = (column: number) => `\x1b[${column}G`
 
 export const statusCode = (status: number, statusText: string) => {
   const text = `${status} ${statusText}`.trim()

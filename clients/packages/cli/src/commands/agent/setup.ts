@@ -1,5 +1,5 @@
-import { Effect, Option } from 'effect'
-import { Command, Flag, Prompt } from 'effect/cli'
+import { Effect, Fiber, Option } from 'effect'
+import { Command, Flag } from 'effect/cli'
 import {
   AgentSetupError,
   AgentSetupResult,
@@ -15,16 +15,21 @@ import { AgentSetup } from '@/services/agent-setup/service'
 import { output } from '@/utils/command'
 import { confirm } from '@/utils/flags'
 import {
+  clientState,
   describeClient,
   errorDetail,
   nextSteps,
+  skillsFound,
   skillsName,
+  skillsPath,
   statusReport,
   summary,
+  versionChange,
 } from '@/utils/agent-setup'
 import { Output } from '@/utils/output'
-import { note, withProgress } from '@/utils/progress'
-import { interactive } from '@/utils/prompt'
+import { type Progress, note, withProgress } from '@/utils/progress'
+import { typeBanner } from '@/utils/logo'
+import { interactive, multiSelect } from '@/utils/prompt'
 import * as ui from '@/utils/ui'
 
 const status = Flag.Boolean('status').pipe(
@@ -58,7 +63,7 @@ const isClient = (agent: string): agent is Client =>
   clients.some((client) => client === agent)
 
 const skillsDescription = (scope: SkillScope, outdated: boolean) => {
-  const directory = `${scope === 'global' ? '~/' : ''}.agents/skills`
+  const directory = skillsPath(scope)
   return outdated
     ? `Out of date, updates ${directory}`
     : `For other agents, in ${directory}`
@@ -69,35 +74,35 @@ const pick = (
   scope: SkillScope | undefined,
   skills: ReadonlyArray<SkillsStatus>,
 ) =>
-  Prompt.run(
-    Prompt.MultiSelect<Client | SkillScope>({
-      message: 'What should be set up for Polar?',
-      choices: [
-        ...detected.map((status) => ({
-          title: status.name,
-          value: status.client,
-          description: describeClient(status),
-          selected: !status.installed && status.problem === undefined,
-        })),
-        ...skillScopes.map((value) => {
-          const outdated = skills.some(
-            (status) => status.scope === value && status.state === 'outdated',
-          )
-          return {
-            title: skillsName(value),
-            value,
-            description: skillsDescription(value, outdated),
-            selected:
-              scope === value ||
-              outdated ||
-              (scope === undefined &&
-                value === 'project' &&
-                detected.length === 0),
-          }
-        }),
-      ],
-    }),
-  ).pipe(
+  multiSelect<Client | SkillScope>({
+    message: 'What should be set up for Polar?',
+    choices: [
+      ...detected.map((status) => ({
+        title: status.name,
+        value: status.client,
+        description: describeClient(status),
+        selected:
+          status.problem === undefined &&
+          (!status.installed || status.update !== undefined),
+      })),
+      ...skillScopes.map((value) => {
+        const outdated = skills.some(
+          (status) => status.scope === value && status.state === 'outdated',
+        )
+        return {
+          title: skillsName(value),
+          value,
+          description: skillsDescription(value, outdated),
+          selected:
+            scope === value ||
+            outdated ||
+            (scope === undefined &&
+              value === 'project' &&
+              detected.length === 0),
+        }
+      }),
+    ],
+  }).pipe(
     Effect.orElseSucceed((): ReadonlyArray<Client | SkillScope> => []),
     Effect.map(
       (picked): Selection => ({
@@ -107,7 +112,29 @@ const pick = (
     ),
   )
 
+const padded = (names: ReadonlyArray<string>) => {
+  const width = Math.max(...names.map((name) => name.length)) + 1
+  return (name: string) => name.padEnd(width)
+}
+
+const done = (detail: string) => `${ui.green('✔')} ${detail}`
+
+const SKILLS = 'Skills'
+
+const checkSkills = (progress: Progress, label: string) =>
+  progress.start(label).pipe(
+    Effect.andThen(findSkills),
+    Effect.tap((found) => progress.finish(skillsFound(found))),
+    Effect.catch((error) =>
+      progress
+        .fail(error.message)
+        .pipe(Effect.as<ReadonlyArray<SkillsStatus>>([])),
+    ),
+  )
+
 const select = (
+  progress: Progress,
+  skillsLabel: string,
   detected: ReadonlyArray<ClientStatus>,
   only: Client | undefined,
   scope: SkillScope | undefined,
@@ -120,6 +147,7 @@ const select = (
     if (agent && !only) {
       const own = detected.find((status) => status.client === agent.id)
       if (own) {
+        yield* progress.close
         yield* note(ui.step(`Running inside ${own.name}, setting up only it`))
         return { targets: [own], scopes }
       }
@@ -129,6 +157,7 @@ const select = (
           hint: 'Pass --client to set up another agent.',
         })
       }
+      yield* progress.close
       yield* note(
         ui.step(
           `Running inside ${agent.name}, which has no Polar plugin, installing the Polar skills instead`,
@@ -145,12 +174,8 @@ const select = (
         hint: 'Pass --confirm to set up every detected agent, or --client to pick one.',
       })
     }
-    const skills = yield* withProgress((progress) =>
-      progress
-        .start('Checking the Polar skills')
-        .pipe(Effect.andThen(installedSkills)),
-    )
-    yield* note(ui.blank)
+    const skills = yield* checkSkills(progress, skillsLabel)
+    yield* progress.close
     return yield* pick(detected, scope, skills)
   })
 
@@ -162,79 +187,90 @@ const step = (
 ): SetupStep => ({ target, name, outcome, ...(detail ? { detail } : {}) })
 
 const attempt = <R>(
+  progress: Progress,
   target: SetupStep['target'],
   name: string,
   work: Effect.Effect<SetupStep, AgentSetupError, R>,
 ) =>
   work.pipe(
     Effect.catch((error) =>
-      note(errorDetail(error)).pipe(
-        Effect.as(step(target, name, 'failed', error.message)),
-      ),
+      progress
+        .fail(`${ui.red('✖')} ${errorDetail(error)}`)
+        .pipe(Effect.as(step(target, name, 'failed', error.message))),
     ),
   )
 
-const setUpClient = (target: ClientStatus, force: boolean) =>
+const setUpClient = (
+  progress: Progress,
+  label: string,
+  target: ClientStatus,
+  force: boolean,
+) =>
   attempt(
+    progress,
     target.client,
     target.name,
     Effect.gen(function* () {
-      if (target.installed && !force) {
-        yield* note(ui.success(`${target.name} ${ui.dim('already set up')}`))
+      yield* progress.start(label)
+      if (target.installed && !target.update && !force) {
+        yield* progress.finish(done(ui.dim('already set up')))
         return step(target.client, target.name, 'unchanged')
       }
-      const setup = yield* AgentSetup
-      yield* withProgress((progress) =>
-        progress
-          .start(target.name)
-          .pipe(
-            Effect.andThen(
-              target.problem
-                ? Effect.fail(new AgentSetupError({ message: target.problem }))
-                : setup.setUp(target),
-            ),
-          ),
+      if (target.problem) {
+        return yield* new AgentSetupError({ message: target.problem })
+      }
+      const version = yield* (yield* AgentSetup).setUp(target)
+      const change = versionChange(target.version, version)
+      yield* progress.finish(
+        done(change ?? (target.installed ? 'updated' : 'set up')),
       )
       return step(
         target.client,
         target.name,
         target.installed ? 'updated' : 'installed',
+        change,
       )
     }),
   )
 
-const setUpSkills = (scope: SkillScope, force: boolean) => {
+const setUpSkills = (
+  progress: Progress,
+  label: string,
+  scope: SkillScope,
+  force: boolean,
+) => {
   const name = skillsName(scope)
   return attempt(
+    progress,
     'skills',
     name,
-    withProgress((progress) =>
-      Effect.gen(function* () {
-        const setup = yield* AgentSetup
-        yield* progress.start(name)
-        const before = yield* setup.skills(scope)
-        if (before.state === 'current' && !force) {
-          yield* progress.finish('already up to date')
-          return step('skills', name, 'unchanged', before.directory)
-        }
-        const after = yield* setup.installSkills(scope)
-        yield* progress.finish(after.directory)
-        return step(
-          'skills',
-          name,
-          before.state === 'missing' ? 'installed' : 'updated',
-          after.directory,
-        )
-      }),
-    ),
+    Effect.gen(function* () {
+      const setup = yield* AgentSetup
+      yield* progress.start(label)
+      const before = yield* setup.skills(scope)
+      if (before.state === 'current' && !force) {
+        yield* progress.finish(done(ui.dim('already up to date')))
+        return step('skills', name, 'unchanged', before.directory)
+      }
+      const after = yield* setup.installSkills(scope)
+      yield* progress.finish(done(skillsPath(scope)))
+      return step(
+        'skills',
+        name,
+        before.state === 'missing' ? 'installed' : 'updated',
+        after.directory,
+      )
+    }),
   )
 }
 
-const installedSkills = Effect.gen(function* () {
+const findSkills = Effect.gen(function* () {
   const setup = yield* AgentSetup
   const found = yield* Effect.forEach(skillScopes, setup.skills)
   return found.filter((status) => status.state !== 'missing')
-}).pipe(
+})
+
+const installedSkills = findSkills.pipe(
   Effect.catch((error) =>
     note(ui.warning(`Could not check the Polar skills: ${error.message}`)).pipe(
       Effect.as([]),
@@ -250,25 +286,41 @@ interface Input {
   readonly skills: Option.Option<SkillScope>
 }
 
-const runSetup = (input: Input) =>
+const execute = (progress: Progress, input: Input) =>
   Effect.gen(function* () {
     const setup = yield* AgentSetup
     const only = Option.getOrUndefined(input.client)
-    yield* note(ui.blank)
-    const statuses = yield* withProgress((progress) =>
-      Effect.gen(function* () {
-        yield* progress.start('Detecting coding agents')
-        const statuses = yield* setup.detect(only ? [only] : clients)
-        const found = statuses.filter((status) => status.detected)
-        yield* progress.finish(
-          found.map((status) => status.name).join(', ') || 'none found',
-        )
-        return statuses
-      }),
-    )
-    const detected = statuses.filter((status) => status.detected)
     if (input.status) {
+      yield* progress.start('Detecting coding agents')
+      const statuses = yield* setup.detect(only ? [only] : clients)
+      yield* progress.clear
       return { clients: statuses, skills: yield* installedSkills, steps: [] }
+    }
+    const { callingAgent } = setup
+    const { json } = yield* Output
+    const detecting = yield* Effect.forkChild(
+      setup.detect(only ? [only] : clients),
+    )
+    if (!callingAgent && !json && (yield* interactive)) {
+      yield* typeBanner([
+        ['Polar agent setup', ui.bold],
+        ['Connect your coding agents to Polar', ui.dim],
+      ])
+    }
+    yield* progress.open('Detected')
+    yield* progress.start('Agents')
+    const statuses = yield* Fiber.join(detecting)
+    const detected = statuses.filter((status) => status.detected)
+    const label = padded([SKILLS, ...detected.map((status) => status.name)])
+    if (detected.length === 0) {
+      yield* progress.finish('none found')
+    } else {
+      yield* progress.clear
+      yield* Effect.forEach(detected, (status) =>
+        progress
+          .start(label(status.name))
+          .pipe(Effect.andThen(progress.finish(clientState(status)))),
+      )
     }
     if (only && detected.length === 0) {
       const name = statuses[0]?.name ?? only
@@ -278,21 +330,36 @@ const runSetup = (input: Input) =>
       })
     }
     const selection = yield* select(
+      progress,
+      label(SKILLS),
       detected,
       only,
       Option.getOrUndefined(input.skills),
       input.confirm,
     )
+    const names = [
+      ...selection.targets.map((target) => target.name),
+      ...selection.scopes.map(skillsName),
+    ]
+    if (names.length === 0) return { clients: statuses, skills: [], steps: [] }
+    const row = padded(names)
+    yield* progress.open('Setup')
     const steps = [
       ...(yield* Effect.forEach(selection.targets, (target) =>
-        setUpClient(target, input.force),
+        setUpClient(progress, row(target.name), target, input.force),
       )),
       ...(yield* Effect.forEach(selection.scopes, (scope) =>
-        setUpSkills(scope, input.force),
+        setUpSkills(progress, row(skillsName(scope)), scope, input.force),
       )),
     ]
     return { clients: statuses, skills: [], steps }
   })
+
+const runSetup = (input: Input) =>
+  withProgress(
+    (progress) => execute(progress, input),
+    input.status ? 'checks' : 'columns',
+  )
 
 export const setup = Command.make('setup', {
   status,

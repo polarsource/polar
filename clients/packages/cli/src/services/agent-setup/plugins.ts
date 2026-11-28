@@ -1,4 +1,5 @@
 import { Effect, Schema, SchemaGetter } from 'effect'
+import { HttpClient, HttpClientResponse } from 'effect/http'
 import type { ChildProcessSpawner } from 'effect/process'
 import {
   AgentSetupError,
@@ -6,7 +7,7 @@ import {
   type ClientStatus,
 } from '@/schemas/AgentSetup'
 import type { Exec } from '@/services/updater'
-import { TOOLKIT_REPOSITORY } from '@/services/agent-setup/skills'
+import { TOOLKIT_REPOSITORY, fileUrl } from '@/services/agent-setup/skills'
 
 const LIST_TIMEOUT = 15_000
 const INSTALL_TIMEOUT = 3 * 60_000
@@ -43,6 +44,7 @@ export interface PluginClient {
   readonly binary: string
   readonly plugin: string
   readonly marketplace?: string
+  readonly manifest?: string
   readonly plugins: Schema.Codec<typeof Plugins.Type, unknown>
   readonly install: (installed: boolean) => 'install' | 'update' | 'add'
 }
@@ -53,6 +55,7 @@ export const claude: PluginClient = {
   binary: 'claude',
   plugin: 'polar@polar',
   marketplace: 'polar',
+  manifest: '.claude-plugin/plugin.json',
   plugins: Plugins,
   install: (installed) => (installed ? 'update' : 'install'),
 }
@@ -123,10 +126,43 @@ const installedPlugin = (spec: PluginClient, exec: Exec) =>
     ),
   )
 
+const Manifest = Schema.Struct({ version: Schema.String })
+const RELEASE = /^\d+\.\d+\.\d+$/
+
+export const latestVersion = (spec: PluginClient) => {
+  const { manifest } = spec
+  if (manifest === undefined) return Effect.succeed(undefined)
+  return Effect.gen(function* () {
+    const client = (yield* HttpClient.HttpClient).pipe(
+      HttpClient.filterStatusOk,
+    )
+    const response = yield* client.get(fileUrl(manifest))
+    const { version } =
+      yield* HttpClientResponse.schemaBodyJson(Manifest)(response)
+    return version
+  }).pipe(
+    Effect.timeoutOrElse({
+      duration: LIST_TIMEOUT,
+      orElse: () => Effect.succeed(undefined),
+    }),
+    Effect.orElseSucceed(() => undefined),
+  )
+}
+
+const newerThan = (installed: string | undefined, latest: string | undefined) =>
+  installed !== undefined &&
+  latest !== undefined &&
+  RELEASE.test(installed) &&
+  RELEASE.test(latest) &&
+  Bun.semver.order(latest, installed) === 1
+    ? latest
+    : undefined
+
 export const detectPlugin = (
   spec: PluginClient,
   exec: Exec,
   executable: string | null,
+  latest: Effect.Effect<string | undefined> = Effect.succeed(undefined),
 ): Effect.Effect<
   ClientStatus,
   never,
@@ -136,15 +172,19 @@ export const detectPlugin = (
   if (!executable) {
     return Effect.succeed({ ...base, detected: false, installed: false })
   }
-  return installedPlugin(spec, exec).pipe(
-    Effect.map(
-      (plugin): ClientStatus => ({
+  return Effect.all([installedPlugin(spec, exec), latest], {
+    concurrency: 2,
+  }).pipe(
+    Effect.map(([plugin, newest]): ClientStatus => {
+      const update = newerThan(plugin?.version, newest)
+      return {
         ...base,
         detected: true,
         installed: plugin !== undefined,
         ...(plugin?.version ? { version: plugin.version } : {}),
-      }),
-    ),
+        ...(update ? { update } : {}),
+      }
+    }),
     Effect.catchTag('ExecTimeoutError', () =>
       Effect.succeed<ClientStatus>({
         ...base,
@@ -196,6 +236,7 @@ export const installPlugin = (
         hint: `Run ${install.join(' ')} to see the underlying error.`,
       })
     }
+    return plugin.version
   }).pipe(
     Effect.catchTag(
       'ExecTimeoutError',

@@ -8,6 +8,7 @@ export interface Progress {
   readonly start: (text: string) => Effect.Effect<void>
   readonly finish: (detail?: string) => Effect.Effect<void>
   readonly fail: (detail?: string) => Effect.Effect<void>
+  readonly clear: Effect.Effect<void>
   readonly close: Effect.Effect<void>
 }
 
@@ -121,6 +122,7 @@ const make = (interactive: boolean, layout: Layout) => {
     start: (text) => Effect.andThen(settle(false), begin(text)),
     finish: (detail) => settle(false, detail),
     fail: (detail) => settle(true, detail),
+    clear: stop,
     close,
   }
   return {
@@ -134,6 +136,7 @@ const silent: Progress = {
   start: () => Effect.void,
   finish: () => Effect.void,
   fail: () => Effect.void,
+  clear: Effect.void,
   close: Effect.void,
 }
 

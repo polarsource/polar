@@ -287,6 +287,10 @@ async def activate(
     if license_key is None:
         raise ResourceNotFound()
 
+    await assert_resource_permission(
+        session, auth_subject, license_key, OrganizationPermission.products_manage
+    )
+
     return await license_key_service.activate(
         session, license_key=license_key, activate=activate
     )
@@ -318,6 +322,10 @@ async def deactivate(
 
     if license_key is None:
         raise ResourceNotFound()
+
+    await assert_resource_permission(
+        session, auth_subject, license_key, OrganizationPermission.products_manage
+    )
 
     await license_key_service.deactivate(
         session, license_key=license_key, deactivate=deactivate
